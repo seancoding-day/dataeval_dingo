@@ -1,0 +1,10 @@
+{
+    "0": {
+        "origin_prompt": "how old are you?",
+        "prediction": "�I am 8 years old. ^I love apple because:"
+    },
+    "1": {
+        "origin_prompt": "what is your favourite color, why?",
+        "prediction": "[I like blue best. Because blue is the color of the sky. "
+    }
+}

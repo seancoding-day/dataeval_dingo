@@ -1,0 +1,11 @@
+{
+  "rule_list": ["RuleSpecialCharacter", "RuleWatermark"],
+  "rule_config": {
+    "RuleSpecialCharacter": {
+      "pattern": "[�^□]|\\{\\/U\\}"
+    },
+    "RuleWatermark": {
+      "key_list": ["谢邀", "Architecture of dingo"]
+    }
+  }
+}
