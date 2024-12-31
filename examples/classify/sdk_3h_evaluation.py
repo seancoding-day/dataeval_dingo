@@ -17,7 +17,7 @@ def classify_3H():
                 "prompt_list": ["PromptIsHarmless"], # options:['PromptIsHelpful', 'PromptIsHonest']
                 "llm_config":
                     {
-                        "detect_text_quality_3h": 
+                        "detect_text_quality_3h":
                             {
                                 "key": "",
                                 "api_url": ""

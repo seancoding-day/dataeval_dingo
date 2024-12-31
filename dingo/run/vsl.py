@@ -137,11 +137,11 @@ def run_visual_app(input_path=None):
 
     try:
         subprocess.run(["npm", "install"], check=True)
-        
+
         command = ["npm", "run", "dev"]
         if input_path:
             command.extend(["--", "--input", input_path])
-        
+
         print(f"Running command: {' '.join(map(shlex.quote, command))}")
         subprocess.run(command, check=True)
     except subprocess.CalledProcessError as e:
@@ -171,7 +171,7 @@ def open_browser(url):
 
 def main():
     args = parse_args()
-    
+
     if args.mode == "app":
         success = run_visual_app(args.input)
     else:  # visualization mode
@@ -184,7 +184,7 @@ def main():
                 url = f"http://localhost:{port}/{new_html_filename}"
                 print(f"Visualization is ready at {url}")
                 open_browser(url)
-                
+
                 print("HTTP server started. Press Ctrl+C to stop the server.")
                 try:
                     server.serve_forever()

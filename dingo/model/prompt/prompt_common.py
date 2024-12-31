@@ -66,8 +66,8 @@ class PromptUnreadIssue(BasePrompt):
     2. Calculate the total length of the evaluated string, denoted as b.
     3. If the ratio of a/b is greater than 0.01, then it is considered low-quality data.
     ### Quality Standard
-    After workflow, you can judge 
-    1. low-quality：If the ratio of a/b is greater than 0.01, then it is considered low-quality data. 
+    After workflow, you can judge
+    1. low-quality：If the ratio of a/b is greater than 0.01, then it is considered low-quality data.
     2. high-quality:If the ratio of a/b is smaller than 0.01，it is considered high-quality data.
     ### Warning
     Please remember to output only JSON data, without additional content.

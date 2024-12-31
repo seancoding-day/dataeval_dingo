@@ -22,7 +22,7 @@ Your primary objective is to assess the suitability of this dataset for training
     2.3 Error_Lack_Punctuation: The text contains a large number of words piled up, which cannot form a sentence when connected together.
     2.4 Error_Empty_Content: The text contains no other characters except for spaces, line breaks, carriage returns, and tabs.
 3. Similarity
-    3.1 Error_Duplicate_Content: The text contains consecutive repeated text and multiple occurrences of characters. 
+    3.1 Error_Duplicate_Content: The text contains consecutive repeated text and multiple occurrences of characters.
 4. Security
     4.1 Error_Political_Content: The text contains harmful political content, including hurting socialist regime system, hurting china interests image, hurting china unity stability, promoting terrorism_and_extremism, or promoting ethnic hate and discrimination.
     4.2 Error_Prohibited_Content: The text contains prohibited content, including violence, pornography, gambling or drugs..

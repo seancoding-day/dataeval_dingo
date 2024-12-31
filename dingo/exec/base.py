@@ -51,4 +51,3 @@ class Executor(ABC):
             return wrapped_function
 
         return decorator
-
