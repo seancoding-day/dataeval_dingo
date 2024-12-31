@@ -1,68 +1,69 @@
-# Dataset Slimpajama
+# Slimpajama Dataset
 
-## 数据集介绍
-本数据集旨在评估dingo内置规则的准确性，因此选择开源数据集slimpajama，从中抽取数据构建测试集。
+## Dataset Introduction
+This dataset aims to evaluate the accuracy of the built-in rules in dingo. Therefore, the open-source dataset Slimpajama was selected, and data was extracted from it to construct the test set.
 
-| 字段名          | 介绍                                       |
-|--------------|------------------------------------------|
-| data_id      | 数据id，没有特殊含义，用户可根据自身需求修改                  |
-| content      | 待测试数据                                    |
-| language     | 语言类型                                     |
-| error_status | 数据状态，True为负例数据，False为正例数据                |
-| type_list    | 负例数据的负例类型，正例数据该字段则为空列表                   |
-| name_list    | 负例数据的负例名称，正例数据该字段则为空列表                   |
-| reason_list  | 负例数据的负例介绍，正例数据该字段则为空列表                   |
+| Field Name   | Description                                                                   |
+|--------------|-------------------------------------------------------------------------------|
+| data_id      | Data ID, without special meaning, can be modified according to user needs     |
+| content      | Data to be tested                                                             |
+| language     | Language type                                                                 |
+| error_status | Data status, True for negative examples, False for positive examples          |
+| type_list    | Negative example types for negative data, empty list for positive data        |
+| name_list    | Negative example names for negative data, empty list for positive data        |
+| reason_list  | Negative example descriptions for negative data, empty list for positive data |
 
-链接：
+Links:
 https://huggingface.co/datasets/chupei/slimpajama_badcase_rule
 https://huggingface.co/datasets/chupei/slimpajama_goodcase_rule
 
-### 数据集构成
-| 类型                                | 数量 |
-|-----------------------------------|----|
-| 正例数据                              | 82 |
-| 负例数据：RuleAlphaWords               | 27 |
-| 负例数据：RuleCapitalWords             | 26 |
-| 负例数据：RuleCharNumber               | 5  |
-| 负例数据：RuleDocRepeat                | 17 |
-| 负例数据：RuleHtmlEntity               | 3  |
-| 负例数据：RuleLineEndWithEllipsis      | 5  |
-| 负例数据：RuleLineEndWithTerminal      | 5  |
-| 负例数据：RuleLineStartWithBulletpoint | 6  |
-| 负例数据：RuleLoremIpsum               | 5  |
-| 负例数据：RuleMeanWordLength           | 12 |
-| 负例数据：RuleNoPunc                   | 7  |
-| 负例数据：RuleSentenceNumber           | 8  |
-| 负例数据：RuleSpecialCharacter         | 4  |
-| 负例数据：RuleStopWord                 | 24 |
-| 负例数据：RuleSymbolWordRatio          | 5  |
-| 负例数据：RuleUniqueWords              | 7  |
-| 负例数据：RuleWordNumber               | 7  |
+### Dataset Composition
+| Type                                            | Count |
+|-------------------------------------------------|-------|
+| Positive examples                               | 82    |
+| Negative examples: RuleAlphaWords               | 27    |
+| Negative examples: RuleCapitalWords             | 26    |
+| Negative examples: RuleCharNumber               | 5     |
+| Negative examples: RuleDocRepeat                | 17    |
+| Negative examples: RuleHtmlEntity               | 3     |
+| Negative examples: RuleLineEndWithEllipsis      | 5     |
+| Negative examples: RuleLineEndWithTerminal      | 5     |
+| Negative examples: RuleLineStartWithBulletpoint | 6     |
+| Negative examples: RuleLoremIpsum               | 5     |
+| Negative examples: RuleMeanWordLength           | 12    |
+| Negative examples: RuleNoPunc                   | 7     |
+| Negative examples: RuleSentenceNumber           | 8     |
+| Negative examples: RuleSpecialCharacter         | 4     |
+| Negative examples: RuleStopWord                 | 24    |
+| Negative examples: RuleSymbolWordRatio          | 5     |
+| Negative examples: RuleUniqueWords              | 7     |
+| Negative examples: RuleWordNumber               | 7     |
 
-## 规则介绍
-本次测试使用内置的 **pretrain** 作为eval_group，具体包含的规则可以参考：[集合介绍](../groups.md)
-集合内部的规则可以参考：[规则介绍](../rules.md)
+## Rules Introduction
+This test uses the built-in **pretrain** as the eval_group. For specific rules included, please refer to: [Group Introduction](../groups.md).<br>
+For rules within the group, please refer to: [Rules Introduction](../rules.md).
 
-## 评测结果
-### 概念介绍
-正例数据与负例数据经过评测，均会生成对应的summary文件，因此需要对结果进行定义，明确概念。
+## Evaluation Results
+### Definitions
+After evaluation, both positive and negative data will generate corresponding summary files. Therefore, the results need to be defined with clear concepts.
 
-| 名称  | 介绍                            |
-|-----|-------------------------------|
-| TP  | True Positive：正例数据中被评测为正例的数量  |
-| FP  | False Positive：负例数据中被评测为正例的数量 |
-| TN  | True Negative：负例数据中被评测为负例的数量  |
-| FN  | False Negative：正例数据中被评测为负例的数量 |
-| 准确率 | TP / (TP + FP) 被评测为正例中正例数据的比率 |
-| 召回率 | TP / (TP + FN) 正例数据被评测为正例的比率  |
-| F1  | (准确率 + 召回率) / 2               |
+| Term     | Description                                                                    |
+|----------|--------------------------------------------------------------------------------|
+| TP       | True Positive: Number of positive examples correctly identified                |
+| FP       | False Positive: Number of negative examples incorrectly identified as positive |
+| TN       | True Negative: Number of negative examples correctly identified                |
+| FN       | False Negative: Number of positive examples incorrectly identified as negative |
+| Accuracy | TP / (TP + FP) Ratio of positive examples in the identified positives          |
+| Recall   | TP / (TP + FN) Ratio of positive examples correctly identified                 |
+| F1       | (Accuracy + Recall) / 2                                                        |
 
-### 结果展示
-| 数据集名称      | TP | FP | TN  | FN | 准确率% | 召回率% | F1   |
-|------------|----|----|-----|----|------|------|------|
-| slimpajama | 78 | 5  | 103 | 4  | 94   | 95   | 94.5 |
+### Results Display
+| Dataset Name | TP | FP | TN  | FN | Accuracy% | Recall% | F1   |
+|--------------|----|----|-----|----|-----------|---------|------|
+| slimpajama   | 78 | 5  | 103 | 4  | 94        | 95      | 94.5 |
 
-## 评测方式
+## Evaluation Method
+Translate this markdown into English.
 
 ```python
 from dingo.io import InputArgs

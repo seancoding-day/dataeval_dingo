@@ -1,57 +1,57 @@
 # Dataset Redpajama
 
-## 数据集介绍
-本数据集旨在评估dingo内置提示词的准确性，因此选择开源数据集redpajama，从中抽取数据构建测试集。
+## Dataset Introduction
+This dataset aims to evaluate the accuracy of the built-in prompt words in dingo, therefore, the open-source dataset redpajama is selected, and data is extracted from it to build a test set.
 
-| 字段名          | 介绍                        |
-|--------------|---------------------------|
-| data_id      | 数据id，没有特殊含义，用户可根据自身需求修改   |
-| content      | 待测试数据                     |
-| language     | 语言类型                      |
-| error_status | 数据状态，True为负例数据，False为正例数据 |
-| type_list    | 负例数据的负例类型，正例数据该字段则为空列表    |
-| name_list    | 负例数据的负例名称，正例数据该字段则为空列表    |
-| reason_list  | 负例数据的负例介绍，正例数据该字段则为空列表    |
+| Field Name   | Description                                                                        |
+|--------------|------------------------------------------------------------------------------------|
+| data_id      | Data ID, without special meaning, users can modify it according to their own needs |
+| content      | Data to be tested                                                                  |
+| language     | Language type                                                                      |
+| error_status | Data status, True for negative examples, False for positive examples               |
+| type_list    | Negative types for negative examples, empty list for positive examples             |
+| name_list    | Negative names for negative examples, empty list for positive examples             |
+| reason_list  | Negative introductions for negative examples, empty list for positive examples     |
 
-链接：
-https://huggingface.co/datasets/chupei/redpajama_good_model
+Links:<br>
+https://huggingface.co/datasets/chupei/redpajama_good_model<br>
 https://huggingface.co/datasets/chupei/redpajama_bad_model
 
-### 数据集构成
-| 类型                        | 数量  |
-|---------------------------|-----|
-| 正例数据                      | 101 |
-| 负例数据：disfluency           | 4   |
-| 负例数据：dissimilarity        | 3   |
-| 负例数据：disunderstandability | 2   |
-| 负例数据：incompleteness       | 27  |
-| 负例数据：insecurity           | 16  |
-| 负例数据：irrelevance          | 49  |
+### Dataset Composition
+| Type                                    | Count |
+|-----------------------------------------|-------|
+| Positive Examples                       | 101   |
+| Negative Examples: disfluency           | 4     |
+| Negative Examples: dissimilarity        | 3     |
+| Negative Examples: disunderstandability | 2     |
+| Negative Examples: incompleteness       | 27    |
+| Negative Examples: insecurity           | 16    |
+| Negative Examples: irrelevance          | 49    |
 
-## 提示词介绍
-本次测试使用内置的 **PromptTextQualityV2** 作为提示词，具体包含的内容可以参考：[PromptTextQualityV2介绍](../../dingo/model/prompt/prompt_text_quality_v2.py)
-内置的提示词集合可以参考：[提示词集合](../../dingo/model/prompt)
+## Prompt Introduction
+The built-in **PromptTextQualityV2** is used as the prompt for this test. Specific content can be referred to: [Introduction to PromptTextQualityV2](../../dingo/model/prompt/prompt_text_quality_v2.py)<br>
+The built-in prompt collection can be referred to: [Prompt Collection](../../dingo/model/prompt)
 
-## 评测结果
-### 概念介绍
-正例数据与负例数据经过评测，均会生成对应的summary文件，因此需要对结果进行定义，明确概念。
+## Evaluation Results
+### Concept Introduction
+Both positive and negative examples will generate corresponding summary files after evaluation, so the results need to be defined and the concepts clarified.
 
-| 名称  | 介绍                            |
-|-----|-------------------------------|
-| TP  | True Positive：正例数据中被评测为正例的数量  |
-| FP  | False Positive：负例数据中被评测为正例的数量 |
-| TN  | True Negative：负例数据中被评测为负例的数量  |
-| FN  | False Negative：正例数据中被评测为负例的数量 |
-| 准确率 | TP / (TP + FP) 被评测为正例中正例数据的比率 |
-| 召回率 | TP / (TP + FN) 正例数据被评测为正例的比率  |
-| F1  | (准确率 + 召回率) / 2               |
+| Name     | Description                                                                 |
+|----------|-----------------------------------------------------------------------------|
+| TP       | True Positive: Number of positive examples evaluated as positive            |
+| FP       | False Positive: Number of negative examples evaluated as positive           |
+| TN       | True Negative: Number of negative examples evaluated as negative            |
+| FN       | False Negative: Number of positive examples evaluated as negative           |
+| Accuracy | TP / (TP + FP) Ratio of positive examples among those evaluated as positive |
+| Recall   | TP / (TP + FN) Ratio of positive examples correctly evaluated as positive   |
+| F1       | (Accuracy + Recall) / 2                                                     |
 
-### 结果展示
-| 数据集名称     | TP | FP | TN  | FN | 准确率% | 召回率% | F1 |
-|-----------|----|----|-----|----|------|------|----|
-| redpajama | 95 | 0  | 101 | 6  | 100  | 94   | 97 |
+### Result Display
+| Dataset Name | TP | FP | TN  | FN | Accuracy% | Recall% | F1 |
+|--------------|----|----|-----|----|-----------|---------|----|
+| redpajama    | 95 | 0  | 101 | 6  | 100       | 94      | 97 |
 
-## 评测方式
+## Evaluation Method
 
 ```python
 from dingo.io import InputArgs
