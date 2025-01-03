@@ -1,7 +1,7 @@
 # Multi_Lan Dataset
 
 ## Dataset Introduction
-Multi_Lan Dataset aims to evaluate the ability of Dingo's built-in prompt to mine low-quality data in multi-language pre-training datasets. We extracted a portion of data from the Common Crawl (CC) dataset, which was then annotated by experts in these languages based on seven quality dimensions（[quality_metrics](../metrics.md)）. If any dimension has problems, the data will be marked as low-quality data.
+Multi_Lan Dataset aims to evaluate the ability of Dingo's built-in prompt to mine low-quality data in multi-language pre-training datasets. We extracted a portion of data from the Common Crawl (CC) dataset, which was then annotated by experts in these languages based on seven quality dimensions（[quality_metrics](../../metrics.md)）. If any dimension has problems, the data will be marked as low-quality data.
 
 | Field Name          | Description                           |
 |--------------|------------------------------|
@@ -16,12 +16,12 @@ Multi_Lan Dataset aims to evaluate the ability of Dingo's built-in prompt to min
 ### Dataset Link
 The dataset is available for different languages through the following links:
 
-| Language | Dataset Link                                        |
-|----------|----------------------------------------------|
-| Russian       | https://huggingface.co/datasets/chupei/cc_ru |
+| Language   | Dataset Link                                 |
+|------------|----------------------------------------------|
+| Russian    | https://huggingface.co/datasets/chupei/cc_ru |
 | Thai       | https://huggingface.co/datasets/chupei/cc_th |
-| Vietnamese      | https://huggingface.co/datasets/chupei/cc_vi |
-| Hungarian     | https://huggingface.co/datasets/chupei/cc_hu |
+| Vietnamese | https://huggingface.co/datasets/chupei/cc_vi |
+| Hungarian  | https://huggingface.co/datasets/chupei/cc_hu |
 | Serbian    | https://huggingface.co/datasets/chupei/cc_sr |
 
 
@@ -29,12 +29,12 @@ The dataset is available for different languages through the following links:
 The dataset includes five languages: Russian, Thai, Vietnamese, Hungarian, and Serbian. Below is a summary of each language's data:
 
 | Language   | Number of dataset | Number of High-Quality Data | Number of Low-Quality Data |
-|------|-------------------|-----------------------------|----------------------------|
-| Russian   | 154               | 71                          | 83                         |
-| Thai   | 267               | 128                         | 139                        |
-| Vietnamese  | 214               | 101                         | 113                        |
-| Hungarian | 225               | 99                          | 126                        |
-| Serbian | 144               | 38                          | 76                         |
+|------------|-------------------|-----------------------------|----------------------------|
+| Russian    | 154               | 71                          | 83                         |
+| Thai       | 267               | 128                         | 139                        |
+| Vietnamese | 214               | 101                         | 113                        |
+| Hungarian  | 225               | 99                          | 126                        |
+| Serbian    | 144               | 38                          | 76                         |
 
 
 

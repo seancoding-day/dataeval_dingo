@@ -40,8 +40,8 @@ https://huggingface.co/datasets/chupei/slimpajama_goodcase_rule
 | Negative examples: RuleWordNumber               | 7     |
 
 ## Rules Introduction
-This test uses the built-in **pretrain** as the eval_group. For specific rules included, please refer to: [Group Introduction](../groups.md).<br>
-For rules within the group, please refer to: [Rules Introduction](../rules.md).
+This test uses the built-in **pretrain** as the eval_group. For specific rules included, please refer to: [Group Introduction](../../groups.md).<br>
+For rules within the group, please refer to: [Rules Introduction](../../rules.md).
 
 ## Evaluation Results
 ### Definitions
