@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
-import json
-import re
 import argparse
 import base64
+import json
+import os
+import re
+
 
 def get_folder_structure(root_path):
     structure = []

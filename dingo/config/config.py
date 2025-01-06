@@ -1,8 +1,8 @@
 import json
+from typing import Dict, List, Optional
 
-from typing import Optional, List, Dict
-from pydantic import BaseModel
 from dingo.utils import log
+from pydantic import BaseModel
 
 
 class DynamicRuleConfig(BaseModel):

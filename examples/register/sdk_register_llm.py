@@ -41,8 +41,8 @@ class DetectTextQualityRegister(BaseOpenAI):
         return result
 
 if __name__ == '__main__':
-    from dingo.io import InputArgs
     from dingo.exec import Executor
+    from dingo.io import InputArgs
 
     input_data = {
         "eval_group": "test",

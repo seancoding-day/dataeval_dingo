@@ -1,16 +1,17 @@
-import os
-import json
-import re
-import base64
-import webbrowser
 import argparse
-import sys
+import base64
+import json
+import os
 import platform
-import subprocess
-from http.server import HTTPServer, SimpleHTTPRequestHandler
+import re
 import shlex
-import time
 import shutil
+import subprocess
+import sys
+import time
+import webbrowser
+from http.server import HTTPServer, SimpleHTTPRequestHandler
+
 
 def get_folder_structure(root_path):
     structure = []

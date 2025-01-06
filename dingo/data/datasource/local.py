@@ -1,5 +1,5 @@
 import os
-from typing import Any, Dict, Optional, Generator, List
+from typing import Any, Dict, Generator, List, Optional
 
 from dingo.data.datasource.base import DataSource
 from dingo.io import InputArgs

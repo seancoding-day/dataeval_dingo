@@ -1,6 +1,6 @@
+from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
-from dingo.model.model import Model
 
 @Model.prompt_register("TEXT_QUALITY_V3", [])
 class PromptTextQualityV3(BasePrompt):

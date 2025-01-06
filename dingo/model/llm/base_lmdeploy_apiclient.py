@@ -2,8 +2,6 @@ import json
 import time
 from typing import List
 
-from pydantic import ValidationError
-
 from dingo.config.config import DynamicLLMConfig
 from dingo.io import MetaData
 from dingo.model.llm.base import BaseLLM
@@ -12,6 +10,7 @@ from dingo.model.prompt.base import BasePrompt
 from dingo.model.response.response_class import ResponseScoreReason
 from dingo.utils import log
 from dingo.utils.exception import ConvertJsonError, ExceedMaxTokens
+from pydantic import ValidationError
 
 
 class BaseLmdeployApiClient(BaseLLM):

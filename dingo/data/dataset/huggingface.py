@@ -1,11 +1,11 @@
 import json
-import datasets
-from typing import Any, Dict, Mapping, Optional, Sequence, Union, Generator
+from typing import Any, Dict, Generator, Mapping, Optional, Sequence, Union
 
+import datasets
 from dingo.data.dataset.base import Dataset
-from dingo.data.utils.digit import compute_pandas_digest
 from dingo.data.datasource import DataSource
 from dingo.data.datasource.huggingface import HuggingFaceSource
+from dingo.data.utils.digit import compute_pandas_digest
 from dingo.io import MetaData
 
 _MAX_ROWS_FOR_DIGEST_COMPUTATION_AND_SCHEMA_INFERENCE = 10000

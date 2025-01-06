@@ -1,8 +1,7 @@
-from dingo.utils import log
-
 from dingo.data.dataset.base import Dataset
-from dingo.data.dataset.local import LocalDataset
 from dingo.data.dataset.huggingface import HuggingFaceDataset
+from dingo.data.dataset.local import LocalDataset
+from dingo.utils import log
 
 try:
     from dingo.data.dataset.spark import SparkDataset

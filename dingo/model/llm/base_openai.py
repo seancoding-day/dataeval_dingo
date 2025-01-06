@@ -1,8 +1,6 @@
 import json
 import time
-from typing import List, Dict
-
-from pydantic import ValidationError
+from typing import Dict, List
 
 from dingo.config.config import DynamicLLMConfig
 from dingo.io import MetaData
@@ -11,7 +9,8 @@ from dingo.model.modelres import ModelRes
 from dingo.model.prompt.base import BasePrompt
 from dingo.model.response.response_class import ResponseScoreReason
 from dingo.utils import log
-from dingo.utils.exception import ExceedMaxTokens, ConvertJsonError
+from dingo.utils.exception import ConvertJsonError, ExceedMaxTokens
+from pydantic import ValidationError
 
 
 class BaseOpenAI(BaseLLM):

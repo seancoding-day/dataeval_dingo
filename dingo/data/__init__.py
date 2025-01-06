@@ -1,3 +1,3 @@
-from dingo.data.dataset import dataset_map, Dataset
-from dingo.data.datasource import datasource_map, DataSource
-from dingo.data.converter import converters, BaseConverter
+from dingo.data.converter import BaseConverter, converters
+from dingo.data.dataset import Dataset, dataset_map
+from dingo.data.datasource import DataSource, datasource_map

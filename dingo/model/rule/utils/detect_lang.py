@@ -1,9 +1,8 @@
+from typing import Any, Dict, Tuple
+
 import fasttext
-
-from typing import Tuple, Dict, Any
-from huggingface_hub import hf_hub_download
-
 from dingo.utils import log
+from huggingface_hub import hf_hub_download
 
 _global_lang_detect = []
 _fasttext_path = ''

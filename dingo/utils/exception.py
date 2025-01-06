@@ -1,6 +1,5 @@
 from fastapi import HTTPException
 
-
 # tokens
 
 class TokensException(HTTPException):

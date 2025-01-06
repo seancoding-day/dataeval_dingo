@@ -1,6 +1,7 @@
 import asyncio
-import aiohttp
 import time
+
+import aiohttp
 
 url = 'https://labelu-tools.shlab.tech/?tool=extract'
 total_requests = 6000  # 总请求数

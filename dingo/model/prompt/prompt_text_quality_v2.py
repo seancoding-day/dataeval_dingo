@@ -1,6 +1,5 @@
-from dingo.model.prompt.base import BasePrompt
-
 from dingo.model.model import Model
+from dingo.model.prompt.base import BasePrompt
 
 ROLE = """
     ### Role

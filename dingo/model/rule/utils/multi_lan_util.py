@@ -1,5 +1,6 @@
 from typing import List
 
+
 def get_xyz_head_word(lang) -> List[str]:
     return xyz_head_word[lang]
 

@@ -1,8 +1,8 @@
+from dingo.data.datasource.base import DataSource
+from dingo.data.datasource.huggingface import HuggingFaceSource
+from dingo.data.datasource.local import LocalDataSource
 from dingo.utils import log
 
-from dingo.data.datasource.base import DataSource
-from dingo.data.datasource.local import LocalDataSource
-from dingo.data.datasource.huggingface import HuggingFaceSource
 try:
     from dingo.data.datasource.s3 import S3DataSource
 except Exception as e:

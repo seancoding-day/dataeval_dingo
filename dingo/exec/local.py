@@ -5,7 +5,6 @@ import json
 import os
 import time
 import uuid
-from tqdm import tqdm
 from typing import Generator, List, Optional
 
 from dingo.config import GlobalConfig
@@ -18,6 +17,7 @@ from dingo.model.modelres import ModelRes
 from dingo.model.prompt.base import BasePrompt
 from dingo.model.rule.base import BaseRule
 from dingo.utils import log
+from tqdm import tqdm
 
 
 @Executor.register('local')

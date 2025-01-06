@@ -1,10 +1,12 @@
 import re
 from typing import List
+
+from dingo.config.config import DynamicRuleConfig
 from dingo.io import MetaData
 from dingo.model.model import Model
 from dingo.model.modelres import ModelRes
 from dingo.model.rule.base import BaseRule
-from dingo.config.config import DynamicRuleConfig
+
 
 @Model.rule_register('QUALITY_BAD_RELEVANCE', [])
 class CommonPatternDemo(BaseRule):
@@ -23,8 +25,8 @@ class CommonPatternDemo(BaseRule):
         return res
 
 if __name__ == '__main__':
-    from dingo.io import InputArgs
     from dingo.exec import Executor
+    from dingo.io import InputArgs
 
     input_data = {
         "eval_group": "test",

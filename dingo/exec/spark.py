@@ -3,20 +3,19 @@ import time
 import uuid
 from typing import Any, Callable, Dict, Generator, List, Optional, Union
 
-from pyspark import SparkConf, SparkContext
-from pyspark.rdd import RDD
-from pyspark.sql import DataFrame, Row, SparkSession
-
 from dingo.config import GlobalConfig
 from dingo.data import Dataset, DataSource, dataset_map, datasource_map
 from dingo.exec.base import Executor
 from dingo.io import InputArgs, MetaData, ResultInfo, SummaryModel
 from dingo.model import Model
+from dingo.model.llm.base import BaseLLM
 from dingo.model.modelres import ModelRes
 from dingo.model.prompt.base import BasePrompt
 from dingo.model.rule.base import BaseRule
-from dingo.model.llm.base import BaseLLM
 from dingo.utils import log
+from pyspark import SparkConf, SparkContext
+from pyspark.rdd import RDD
+from pyspark.sql import DataFrame, Row, SparkSession
 
 
 @Executor.register('spark')

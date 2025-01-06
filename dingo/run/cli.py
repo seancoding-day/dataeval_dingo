@@ -4,7 +4,6 @@ import os
 import pprint
 
 import prettytable as pt
-
 from dingo.exec import ExecProto, Executor
 from dingo.io import InputArgs
 from dingo.model import Model
