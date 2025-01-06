@@ -5,7 +5,7 @@ from typing import Any, Callable, Dict, Generator, List, Optional, Union
 
 from dingo.config import GlobalConfig
 from dingo.data import Dataset, DataSource, dataset_map, datasource_map
-from dingo.exec.base import Executor
+from dingo.exec.base import ExecProto, Executor
 from dingo.io import InputArgs, MetaData, ResultInfo, SummaryModel
 from dingo.model import Model
 from dingo.model.llm.base import BaseLLM
@@ -19,7 +19,7 @@ from pyspark.sql import DataFrame, Row, SparkSession
 
 
 @Executor.register('spark')
-class SparkExecutor(Executor):
+class SparkExecutor(ExecProto):
     """
     Spark executor
     """

@@ -1,6 +1,7 @@
+import inspect
 from abc import ABC, abstractmethod
 from functools import wraps
-from typing import Any, Dict, List, Protocol, Union
+from typing import Any, Dict, List, Protocol, Type, Union
 
 from dingo.io import MetaData, SummaryModel
 
@@ -19,24 +20,8 @@ class ExecProto(Protocol):
         ...
 
 
-class Executor(ABC):
-    exec_map: Dict[str, Any] = {}
-
-    @abstractmethod
-    def load_data(self) -> List[MetaData]:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def execute(self, *args, **kwargs) -> List[SummaryModel]:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def evaluate(self, *args, **kwargs) -> Union[SummaryModel, List[SummaryModel], Any]:
-        raise NotImplementedError()
-
-    @abstractmethod
-    def summarize(self) -> SummaryModel:
-        raise NotImplementedError()
+class Executor:
+    exec_map: Dict[str, Type[ExecProto]] = {}
 
     @classmethod
     def register(cls, exec_name: str):
@@ -44,10 +29,9 @@ class Executor(ABC):
         def decorator(root_exec):
             cls.exec_map[exec_name] = root_exec
 
-            @wraps(root_exec)
-            def wrapped_function(*args, **kwargs):
-                return root_exec(*args, **kwargs)
-
-            return wrapped_function
+            if inspect.isclass(root_exec):
+                return root_exec
+            else:
+                raise ValueError("root_exec must be a class")
 
         return decorator

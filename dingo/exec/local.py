@@ -9,7 +9,7 @@ from typing import Generator, List, Optional
 
 from dingo.config import GlobalConfig
 from dingo.data import Dataset, DataSource, dataset_map, datasource_map
-from dingo.exec.base import Executor
+from dingo.exec.base import ExecProto, Executor
 from dingo.io import InputArgs, MetaData, ResultInfo, SummaryModel
 from dingo.model import Model
 from dingo.model.llm.base import BaseLLM
@@ -21,7 +21,7 @@ from tqdm import tqdm
 
 
 @Executor.register('local')
-class LocalExecutor(Executor):
+class LocalExecutor(ExecProto):
 
     def __init__(self, input_args: InputArgs):
         self.input_args: InputArgs = input_args
