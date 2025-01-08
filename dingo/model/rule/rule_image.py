@@ -6,6 +6,7 @@ from dingo.io import MetaData
 from dingo.model.model import Model
 from dingo.model.modelres import ModelRes
 from dingo.model.rule.base import BaseRule
+import os
 from PIL import Image
 
 
@@ -97,7 +98,7 @@ class RuleImageRepeat(BaseRule):
         image_dir = input_data.content
         phasher = PHash()
         cnn_encoder = CNN()
-
+        duplicate_info = dict()
         phash_encodings = phasher.encode_images(image_dir=image_dir)
         duplicates_phash = phasher.find_duplicates(encoding_map=phash_encodings)
         duplicate_images_phash = set()
@@ -107,12 +108,15 @@ class RuleImageRepeat(BaseRule):
                 duplicate_images_phash.update(values)
         duplicates_cnn = cnn_encoder.find_duplicates(image_dir=image_dir, min_similarity_threshold=0.97)
         common_duplicates = duplicate_images_phash.intersection(set(duplicates_cnn.keys()))
+        if len(os.listdir(image_dir)) == 0:
+            raise ZeroDivisionError("The directory is empty, cannot calculate the ratio.")
+        duplicate_info["duplicate_ratio"] = len(common_duplicates) / len(os.listdir(image_dir))
         if common_duplicates:
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
             res.reason = [f'{image} -> {duplicates_cnn[image]}' for image in common_duplicates]
-
+            res.reason.extend("duplicate_info": duplicate_info)
         return res
 
 
