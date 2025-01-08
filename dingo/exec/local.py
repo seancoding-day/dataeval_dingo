@@ -99,7 +99,7 @@ class LocalExecutor(ExecProto):
             data_iter = self.load_data()
             data_iter = itertools.islice(data_iter, self.input_args.start_index, None)
             pbar = tqdm(total=None, unit='items')
-                
+
             def process_batch(batch: List):
                 futures=[]
                 for group_type, group in Model.get_group(self.input_args.eval_group).items():
@@ -109,7 +109,7 @@ class LocalExecutor(ExecProto):
                         futures += [thread_executor.submit(self.evaluate_single_data, group_type, group, data) for data in batch]
                     else:
                         raise RuntimeError(f'Unsupported group type: {group_type}')
-                    
+
                 for future in concurrent.futures.as_completed(futures):
                     future.result()
                     if self.input_args.save_data:
@@ -132,7 +132,7 @@ class LocalExecutor(ExecProto):
                 if not batch:
                     break
                 process_batch(batch)
-            
+
 
         log.debug('[Summary]: ' + str(self.summary))
 
