@@ -1,3 +1,4 @@
+import os
 from typing import List
 
 import numpy as np
@@ -6,7 +7,6 @@ from dingo.io import MetaData
 from dingo.model.model import Model
 from dingo.model.modelres import ModelRes
 from dingo.model.rule.base import BaseRule
-import os
 from PIL import Image
 
 
