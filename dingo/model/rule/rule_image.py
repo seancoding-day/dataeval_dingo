@@ -116,7 +116,7 @@ class RuleImageRepeat(BaseRule):
             res.type = cls.metric_type
             res.name = cls.__name__
             res.reason = [f'{image} -> {duplicates_cnn[image]}' for image in common_duplicates]
-            res.reason.extend("duplicate_info": duplicate_info)
+            res.reason.extend(duplicate_info)
         return res
 
 
