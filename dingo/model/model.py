@@ -263,10 +263,11 @@ class Model:
                     if v is not None:
                         setattr(config_default, k, v)
                 setattr(cls_llm, 'dynamic_config', config_default)
+        if GlobalConfig.config:
+            if GlobalConfig.config.rule_list or GlobalConfig.config.prompt_list:
+                if eval_group in Model.rule_groups or eval_group in Model.prompt_groups:
+                    raise KeyError(f'eval group: [{eval_group}] already in Model, please input other name.')
         if GlobalConfig.config and GlobalConfig.config.rule_list:
-            if eval_group in Model.rule_groups or eval_group in Model.prompt_groups:
-                raise KeyError(f'eval model: [{eval_group}] already in Model, please input other name.')
-
             model: List[BaseRule] = []
             for rule in GlobalConfig.config.rule_list:
                 assert isinstance(rule, str)
@@ -275,9 +276,6 @@ class Model:
                 model.append(Model.rule_name_map[rule])
             Model.rule_groups[eval_group] = model
         if GlobalConfig.config and GlobalConfig.config.prompt_list:
-            if eval_group in Model.rule_groups or eval_group in Model.prompt_groups:
-                raise KeyError(f'eval model: [{eval_group}] already in Model, please input other name.')
-
             model: List[BasePrompt] = []
             for prompt in GlobalConfig.config.prompt_list:
                 assert isinstance(prompt, str)
