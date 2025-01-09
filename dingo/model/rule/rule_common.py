@@ -1084,7 +1084,6 @@ class RuleOnlyUrl(BaseRule):
             return res
         SEARCH_REGEX = re.compile(cls.dynamic_config.pattern)
         content_without_url = SEARCH_REGEX.sub("", content)
-        print(content_without_url)
         if len(content_without_url.strip()) == 0:
             res.error_status = True
             res.type = cls.metric_type
