@@ -101,7 +101,37 @@ class LocalExecutor(ExecProto):
             def process_batch(batch: List):
                 futures = [executor.submit(self.evaluate_single_data, self.input_args.eval_group, data) for data in batch]
                 for future in concurrent.futures.as_completed(futures):
-                    future.result()
+                    result_info = future.result()
+                    # calculate summary ratio
+                    if result_info.error_status:
+                        self.bad_info_list.append(result_info)
+                        self.summary.num_bad += 1
+                        for t in result_info.type_list:
+                            if t not in self.summary.type_ratio:
+                                self.summary.type_ratio[t] = 1
+                            else:
+                                self.summary.type_ratio[t] += 1
+                        for n in result_info.name_list:
+                            if n not in self.summary.name_ratio:
+                                self.summary.name_ratio[n] = 1
+                            else:
+                                self.summary.name_ratio[n] += 1
+                    else:
+                        if self.input_args.save_correct:
+                            self.good_info_list.append(result_info)
+                            for t in result_info.type_list:
+                                if t not in self.summary.type_ratio:
+                                    self.summary.type_ratio[t] = 1
+                                else:
+                                    self.summary.type_ratio[t] += 1
+                            for n in result_info.name_list:
+                                if n not in self.summary.name_ratio:
+                                    self.summary.name_ratio[n] = 1
+                                else:
+                                    self.summary.name_ratio[n] += 1
+                    self.summary.total += 1
+
+                    # save data in file
                     if self.input_args.save_data:
                         if self.summary.total > 0 and self.summary.total % self.input_args.interval_size == 0:
                             tmp_summary = self.summarize(self.summary)
@@ -127,7 +157,7 @@ class LocalExecutor(ExecProto):
 
         log.debug('[Summary]: ' + str(self.summary))
 
-    def evaluate_single_data(self, group_name, data: MetaData):
+    def evaluate_single_data(self, group_name, data: MetaData)-> ResultInfo:
         result_info = ResultInfo(data_id=data.data_id, prompt=data.prompt, content=data.content)
         if self.input_args.save_raw:
             result_info.raw_data = data.raw_data
@@ -169,35 +199,7 @@ class LocalExecutor(ExecProto):
             for reason in good_reason_list:
                 if reason and reason not in result_info.reason_list:
                     result_info.reason_list.append(reason)
-
-        if result_info.error_status:
-            self.bad_info_list.append(result_info)
-            self.summary.num_bad += 1
-            for t in result_info.type_list:
-                if t not in self.summary.type_ratio:
-                    self.summary.type_ratio[t] = 1
-                else:
-                    self.summary.type_ratio[t] += 1
-            for n in result_info.name_list:
-                if n not in self.summary.name_ratio:
-                    self.summary.name_ratio[n] = 1
-                else:
-                    self.summary.name_ratio[n] += 1
-        else:
-            if self.input_args.save_correct:
-                self.good_info_list.append(result_info)
-                for t in result_info.type_list:
-                    if t not in self.summary.type_ratio:
-                        self.summary.type_ratio[t] = 1
-                    else:
-                        self.summary.type_ratio[t] += 1
-                for n in result_info.name_list:
-                    if n not in self.summary.name_ratio:
-                        self.summary.name_ratio[n] = 1
-                    else:
-                        self.summary.name_ratio[n] += 1
-
-        self.summary.total += 1
+        return result_info
 
     def evaluate_rule(self, group: List[BaseRule], d: MetaData) -> ResultInfo:
         result_info = ResultInfo(data_id=d.data_id, prompt=d.prompt, content=d.content)
