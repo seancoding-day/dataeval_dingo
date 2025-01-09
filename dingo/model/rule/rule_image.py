@@ -93,12 +93,12 @@ class RuleImageRepeat(BaseRule):
     @classmethod
     def eval(cls, input_data: MetaData) -> ModelRes:
         from imagededup.methods import CNN, PHash
-
         res = ModelRes()
         image_dir = input_data.content
+        if len(os.listdir(image_dir)) == 0:
+            raise ZeroDivisionError("The directory is empty, cannot calculate the ratio.")
         phasher = PHash()
         cnn_encoder = CNN()
-        duplicate_info = dict()
         phash_encodings = phasher.encode_images(image_dir=image_dir)
         duplicates_phash = phasher.find_duplicates(encoding_map=phash_encodings)
         duplicate_images_phash = set()
@@ -108,18 +108,13 @@ class RuleImageRepeat(BaseRule):
                 duplicate_images_phash.update(values)
         duplicates_cnn = cnn_encoder.find_duplicates(image_dir=image_dir, min_similarity_threshold=0.97)
         common_duplicates = duplicate_images_phash.intersection(set(duplicates_cnn.keys()))
-        if len(os.listdir(image_dir)) == 0:
-            raise ZeroDivisionError("The directory is empty, cannot calculate the ratio.")
-        duplicate_info["duplicate_ratio"] = len(common_duplicates) / len(os.listdir(image_dir))
         if common_duplicates:
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
             res.reason = [f'{image} -> {duplicates_cnn[image]}' for image in common_duplicates]
-            res.reason.extend(duplicate_info)
+            res.reason.append({"duplicate_ratio": len(common_duplicates) / len(os.listdir(image_dir))})
         return res
-
-
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', [])
 class RuleImageTextSimilarity(BaseRule):
 
