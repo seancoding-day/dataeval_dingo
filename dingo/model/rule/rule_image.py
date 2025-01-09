@@ -1,3 +1,4 @@
+import os
 from typing import List
 
 import numpy as np
@@ -92,12 +93,12 @@ class RuleImageRepeat(BaseRule):
     @classmethod
     def eval(cls, input_data: MetaData) -> ModelRes:
         from imagededup.methods import CNN, PHash
-
         res = ModelRes()
         image_dir = input_data.content
+        if len(os.listdir(image_dir)) == 0:
+            raise ZeroDivisionError("The directory is empty, cannot calculate the ratio.")
         phasher = PHash()
         cnn_encoder = CNN()
-
         phash_encodings = phasher.encode_images(image_dir=image_dir)
         duplicates_phash = phasher.find_duplicates(encoding_map=phash_encodings)
         duplicate_images_phash = set()
@@ -112,10 +113,8 @@ class RuleImageRepeat(BaseRule):
             res.type = cls.metric_type
             res.name = cls.__name__
             res.reason = [f'{image} -> {duplicates_cnn[image]}' for image in common_duplicates]
-
+            res.reason.append({"duplicate_ratio": len(common_duplicates) / len(os.listdir(image_dir))})
         return res
-
-
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', [])
 class RuleImageTextSimilarity(BaseRule):
 
