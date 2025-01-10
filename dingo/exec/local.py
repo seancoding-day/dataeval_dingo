@@ -83,7 +83,7 @@ class LocalExecutor(ExecProto):
             self.summary = self.summarize(self.summary)
             self.summary.finish_time = time.strftime('%Y%m%d_%H%M%S', time.localtime())
             if self.input_args.save_data:
-                self.save_data(output_path, self.input_args, self.bad_info_list, self.good_info_list, self.summary)
+                self.save_data(output_path, self.input_args, self.bad_info_list[self.bad_info_index:], self.good_info_list[self.good_info_index:], self.summary)
 
         return [self.summary]
 
