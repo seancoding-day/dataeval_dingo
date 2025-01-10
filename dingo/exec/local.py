@@ -153,7 +153,7 @@ class LocalExecutor(ExecProto):
                     if not batch:
                         break
                     process_batch(batch)
-                    pbar.update()
+                    pbar.update(len(batch))
 
         log.debug('[Summary]: ' + str(self.summary))
 
