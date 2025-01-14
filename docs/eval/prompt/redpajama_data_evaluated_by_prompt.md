@@ -30,7 +30,7 @@ https://huggingface.co/datasets/chupei/redpajama_bad_model
 
 ## Prompt Introduction
 The built-in **PromptTextQualityV2** is used as the prompt for this test.<br>
-Specific content can be referred to: [Introduction to PromptTextQualityV2](../../../dingo/model/prompt/prompt_text_quality_v2.py)<br>
+Specific content can be referred to: [Introduction to PromptTextQualityV2](../../../dingo/model/prompt/prompt_text_quality.py)<br>
 The built-in prompt collection can be referred to: [Prompt Collection](../../../dingo/model/prompt)
 
 ## Evaluation Results
