@@ -23,8 +23,7 @@ class InputArgs(BaseModel):
     interval_size: int = 1000
 
     # Concurrent settings
-    process_workers: int = 1
-    thread_workers: int = 1
+    max_workers: int = 1
     batch_size: int = 1
 
     # Dataset setting
@@ -75,13 +74,9 @@ class InputArgs(BaseModel):
         if self.interval_size <= 0:
             raise ValueError("interval_size must be positive.")
 
-        # check process num
-        if self.process_workers <= 0:
-            raise ValueError("process_workers must be a positive integer.")
-
-        # check thread num
-        if self.thread_workers <= 0:
-            raise ValueError("thread_workers must be a positive integer.")
+        # check max workers
+        if self.max_workers <= 0:
+            raise ValueError("max_workers must be a positive integer.")
 
         # check batch size
         if self.batch_size <= 0:
