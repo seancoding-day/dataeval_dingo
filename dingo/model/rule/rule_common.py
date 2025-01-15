@@ -305,7 +305,7 @@ class RuleEnterAndSpace(BaseRule):
 
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','llm_base','multi_lan_ar','multi_lan_ko',
                                                    'multi_lan_ru','multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu',
-                                                   'multi_lan_sr', 'qa_standard_v1','pdf'])
+                                                   'multi_lan_sr','pdf'])
 class RuleEnterMore(BaseRule):
     """check whether content has 8 consecutive carriage returns."""
 
@@ -329,7 +329,7 @@ class RuleEnterMore(BaseRule):
 
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','llm_base','multi_lan_ar','multi_lan_ko',
                                                    'multi_lan_ru','multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu',
-                                                   'multi_lan_sr', 'qa_standard_v1','pdf'])
+                                                   'multi_lan_sr','pdf'])
 class RuleEnterRatioMore(BaseRule):
     """check whether the number of enter / the number of content > 25%"""
 
@@ -529,7 +529,7 @@ class RuleHeadWordVi(BaseRule):
 
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['default','sft','pretrain','benchmark','text_base_all',
                                                    'multi_lan_ar','multi_lan_ko','multi_lan_ru','multi_lan_th','multi_lan_vi',
-                                                   'multi_lan_cs','multi_lan_hu','multi_lan_sr','qa_standard_v1','pdf'])
+                                                   'multi_lan_cs','multi_lan_hu','multi_lan_sr','pdf'])
 class RuleHtmlEntity(BaseRule):
     """check whether content has html entity"""
 
@@ -585,8 +585,7 @@ class RuleHtmlEntity(BaseRule):
 
 
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','multi_lan_ar','multi_lan_ko','multi_lan_ru',
-                                                   'multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr',
-                                                   'qa_standard_v1','pdf'])
+                                                   'multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr','pdf'])
 class RuleHtmlTag(BaseRule):
     """check whether content has image links or html tags."""
 
@@ -632,8 +631,7 @@ class RuleIDCard(BaseRule):
 
 
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','multi_lan_ar','multi_lan_ko','multi_lan_ru',
-                                                   'multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr',
-                                                   'qa_standard_v1'])
+                                                   'multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr',])
 class RuleInvisibleChar(BaseRule):
     """check whether content has invisible chars."""
 
@@ -939,7 +937,7 @@ class RuleSentenceNumber(BaseRule):
 
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','llm_base','multi_lan_ar','multi_lan_ko',
                                                    'multi_lan_ru','multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu',
-                                                   'multi_lan_sr','qa_standard_v1','pdf'])
+                                                   'multi_lan_sr','pdf'])
 class RuleSpaceMore(BaseRule):
     """check whether content has 500 spaces."""
 
@@ -961,8 +959,7 @@ class RuleSpaceMore(BaseRule):
 
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['default','sft','pretrain','benchmark','text_base_all',
                                                    'llm_base','multi_lan_ar','multi_lan_ko','multi_lan_ru','multi_lan_th',
-                                                   'multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr','qa_standard_v1',
-                                                   'pdf'])
+                                                   'multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr','pdf'])
 class RuleSpecialCharacter(BaseRule):
     """check whether content has special characters. """
 
