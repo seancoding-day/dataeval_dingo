@@ -9,6 +9,40 @@ from dingo.model.modelres import ModelRes
 from dingo.model.rule.base import BaseRule
 
 
+@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['qa_standard_v1'])
+class RuleAbnormalChar(BaseRule):
+    # consist of [RuleSpecialCharacter, RuleInvisibleChar]
+
+    @classmethod
+    def eval(cls, input_data: MetaData) -> ModelRes:
+        res = ModelRes()
+        for r in [RuleSpecialCharacter, RuleInvisibleChar]:
+            tmp_res = r.eval(input_data)
+            if tmp_res.error_status:
+                res.error_status = True
+                res.type = cls.metric_type
+                res.name = cls.__name__
+                res.reason.extend(tmp_res.reason)
+        return res
+
+
+@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['qa_standard_v1'])
+class RuleAbnormalHtml(BaseRule):
+    # consist of [RuleHtmlEntity, RuleHtmlTag]
+
+    @classmethod
+    def eval(cls, input_data: MetaData) -> ModelRes:
+        res = ModelRes()
+        for r in [RuleHtmlEntity, RuleHtmlTag]:
+            tmp_res = r.eval(input_data)
+            if tmp_res.error_status:
+                res.error_status = True
+                res.type = cls.metric_type
+                res.name = cls.__name__
+                res.reason.extend(tmp_res.reason)
+        return res
+
+
 @Model.rule_register('QUALITY_BAD_FLUENCY', ['pdf_all'])
 class RuleAbnormalNumber(BaseRule):
     """check pdf content abnormal book page or index number."""
@@ -249,6 +283,23 @@ class RuleDocRepeat(BaseRule):
             res.type = cls.metric_type
             res.name = cls.__name__
             res.reason = ['Repeatability of text is too high, with ratio： ' + str(repeat_score)]
+        return res
+
+
+@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['qa_standard_v1'])
+class RuleEnterAndSpace(BaseRule):
+    # consist of [RuleEnterMore, RuleEnterRatioMore, RuleSpaceMore]
+
+    @classmethod
+    def eval(cls, input_data: MetaData) -> ModelRes:
+        res = ModelRes()
+        for r in [RuleEnterMore, RuleEnterRatioMore, RuleSpaceMore]:
+            tmp_res = r.eval(input_data)
+            if tmp_res.error_status:
+                res.error_status = True
+                res.type = cls.metric_type
+                res.name = cls.__name__
+                res.reason.extend(tmp_res.reason)
         return res
 
 
@@ -1202,7 +1253,7 @@ if __name__ == '__main__':
     data = MetaData(
         data_id = '',
         prompt = '',
-        content = "Ch. Gentry's Caprice CD. WD.\nCh. Hillcrest Firewind Woodsman CD.\nCh. Hillcrest Namtn Ko Cr Colours UD. TDX. AX. AXJ. MH. RA.\nCCh. Tessera's Fun and Fancy Free C. CDX. AGN. SHDCH.\nCopyright � 2004-2008 Lynn, Anne & Barb Dorsay, Bondir English Springer Spaniels."
+        content = "\n \n \n \n hello \n \n "
     )
-    tmp = RuleStopWord().eval(data)
+    tmp = RuleEnterAndSpace().eval(data)
     print(tmp)
