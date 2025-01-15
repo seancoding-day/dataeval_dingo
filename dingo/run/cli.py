@@ -30,10 +30,8 @@ def parse_args():
                         default=None, help="The number of data start to check.")
     parser.add_argument("--interval_size", type=int,
                         default=None, help="The number of size to save while checking.")
-    parser.add_argument("--process_workers", type=int,
-                        default=None, help="The number of process workers to concurrent check. ")
-    parser.add_argument("--thread_workers", type=int,
-                        default=None, help="The number of thread workers to concurrent check. ")
+    parser.add_argument("--max_workers", type=int,
+                        default=None, help="The number of max workers to concurrent check. ")
     parser.add_argument("--batch_size", type=int,
                         default=None, help="the number of max data for concurrent check. ")
     parser.add_argument("--dataset", type=str,
