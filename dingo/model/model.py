@@ -184,11 +184,8 @@ class Model:
             cls.rule_metric_type_map[metric_type].append(root_class)
             root_class.metric_type = metric_type
 
-            @wraps(root_class)
-            def wrapped_function(*args, **kwargs):
-                return root_class(*args, **kwargs)
 
-            return wrapped_function
+            return root_class
 
         return decorator
 
