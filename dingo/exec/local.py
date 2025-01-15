@@ -94,8 +94,8 @@ class LocalExecutor(ExecProto):
             group (Any): _description_
             group_type (str): _description_
         """
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self.input_args.thread_workers) as thread_executor, \
-             concurrent.futures.ProcessPoolExecutor(max_workers=self.input_args.process_workers) as process_executor:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=self.input_args.max_workers) as thread_executor, \
+             concurrent.futures.ProcessPoolExecutor(max_workers=self.input_args.max_workers) as process_executor:
             data_iter = self.load_data()
             data_iter = itertools.islice(data_iter, self.input_args.start_index, None)
             pbar = tqdm(total=None, unit='items')
