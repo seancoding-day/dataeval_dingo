@@ -9,6 +9,40 @@ from dingo.model.modelres import ModelRes
 from dingo.model.rule.base import BaseRule
 
 
+@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['qa_standard_v1'])
+class RuleAbnormalChar(BaseRule):
+    # consist of [RuleSpecialCharacter, RuleInvisibleChar]
+
+    @classmethod
+    def eval(cls, input_data: MetaData) -> ModelRes:
+        res = ModelRes()
+        for r in [RuleSpecialCharacter, RuleInvisibleChar]:
+            tmp_res = r.eval(input_data)
+            if tmp_res.error_status:
+                res.error_status = True
+                res.type = cls.metric_type
+                res.name = cls.__name__
+                res.reason.extend(tmp_res.reason)
+        return res
+
+
+@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['qa_standard_v1'])
+class RuleAbnormalHtml(BaseRule):
+    # consist of [RuleHtmlEntity, RuleHtmlTag]
+
+    @classmethod
+    def eval(cls, input_data: MetaData) -> ModelRes:
+        res = ModelRes()
+        for r in [RuleHtmlEntity, RuleHtmlTag]:
+            tmp_res = r.eval(input_data)
+            if tmp_res.error_status:
+                res.error_status = True
+                res.type = cls.metric_type
+                res.name = cls.__name__
+                res.reason.extend(tmp_res.reason)
+        return res
+
+
 @Model.rule_register('QUALITY_BAD_FLUENCY', ['pdf_all'])
 class RuleAbnormalNumber(BaseRule):
     """check pdf content abnormal book page or index number."""
@@ -252,9 +286,26 @@ class RuleDocRepeat(BaseRule):
         return res
 
 
+@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['qa_standard_v1'])
+class RuleEnterAndSpace(BaseRule):
+    # consist of [RuleEnterMore, RuleEnterRatioMore, RuleSpaceMore]
+
+    @classmethod
+    def eval(cls, input_data: MetaData) -> ModelRes:
+        res = ModelRes()
+        for r in [RuleEnterMore, RuleEnterRatioMore, RuleSpaceMore]:
+            tmp_res = r.eval(input_data)
+            if tmp_res.error_status:
+                res.error_status = True
+                res.type = cls.metric_type
+                res.name = cls.__name__
+                res.reason.extend(tmp_res.reason)
+        return res
+
+
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','llm_base','multi_lan_ar','multi_lan_ko',
                                                    'multi_lan_ru','multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu',
-                                                   'multi_lan_sr', 'qa_standard_v1','pdf'])
+                                                   'multi_lan_sr','pdf'])
 class RuleEnterMore(BaseRule):
     """check whether content has 8 consecutive carriage returns."""
 
@@ -278,7 +329,7 @@ class RuleEnterMore(BaseRule):
 
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','llm_base','multi_lan_ar','multi_lan_ko',
                                                    'multi_lan_ru','multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu',
-                                                   'multi_lan_sr', 'qa_standard_v1','pdf'])
+                                                   'multi_lan_sr','pdf'])
 class RuleEnterRatioMore(BaseRule):
     """check whether the number of enter / the number of content > 25%"""
 
@@ -478,7 +529,7 @@ class RuleHeadWordVi(BaseRule):
 
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['default','sft','pretrain','benchmark','text_base_all',
                                                    'multi_lan_ar','multi_lan_ko','multi_lan_ru','multi_lan_th','multi_lan_vi',
-                                                   'multi_lan_cs','multi_lan_hu','multi_lan_sr','qa_standard_v1','pdf'])
+                                                   'multi_lan_cs','multi_lan_hu','multi_lan_sr','pdf'])
 class RuleHtmlEntity(BaseRule):
     """check whether content has html entity"""
 
@@ -534,8 +585,7 @@ class RuleHtmlEntity(BaseRule):
 
 
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','multi_lan_ar','multi_lan_ko','multi_lan_ru',
-                                                   'multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr',
-                                                   'qa_standard_v1','pdf'])
+                                                   'multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr','pdf'])
 class RuleHtmlTag(BaseRule):
     """check whether content has image links or html tags."""
 
@@ -581,8 +631,7 @@ class RuleIDCard(BaseRule):
 
 
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','multi_lan_ar','multi_lan_ko','multi_lan_ru',
-                                                   'multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr',
-                                                   'qa_standard_v1'])
+                                                   'multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr',])
 class RuleInvisibleChar(BaseRule):
     """check whether content has invisible chars."""
 
@@ -888,7 +937,7 @@ class RuleSentenceNumber(BaseRule):
 
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','llm_base','multi_lan_ar','multi_lan_ko',
                                                    'multi_lan_ru','multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu',
-                                                   'multi_lan_sr','qa_standard_v1','pdf'])
+                                                   'multi_lan_sr','pdf'])
 class RuleSpaceMore(BaseRule):
     """check whether content has 500 spaces."""
 
@@ -910,8 +959,7 @@ class RuleSpaceMore(BaseRule):
 
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['default','sft','pretrain','benchmark','text_base_all',
                                                    'llm_base','multi_lan_ar','multi_lan_ko','multi_lan_ru','multi_lan_th',
-                                                   'multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr','qa_standard_v1',
-                                                   'pdf'])
+                                                   'multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr','pdf'])
 class RuleSpecialCharacter(BaseRule):
     """check whether content has special characters. """
 
@@ -1202,7 +1250,7 @@ if __name__ == '__main__':
     data = MetaData(
         data_id = '',
         prompt = '',
-        content = "Ch. Gentry's Caprice CD. WD.\nCh. Hillcrest Firewind Woodsman CD.\nCh. Hillcrest Namtn Ko Cr Colours UD. TDX. AX. AXJ. MH. RA.\nCCh. Tessera's Fun and Fancy Free C. CDX. AGN. SHDCH.\nCopyright � 2004-2008 Lynn, Anne & Barb Dorsay, Bondir English Springer Spaniels."
+        content = "\n \n \n \n hello \n \n "
     )
-    tmp = RuleStopWord().eval(data)
+    tmp = RuleEnterAndSpace().eval(data)
     print(tmp)
