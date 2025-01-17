@@ -1,4 +1,7 @@
+import json
 import os
+import time
+import uuid
 from typing import Optional
 
 from pydantic import BaseModel, ValidationError
@@ -56,7 +59,19 @@ class InputArgs(BaseModel):
     def check_args(self):
         # check eval group
         if not self.eval_group:
-            raise ValueError("eval_group cannot be empty.")
+            if not self.custom_config:
+                raise ValueError("eval_group cannot be empty.")
+            else:
+                tmp_config = {}
+                if isinstance(self.custom_config, str):
+                    with open(self.custom_config, 'r', encoding='utf-8') as f:
+                        tmp_config = json.load(f)
+                else:
+                    tmp_config = self.custom_config
+                if 'rule_list' in tmp_config or 'prompt_list' in tmp_config:
+                    self.eval_group = 'custom_group' + '_' + time.strftime('%H%M%S', time.localtime()) + '_' + str(uuid.uuid1())[:8]
+                else:
+                    raise ValueError("eval_group cannot be empty.")
 
         # check input path
         if self.dataset != 'hugging_face' and not os.path.exists(self.input_path):

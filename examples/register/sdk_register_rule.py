@@ -8,7 +8,7 @@ from dingo.model.modelres import ModelRes
 from dingo.model.rule.base import BaseRule
 
 
-@Model.rule_register('QUALITY_BAD_RELEVANCE', [])
+@Model.rule_register('QUALITY_BAD_RELEVANCE', ['test'])
 class CommonPatternDemo(BaseRule):
     """let user input pattern to search"""
     dynamic_config = DynamicRuleConfig(pattern = "blue")
@@ -33,10 +33,7 @@ if __name__ == '__main__':
         "input_path": "../../test/data/test_local_json.json",  # local filesystem dataset
         "dataset": "local",
         "data_format": "json",
-        "column_content": "prediction",
-        "custom_config": {
-            "rule_list": ["CommonPatternDemo"],
-        }
+        "column_content": "prediction"
     }
     input_args = InputArgs(**input_data)
     executor = Executor.exec_map["local"](input_args)
