@@ -30,9 +30,6 @@ class LocalExecutor(ExecProto):
         self.bad_info_list: List[ResultInfo] = []
         self.good_info_list: List[ResultInfo] = []
 
-        self.bad_info_index = 0
-        self.good_info_index = 0
-
     def load_data(self) -> Generator[MetaData, None, None]:
         """
         Reads data from given path.
@@ -83,7 +80,7 @@ class LocalExecutor(ExecProto):
             self.summary = self.summarize(self.summary)
             self.summary.finish_time = time.strftime('%Y%m%d_%H%M%S', time.localtime())
             if self.input_args.save_data:
-                self.save_data(output_path, self.input_args, self.bad_info_list[self.bad_info_index:], self.good_info_list[self.good_info_index:], self.summary)
+                self.save_data(output_path, self.input_args, self.bad_info_list, self.good_info_list, self.summary)
 
         return [self.summary]
 
@@ -101,6 +98,8 @@ class LocalExecutor(ExecProto):
             pbar = tqdm(total=None, unit='items')
 
             def process_batch(batch: List):
+                save_flag = False
+
                 futures=[]
                 for group_type, group in Model.get_group(self.input_args.eval_group).items():
                     if group_type == 'rule':
@@ -140,30 +139,23 @@ class LocalExecutor(ExecProto):
                                 else:
                                     self.summary.name_ratio[n] += 1
                     self.summary.total += 1
-
-                    # save data in file
-                    if self.input_args.save_data:
-                        if self.summary.total > 0 and self.summary.total % self.input_args.interval_size == 0:
-                            tmp_summary = self.summarize(self.summary)
-                            tmp_summary.finish_time = time.strftime('%Y%m%d_%H%M%S', time.localtime())
-                            tmp_output_path = self.summary.output_path
-                            tmp_bad_info_list = []
-                            if self.bad_info_index < len(self.bad_info_list):
-                                tmp_bad_info_list = self.bad_info_list[self.bad_info_index:len(self.bad_info_list)]
-                                self.bad_info_index = len(self.bad_info_list)
-                            tmp_good_info_list = []
-                            if self.good_info_index < len(self.good_info_list):
-                                tmp_good_info_list = self.good_info_list[self.good_info_index:len(self.good_info_list)]
-                                self.good_info_index = len(self.good_info_list)
-                            self.save_data(tmp_output_path, self.input_args, tmp_bad_info_list, tmp_good_info_list, tmp_summary)
-
+                    if self.summary.total % self.input_args.interval_size == 0:
+                        save_flag = True
                     pbar.update()
+                # save data in file
+                if self.input_args.save_data:
+                    if save_flag:
+                        tmp_summary = self.summarize(self.summary)
+                        tmp_summary.finish_time = time.strftime('%Y%m%d_%H%M%S', time.localtime())
+                        tmp_output_path = self.summary.output_path
+                        self.save_data(tmp_output_path, self.input_args, self.bad_info_list, self.good_info_list, tmp_summary)
+                        self.bad_info_list = []
+                        self.good_info_list = []
             while True:
                 batch = list(itertools.islice(data_iter, self.input_args.batch_size))
                 if not batch:
                     break
                 process_batch(batch)
-
 
         log.debug('[Summary]: ' + str(self.summary))
 
@@ -198,7 +190,7 @@ class LocalExecutor(ExecProto):
             for name in bad_name_list:
                 if name not in result_info.name_list:
                     result_info.name_list.append(name)
-            for reason in bad_reason_list :
+            for reason in bad_reason_list:
                 if reason and reason not in result_info.reason_list:
                     result_info.reason_list.append(reason)
         else:
