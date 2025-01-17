@@ -184,7 +184,6 @@ class Model:
             cls.rule_metric_type_map[metric_type].append(root_class)
             root_class.metric_type = metric_type
 
-
             return root_class
 
         return decorator
@@ -210,7 +209,7 @@ class Model:
     @classmethod
     def prompt_register(cls, metric_type: str, group: List[str]) -> Callable:
         def decorator(root_class):
-
+            # group
             for group_name in group:
                 if group_name not in cls.prompt_groups:
                     cls.prompt_groups[group_name] = []
@@ -224,11 +223,7 @@ class Model:
             cls.prompt_metric_type_map[metric_type].append(root_class)
             root_class.metric_type = metric_type
 
-            @wraps(root_class)
-            def wrapped_function(*args, **kwargs):
-                return root_class(*args, **kwargs)
-
-            return wrapped_function
+            return root_class
 
         return decorator
 
