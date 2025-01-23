@@ -227,10 +227,8 @@ class Model:
 
         return decorator
 
-
     @classmethod
-    def apply_config(cls, custom_config: Optional[str|dict], eval_group: str = ''):
-        GlobalConfig.read_config_file(custom_config)
+    def apply_config_rule(cls):
         if GlobalConfig.config and GlobalConfig.config.rule_config:
             for rule, rule_config in GlobalConfig.config.rule_config.items():
                 if rule not in cls.rule_name_map:
@@ -239,10 +237,13 @@ class Model:
                 log.debug(f"[Rule config]: config {rule_config} for {rule}")
                 cls_rule: BaseRule = cls.rule_name_map[rule]
                 config_default = getattr(cls_rule, 'dynamic_config')
-                for k,v in rule_config:
+                for k, v in rule_config:
                     if v is not None:
                         setattr(config_default, k, v)
                 setattr(cls_rule, 'dynamic_config', config_default)
+
+    @classmethod
+    def apply_config_llm(cls):
         if GlobalConfig.config and GlobalConfig.config.llm_config:
             for llm, llm_config in GlobalConfig.config.llm_config.items():
                 if llm not in cls.llm_name_map.keys():
@@ -255,10 +256,9 @@ class Model:
                     if v is not None:
                         setattr(config_default, k, v)
                 setattr(cls_llm, 'dynamic_config', config_default)
-        if GlobalConfig.config:
-            if GlobalConfig.config.rule_list or GlobalConfig.config.prompt_list:
-                if eval_group in Model.rule_groups or eval_group in Model.prompt_groups:
-                    raise KeyError(f'eval group: [{eval_group}] already in Model, please input other name.')
+
+    @classmethod
+    def apply_config_rule_list(cls, eval_group: str = ''):
         if GlobalConfig.config and GlobalConfig.config.rule_list:
             model: List[BaseRule] = []
             for rule in GlobalConfig.config.rule_list:
@@ -267,6 +267,9 @@ class Model:
                     raise KeyError(f"{rule} not in Model.rule_name_map, there are {str(Model.rule_name_map.keys())}")
                 model.append(Model.rule_name_map[rule])
             Model.rule_groups[eval_group] = model
+
+    @classmethod
+    def apply_config_prompt_list(cls, eval_group: str = ''):
         if GlobalConfig.config and GlobalConfig.config.prompt_list:
             model: List[BasePrompt] = []
             for prompt in GlobalConfig.config.prompt_list:
@@ -275,6 +278,26 @@ class Model:
                     raise KeyError(f"{prompt} not in Model.prompt_name_map, there are {str(Model.prompt_name_map.keys())}")
                 model.append(Model.prompt_name_map[prompt])
             Model.prompt_groups[eval_group] = model
+
+    @classmethod
+    def apply_config(cls, custom_config: Optional[str|dict], eval_group: str = ''):
+        GlobalConfig.read_config_file(custom_config)
+        cls.apply_config_rule()
+        cls.apply_config_llm()
+        if GlobalConfig.config:
+            if GlobalConfig.config.rule_list or GlobalConfig.config.prompt_list:
+                if eval_group in Model.rule_groups or eval_group in Model.prompt_groups:
+                    raise KeyError(f'eval group: [{eval_group}] already in Model, please input other name.')
+        cls.apply_config_rule_list(eval_group)
+        cls.apply_config_prompt_list(eval_group)
+
+    @classmethod
+    def apply_config_for_spark_driver(cls, custom_config: Optional[str|dict], eval_group: str = ''):
+        GlobalConfig.read_config_file(custom_config)
+        cls.apply_config_rule()
+        cls.apply_config_llm()
+        cls.apply_config_rule_list(eval_group)
+        cls.apply_config_prompt_list(eval_group)
 
     @classmethod
     def load_model(cls):
