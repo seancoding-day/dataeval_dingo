@@ -111,7 +111,7 @@ class SparkExecutor(ExecProto):
                 task_id=str(uuid.uuid1()),
                 task_name=self.input_args.task_name,
                 eval_group=self.input_args.eval_group,
-                input_path=self.input_args.input_path,
+                input_path=self.input_args.input_path if not self.spark_rdd else '',
                 output_path='',
                 create_time=create_time,
                 score=0,
@@ -138,6 +138,7 @@ class SparkExecutor(ExecProto):
         return [self.summary]
 
     def evaluate(self, data_rdd_item) -> Dict[str, Any]:
+        Model.apply_config_for_spark_driver(self.input_args.custom_config, self.input_args.eval_group)
         # eval with models ( Big Data Caution ）
         data: MetaData = data_rdd_item
         result_info = ResultInfo(data_id=data.data_id, prompt=data.prompt, content=data.content)
