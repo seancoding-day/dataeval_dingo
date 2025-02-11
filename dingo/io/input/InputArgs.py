@@ -23,6 +23,7 @@ class InputArgs(BaseModel):
 
     # Resume settings
     start_index: int = 0
+    end_index: int = -1
     interval_size: int = 1000
 
     # Concurrent settings
@@ -84,6 +85,9 @@ class InputArgs(BaseModel):
         # check start index
         if self.start_index < 0:
             raise ValueError("start_index must be non negative.")
+
+        if self.end_index >= 0 and self.end_index < self.start_index:
+            raise ValueError("if end_index is non negative, end_index must be greater than start_index")
 
         # check interval size
         if self.interval_size <= 0:
