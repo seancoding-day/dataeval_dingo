@@ -28,6 +28,8 @@ def parse_args():
                         default=None, help="Save raw data in output path")
     parser.add_argument("--start_index", type=int,
                         default=None, help="The number of data start to check.")
+    parser.add_argument("--end_index", type=int,
+                        default=None, help="The number of data end to check.")
     parser.add_argument("--interval_size", type=int,
                         default=None, help="The number of size to save while checking.")
     parser.add_argument("--max_workers", type=int,
@@ -108,6 +110,8 @@ if __name__ == '__main__':
             input_data['save_raw'] = args.save_raw
         if args.start_index:
             input_data['start_index'] = args.start_index
+        if args.end_index:
+            input_data['end_index'] = args.end_index
         if args.interval_size:
             input_data['interval_size'] = args.interval_size
         if args.max_workers:

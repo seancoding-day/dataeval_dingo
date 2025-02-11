@@ -6,57 +6,59 @@
 
 用户在命令行输入指令启动项目时会使用到的参数，本质是为了实例化`InputArgs`类：
 
-| Parameter                 | Type |             Default              | Required | Description                                                                           |
-|---------------------------|------|:--------------------------------:|:--------:|---------------------------------------------------------------------------------------|
-| --task_name / -n          | str  |             "dingo"              |    No    | task name.                                                                            |
-| --eval_group / -e         | str  |                ""                |   Yes    | Eval models, can be specified multiple times like '-e default' or '-e pretrain'       |
-| --input_path / -i         | str  | "test/data/test_local_json.json" |   Yes    | file or directory path to check.                                                      |
-| --output_path             | str  |            "outputs/"            |    No    | output path of result.                                                                |
-| --save_data               | bool |              False               |    No    | whether save results into files.                                                      |
-| --save_correct            | bool |              False               |    No    | whether save correct data.                                                            |
-| --save_raw                | bool |              False               |    No    | whether save raw data.                                                                |
-| --start_index             | int  |                0                 |    No    | the number of data start to check.                                                    |
-| --interval_size           | int  |               1000               |    No    | the number of size to save while checking.                                            |
-| --max_workers             | int  |                1                 |    No    | the number of max workers to concurrent check.                                        |
-| --batch_size              | int  |                1                 |    No    | the number of max data for concurrent check.                                          |
-| --dataset                 | str  |          "hugging_face"          |   Yes    | dataset type, in ['hugging_face', 'local']                                            |
-| --data_format             | str  |              "json"              |   Yes    | data format, such as: ['json', 'jsonl', 'plaintext', 'listjson'].                     |
-| --huggingface_split       | str  |                ""                |    No    | Huggingface split, default is 'train'                                                 |
-| --huggingface_config_name | str  |               None               |    No    | Huggingface config name                                                               |
-| --column_id               | str  |                ""                | Depends  | Column name of id in the input file. If exists multiple levels, use '.' separate      |
-| --column_prompt           | str  |                ""                | Depends  | Column name of prompt in the input file. If exists multiple levels, use '.' separate  |
-| --column_content          | str  |                ""                |   Yes    | Column name of content in the input file. If exists multiple levels, use '.' separate |
-| --column_image            | str  |                ""                | Depends  | Column name of image in the input file. If exists multiple levels, use '.' separate   |
-| --custom_config           | str  |               None               | Depends  | Custom config file path                                                               |
-| --log_level               | str  |            "WARNING"             |    No    | printing level of logs, in ['DEBUG', 'INFO', 'WARNING', 'ERROR']                      |
+| Parameter                 | Type |             Default              | Required | Description                                                                                  |
+|---------------------------|------|:--------------------------------:|:--------:|----------------------------------------------------------------------------------------------|
+| --task_name / -n          | str  |             "dingo"              |    No    | task name.                                                                                   |
+| --eval_group / -e         | str  |                ""                |   Yes    | Eval models, can be specified multiple times like '-e default' or '-e pretrain'              |
+| --input_path / -i         | str  | "test/data/test_local_json.json" |   Yes    | file or directory path to check.                                                             |
+| --output_path             | str  |            "outputs/"            |    No    | output path of result.                                                                       |
+| --save_data               | bool |              False               |    No    | whether save results into files.                                                             |
+| --save_correct            | bool |              False               |    No    | whether save correct data.                                                                   |
+| --save_raw                | bool |              False               |    No    | whether save raw data.                                                                       |
+| --start_index             | int  |                0                 |    No    | the number of data start to check.                                                           |
+| --end_index               | int  |                -1                |    No    | the number of data end to check. if it's negative, include the data from start_index to end. |
+| --interval_size           | int  |               1000               |    No    | the number of size to save while checking.                                                   |
+| --max_workers             | int  |                1                 |    No    | the number of max workers to concurrent check.                                               |
+| --batch_size              | int  |                1                 |    No    | the number of max data for concurrent check.                                                 |
+| --dataset                 | str  |          "hugging_face"          |   Yes    | dataset type, in ['hugging_face', 'local']                                                   |
+| --data_format             | str  |              "json"              |   Yes    | data format, such as: ['json', 'jsonl', 'plaintext', 'listjson'].                            |
+| --huggingface_split       | str  |                ""                |    No    | Huggingface split, default is 'train'                                                        |
+| --huggingface_config_name | str  |               None               |    No    | Huggingface config name                                                                      |
+| --column_id               | str  |                ""                | Depends  | Column name of id in the input file. If exists multiple levels, use '.' separate             |
+| --column_prompt           | str  |                ""                | Depends  | Column name of prompt in the input file. If exists multiple levels, use '.' separate         |
+| --column_content          | str  |                ""                |   Yes    | Column name of content in the input file. If exists multiple levels, use '.' separate        |
+| --column_image            | str  |                ""                | Depends  | Column name of image in the input file. If exists multiple levels, use '.' separate          |
+| --custom_config           | str  |               None               | Depends  | Custom config file path                                                                      |
+| --log_level               | str  |            "WARNING"             |    No    | printing level of logs, in ['DEBUG', 'INFO', 'WARNING', 'ERROR']                             |
 
  ## SDK Config
 
 用户通过SDK方式启动项目时会使用到的参数，即`InputArgs`类：
 
-| Parameter               | Type                  |             Default              | Required | Description                                                                           |
-|-------------------------|-----------------------|:--------------------------------:|:--------:|---------------------------------------------------------------------------------------|
-| task_name               | str                   |             "dingo"              |    No    | task name .                                                                           |
-| eval_group              | str                   |                ""                |   Yes    | eval model.                                                                           |
-| input_path              | str                   | "test/data/test_local_json.json" |   Yes    | file or directory path to check.                                                      |
-| output_path             | str                   |            "outputs/"            |    No    | output path of result.                                                                |
-| save_data               | bool                  |              False               |    No    | whether save results into files.                                                      |
-| save_correct            | bool                  |              False               |    No    | whether save correct data.                                                            |
-| save_raw                | bool                  |              False               |    No    | whether save raw data.                                                                |
-| start_index             | int                   |                0                 |    No    | the number of data start to check.                                                    |
-| interval_size           | int                   |               1000               |    No    | the number of size to save while checking.                                            |
-| max_workers             | int                   |                1                 |    No    | the number of max workers to concurrent check.                                        |
-| batch_size              | int                   |                1                 |    No    | the number of max data for concurrent check.                                          |
-| dataset                 | str                   |          "hugging_face"          |   Yes    | dataset type, in ['hugging_face', 'local']                                            |
-| data_format             | str                   |              "json"              |   Yes    | data format, such as: ['json', 'jsonl', 'plaintext', 'listjson'].                     |
-| huggingface_split       | str                   |                ""                |    No    | Huggingface split                                                                     |
-| huggingface_config_name | Optional[str]         |               None               |    No    | Huggingface config name                                                               |
-| column_id               | str                   |                ""                | Depends  | Column name of id in the input file. If exists multiple levels, use '.' separate      |
-| column_prompt           | str                   |                ""                | Depends  | Column name of prompt in the input file. If exists multiple levels, use '.' separate  |
-| column_content          | str                   |                ""                |   Yes    | Column name of content in the input file. If exists multiple levels, use '.' separate |
-| column_image            | str                   |                ""                | Depends  | Column name of image in the input file. If exists multiple levels, use '.' separate   |
-| custom_config           | Optional[str \| dict] |               None               | Depends  | custom config, file path or dict                                                      |
-| log_level               | str                   |            "WARNING"             |    No    | printing level of logs, in ['DEBUG', 'INFO', 'WARNING', 'ERROR']                      |
+| Parameter               | Type                  |             Default              | Required | Description                                                                                  |
+|-------------------------|-----------------------|:--------------------------------:|:--------:|----------------------------------------------------------------------------------------------|
+| task_name               | str                   |             "dingo"              |    No    | task name .                                                                                  |
+| eval_group              | str                   |                ""                |   Yes    | eval model.                                                                                  |
+| input_path              | str                   | "test/data/test_local_json.json" |   Yes    | file or directory path to check.                                                             |
+| output_path             | str                   |            "outputs/"            |    No    | output path of result.                                                                       |
+| save_data               | bool                  |              False               |    No    | whether save results into files.                                                             |
+| save_correct            | bool                  |              False               |    No    | whether save correct data.                                                                   |
+| save_raw                | bool                  |              False               |    No    | whether save raw data.                                                                       |
+| start_index             | int                   |                0                 |    No    | the number of data start to check.                                                           |
+| end_index               | int                   |                -1                |    No    | the number of data end to check. if it's negative, include the data from start_index to end. |
+| interval_size           | int                   |               1000               |    No    | the number of size to save while checking.                                                   |
+| max_workers             | int                   |                1                 |    No    | the number of max workers to concurrent check.                                               |
+| batch_size              | int                   |                1                 |    No    | the number of max data for concurrent check.                                                 |
+| dataset                 | str                   |          "hugging_face"          |   Yes    | dataset type, in ['hugging_face', 'local']                                                   |
+| data_format             | str                   |              "json"              |   Yes    | data format, such as: ['json', 'jsonl', 'plaintext', 'listjson'].                            |
+| huggingface_split       | str                   |                ""                |    No    | Huggingface split                                                                            |
+| huggingface_config_name | Optional[str]         |               None               |    No    | Huggingface config name                                                                      |
+| column_id               | str                   |                ""                | Depends  | Column name of id in the input file. If exists multiple levels, use '.' separate             |
+| column_prompt           | str                   |                ""                | Depends  | Column name of prompt in the input file. If exists multiple levels, use '.' separate         |
+| column_content          | str                   |                ""                |   Yes    | Column name of content in the input file. If exists multiple levels, use '.' separate        |
+| column_image            | str                   |                ""                | Depends  | Column name of image in the input file. If exists multiple levels, use '.' separate          |
+| custom_config           | Optional[str \| dict] |               None               | Depends  | custom config, file path or dict                                                             |
+| log_level               | str                   |            "WARNING"             |    No    | printing level of logs, in ['DEBUG', 'INFO', 'WARNING', 'ERROR']                             |
 
 ## Custom Config
 

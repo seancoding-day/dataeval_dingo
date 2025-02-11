@@ -94,7 +94,7 @@ class LocalExecutor(ExecProto):
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.input_args.max_workers) as thread_executor, \
              concurrent.futures.ProcessPoolExecutor(max_workers=self.input_args.max_workers) as process_executor:
             data_iter = self.load_data()
-            data_iter = itertools.islice(data_iter, self.input_args.start_index, None)
+            data_iter = itertools.islice(data_iter, self.input_args.start_index, self.input_args.end_index if self.input_args.end_index >= 0 else None )
             pbar = tqdm(total=None, unit='items')
 
             def process_batch(batch: List):
