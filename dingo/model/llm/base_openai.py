@@ -41,10 +41,10 @@ class BaseOpenAI(BaseLLM):
 
     @classmethod
     def send_messages(cls, messages: List):
-        if cls.dynamic_config.model is None:
-            model_name = cls.client.models.list().data[0].id
-        else:
+        if cls.dynamic_config.model:
             model_name = cls.dynamic_config.model
+        else:
+            model_name = cls.client.models.list().data[0].id
 
         params = cls.dynamic_config.parameters
         cls.validate_config(params)

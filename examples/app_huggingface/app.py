@@ -5,7 +5,7 @@ from dingo.exec import Executor
 from dingo.io import InputArgs
 
 
-def dingo_demo(input_path, data_format, column_content, rule_list, prompt_list, key, api_url):
+def dingo_demo(input_path, data_format, column_content, rule_list, prompt_list, model, key, api_url):
     if not input_path:
         return 'ValueError: input_path can not be empty, please input.'
     if not data_format:
@@ -27,6 +27,7 @@ def dingo_demo(input_path, data_format, column_content, rule_list, prompt_list, 
                     {
                         "detect_text_quality_detail":
                             {
+                                "model": model,
                                 "key": key,
                                 "api_url": api_url,
                             }
@@ -55,8 +56,9 @@ if __name__ == '__main__':
                 column_content = gr.Textbox(value="content", placeholder="please input column name of content in dataset", label="column_content")
                 rule_list = gr.CheckboxGroup(choices=rule_options, label="rule_list")
                 prompt_list = gr.CheckboxGroup(choices=prompt_options, label="prompt_list")
-                key = gr.Textbox(placeholder="If want to use llm, please input the key of it.", label="key")
-                api_url = gr.Textbox(placeholder="If want to use llm, please input the api_url of it.", label="api_url")
+                model = gr.Textbox(placeholder="If want to use llm, please input model, such as: deepseek-chat", label="model")
+                key = gr.Textbox(placeholder="If want to use llm, please input key, such as: 123456789012345678901234567890xx", label="key")
+                api_url = gr.Textbox(placeholder="If want to use llm, please input api_url, such as: https://api.deepseek.com/v1", label="api_url")
                 with gr.Row():
                     submit_single = gr.Button(value="Submit", interactive=True, variant="primary")
             with gr.Column():
@@ -65,7 +67,7 @@ if __name__ == '__main__':
 
         submit_single.click(
             fn=dingo_demo,
-            inputs=[input_path, data_format, column_content, rule_list, prompt_list, key, api_url],
+            inputs=[input_path, data_format, column_content, rule_list, prompt_list, model, key, api_url],
             outputs=output
         )
 
