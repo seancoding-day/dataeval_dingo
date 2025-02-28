@@ -1,5 +1,7 @@
-from typing import Union, List
+from typing import List, Union
+
 from pydantic import BaseModel
+
 
 class ModelRes(BaseModel):
     error_status: bool = False

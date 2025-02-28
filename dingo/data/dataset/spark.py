@@ -1,9 +1,9 @@
 import json
-from typing import Any, Dict, Optional, Union, Generator
+from typing import Any, Dict, Generator, Optional, Union
 
 from dingo.data.dataset.base import Dataset
-from dingo.data.utils.digit import compute_pandas_digest
 from dingo.data.datasource import DataSource
+from dingo.data.utils.digit import compute_pandas_digest
 from dingo.io import MetaData
 from dingo.utils import log
 

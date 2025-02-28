@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open("README.md", "r", encoding='utf-8') as fh:
     long_description = fh.read()
@@ -11,7 +11,7 @@ with open("./requirements/web.txt", "r", encoding='utf-8') as f:
 
 setup(
     name="dingo-python",
-    version="1.3",
+    version="1.4.0",
     author="Dingo",
     description="A Comprehensive Data Quality Evaluation Tool for Large Models",
     long_description=long_description,

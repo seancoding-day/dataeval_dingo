@@ -22,7 +22,7 @@
 
 ## PromptClassifyTopic设计
 <pre>
-Assume you are a topic classifier, and your task is to categorize user-provided instructions. There are six options in the list provided. You are required to select one category from the following list: ["Language Understanding and Processing", "Writing Ability", "Code", "Mathematics & Reasoning", "Task-oriented Role Play", "Knowledge-based Question and Answering"].Make sure your answer is within the list provided and do not create any additional answers.        
+Assume you are a topic classifier, and your task is to categorize user-provided instructions. There are six options in the list provided. You are required to select one category from the following list: ["Language Understanding and Processing", "Writing Ability", "Code", "Mathematics & Reasoning", "Task-oriented Role Play", "Knowledge-based Question and Answering"].Make sure your answer is within the list provided and do not create any additional answers.
 
 Here are some explanations of the categories you can choose from in the list:
 1. Language Understanding and Processing: Tasks that require linguistic understanding or processing of questions, such as word comprehension, proverbs and poetry, Chinese culture, grammatical and syntactic analysis, translation, information extraction, text classification, semantic understanding, grammar checking, sentence restructuring, text summarization, opinion expression, sentiment analysis, and providing suggestions and recommendations.
@@ -39,7 +39,7 @@ Task requirements:
 1. According to the explanations of the categories, select one category from the following list: ["Language Understanding and Processing", "Writing Ability", "Code", "Mathematics & Reasoning", "Task-oriented Role Play", "Knowledge-based Question and Answering"].
 2. Return answer in JSON format: {"name":"xxx"}. Please remember to output only the JSON FORMAT, without any additional content.
 
-Below is an instruction: 
+Below is an instruction:
 
 </pre>
 

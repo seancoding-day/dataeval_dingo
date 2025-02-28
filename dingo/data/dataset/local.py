@@ -1,9 +1,9 @@
 import json
-from typing import Any, Dict, Optional, Union, Generator
+from typing import Any, Dict, Generator, Optional, Union
 
 from dingo.data.dataset.base import Dataset
-from dingo.data.datasource.local import LocalDataSource
 from dingo.data.datasource import DataSource
+from dingo.data.datasource.local import LocalDataSource
 from dingo.io import MetaData
 
 

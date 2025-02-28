@@ -1,5 +1,5 @@
-from dingo.io import InputArgs
 from dingo.exec import Executor
+from dingo.io import InputArgs
 
 
 def image_repeat():

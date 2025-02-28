@@ -1,6 +1,7 @@
-import sys
-import subprocess
 import argparse
+import subprocess
+import sys
+
 
 def run_electron_app():
     parser = argparse.ArgumentParser(description="Run Electron app with optional input path")

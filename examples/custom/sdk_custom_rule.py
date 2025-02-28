@@ -1,8 +1,7 @@
-from dingo.io import InputArgs
 from dingo.exec import Executor
+from dingo.io import InputArgs
 
 input_data = {
-    "eval_group": "test",
     "input_path": "../../test/data/test_local_json.json",  # local filesystem dataset
     "dataset": "local",
     "data_format": "json",

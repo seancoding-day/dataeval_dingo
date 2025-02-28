@@ -4,12 +4,11 @@ import time
 from io import BytesIO
 from typing import List
 
-from PIL import Image
 from botocore.exceptions import ClientError
 from botocore.response import StreamingBody
-
 from dingo.data.datasource import S3DataSource
 from dingo.io import InputArgs
+from PIL import Image
 
 
 def try_close(obj):

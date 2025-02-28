@@ -1,12 +1,46 @@
 import re
 import string
-from typing import Tuple, List
+from typing import List, Tuple
 
 from dingo.config.config import DynamicRuleConfig
 from dingo.io import MetaData
 from dingo.model.model import Model
 from dingo.model.modelres import ModelRes
 from dingo.model.rule.base import BaseRule
+
+
+@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['qa_standard_v1'])
+class RuleAbnormalChar(BaseRule):
+    # consist of [RuleSpecialCharacter, RuleInvisibleChar]
+
+    @classmethod
+    def eval(cls, input_data: MetaData) -> ModelRes:
+        res = ModelRes()
+        for r in [RuleSpecialCharacter, RuleInvisibleChar]:
+            tmp_res = r.eval(input_data)
+            if tmp_res.error_status:
+                res.error_status = True
+                res.type = cls.metric_type
+                res.name = cls.__name__
+                res.reason.extend(tmp_res.reason)
+        return res
+
+
+@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['qa_standard_v1'])
+class RuleAbnormalHtml(BaseRule):
+    # consist of [RuleHtmlEntity, RuleHtmlTag]
+
+    @classmethod
+    def eval(cls, input_data: MetaData) -> ModelRes:
+        res = ModelRes()
+        for r in [RuleHtmlEntity, RuleHtmlTag]:
+            tmp_res = r.eval(input_data)
+            if tmp_res.error_status:
+                res.error_status = True
+                res.type = cls.metric_type
+                res.name = cls.__name__
+                res.reason.extend(tmp_res.reason)
+        return res
 
 
 @Model.rule_register('QUALITY_BAD_FLUENCY', ['pdf_all'])
@@ -239,7 +273,8 @@ class RuleDocRepeat(BaseRule):
 
     @classmethod
     def eval(cls, input_data: MetaData) -> ModelRes:
-        from dingo.model.rule.utils.util import base_rps_frac_chars_in_dupe_ngrams
+        from dingo.model.rule.utils.util import \
+          base_rps_frac_chars_in_dupe_ngrams
 
         res = ModelRes()
         repeat_score = base_rps_frac_chars_in_dupe_ngrams(6, input_data.content)
@@ -251,9 +286,26 @@ class RuleDocRepeat(BaseRule):
         return res
 
 
+@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['qa_standard_v1'])
+class RuleEnterAndSpace(BaseRule):
+    # consist of [RuleEnterMore, RuleEnterRatioMore, RuleSpaceMore]
+
+    @classmethod
+    def eval(cls, input_data: MetaData) -> ModelRes:
+        res = ModelRes()
+        for r in [RuleEnterMore, RuleEnterRatioMore, RuleSpaceMore]:
+            tmp_res = r.eval(input_data)
+            if tmp_res.error_status:
+                res.error_status = True
+                res.type = cls.metric_type
+                res.name = cls.__name__
+                res.reason.extend(tmp_res.reason)
+        return res
+
+
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','llm_base','multi_lan_ar','multi_lan_ko',
                                                    'multi_lan_ru','multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu',
-                                                   'multi_lan_sr', 'qa_standard_v1','pdf'])
+                                                   'multi_lan_sr','pdf'])
 class RuleEnterMore(BaseRule):
     """check whether content has 8 consecutive carriage returns."""
 
@@ -277,7 +329,7 @@ class RuleEnterMore(BaseRule):
 
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','llm_base','multi_lan_ar','multi_lan_ko',
                                                    'multi_lan_ru','multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu',
-                                                   'multi_lan_sr', 'qa_standard_v1','pdf'])
+                                                   'multi_lan_sr','pdf'])
 class RuleEnterRatioMore(BaseRule):
     """check whether the number of enter / the number of content > 25%"""
 
@@ -477,7 +529,7 @@ class RuleHeadWordVi(BaseRule):
 
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['default','sft','pretrain','benchmark','text_base_all',
                                                    'multi_lan_ar','multi_lan_ko','multi_lan_ru','multi_lan_th','multi_lan_vi',
-                                                   'multi_lan_cs','multi_lan_hu','multi_lan_sr','qa_standard_v1','pdf'])
+                                                   'multi_lan_cs','multi_lan_hu','multi_lan_sr','pdf'])
 class RuleHtmlEntity(BaseRule):
     """check whether content has html entity"""
 
@@ -533,8 +585,7 @@ class RuleHtmlEntity(BaseRule):
 
 
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','multi_lan_ar','multi_lan_ko','multi_lan_ru',
-                                                   'multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr',
-                                                   'qa_standard_v1','pdf'])
+                                                   'multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr','pdf'])
 class RuleHtmlTag(BaseRule):
     """check whether content has image links or html tags."""
 
@@ -580,8 +631,7 @@ class RuleIDCard(BaseRule):
 
 
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','multi_lan_ar','multi_lan_ko','multi_lan_ru',
-                                                   'multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr',
-                                                   'qa_standard_v1'])
+                                                   'multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr',])
 class RuleInvisibleChar(BaseRule):
     """check whether content has invisible chars."""
 
@@ -733,7 +783,8 @@ class RuleLineJavascriptCount(BaseRule):
 
     @classmethod
     def eval(cls, input_data: MetaData) -> ModelRes:
-        from dingo.model.rule.utils.util import TextSlice, normalize, split_paragraphs
+        from dingo.model.rule.utils.util import (TextSlice, normalize,
+                                                 split_paragraphs)
 
         res = ModelRes()
         raw_content = input_data.content
@@ -886,7 +937,7 @@ class RuleSentenceNumber(BaseRule):
 
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','llm_base','multi_lan_ar','multi_lan_ko',
                                                    'multi_lan_ru','multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu',
-                                                   'multi_lan_sr','qa_standard_v1','pdf'])
+                                                   'multi_lan_sr','pdf'])
 class RuleSpaceMore(BaseRule):
     """check whether content has 500 spaces."""
 
@@ -908,8 +959,7 @@ class RuleSpaceMore(BaseRule):
 
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['default','sft','pretrain','benchmark','text_base_all',
                                                    'llm_base','multi_lan_ar','multi_lan_ko','multi_lan_ru','multi_lan_th',
-                                                   'multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr','qa_standard_v1',
-                                                   'pdf'])
+                                                   'multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr','pdf'])
 class RuleSpecialCharacter(BaseRule):
     """check whether content has special characters. """
 
@@ -953,9 +1003,8 @@ class RuleStopWord(BaseRule):
 
     @classmethod
     def eval(cls, input_data: MetaData) -> ModelRes:
-        from nltk.tokenize import WordPunctTokenizer
-
         from dingo.model.rule.utils.util import get_stop_words
+        from nltk.tokenize import WordPunctTokenizer
 
         res = ModelRes()
         raw_content = input_data.content
@@ -1045,18 +1094,25 @@ class RuleUnsafeWords(BaseRule):
 
     @classmethod
     def eval(cls, input_data: MetaData) -> ModelRes:
+        import ahocorasick
         from dingo.model.rule.utils.util import get_unsafe_words
 
         res = ModelRes()
         content = input_data.content
-        if cls.dynamic_config.key_list is None:
-            cls.dynamic_config.key_list = get_unsafe_words(cls.dynamic_config.refer_path)
-        matches = list(filter(lambda x:x in content, cls.dynamic_config.key_list))
+        key_list = cls.dynamic_config.key_list
+        if key_list is None:
+            key_list = get_unsafe_words(cls.dynamic_config.refer_path)
+
+        A = ahocorasick.Automaton()
+        for index, key in enumerate(key_list):
+            A.add_word(key, (index, key))
+        A.make_automaton()
+        matches = [(end_index - len(value[1]) + 1, value[1]) for end_index, value in A.iter(content)]
         if matches:
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = matches
+            res.reason = [value for index, value in matches]
         return res
 
 
@@ -1076,7 +1132,6 @@ class RuleOnlyUrl(BaseRule):
             return res
         SEARCH_REGEX = re.compile(cls.dynamic_config.pattern)
         content_without_url = SEARCH_REGEX.sub("", content)
-        print(content_without_url)
         if len(content_without_url.strip()) == 0:
             res.error_status = True
             res.type = cls.metric_type
@@ -1165,8 +1220,8 @@ class RuleWordStuck(BaseRule):
     @classmethod
     def eval(cls, input_data: MetaData) -> ModelRes:
         import wordninja
-
-        from dingo.model.rule.utils.detect_lang import decide_language_by_str, set_fasttext
+        from dingo.model.rule.utils.detect_lang import (decide_language_by_str,
+                                                        set_fasttext)
         from dingo.model.rule.utils.util import is_sha256
 
         res = ModelRes()
@@ -1195,7 +1250,7 @@ if __name__ == '__main__':
     data = MetaData(
         data_id = '',
         prompt = '',
-        content = "Ch. Gentry's Caprice CD. WD.\nCh. Hillcrest Firewind Woodsman CD.\nCh. Hillcrest Namtn Ko Cr Colours UD. TDX. AX. AXJ. MH. RA.\nCCh. Tessera's Fun and Fancy Free C. CDX. AGN. SHDCH.\nCopyright � 2004-2008 Lynn, Anne & Barb Dorsay, Bondir English Springer Spaniels."
+        content = "\n \n \n \n hello \n \n "
     )
-    tmp = RuleStopWord().eval(data)
+    tmp = RuleEnterAndSpace().eval(data)
     print(tmp)

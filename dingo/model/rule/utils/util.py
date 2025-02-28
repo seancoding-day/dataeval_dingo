@@ -1,14 +1,14 @@
 import json
-import re
 import os
-import sys
-import numpy
+import re
 import string
+import sys
 import unicodedata
-import zhon.hanzi
-
-from typing import Set, Tuple, Callable, List
 from collections import Counter
+from typing import Callable, List, Set, Tuple
+
+import numpy
+import zhon.hanzi
 from zhon.hanzi import punctuation
 
 sys.path.append(os.path.dirname(__file__))

@@ -1,12 +1,14 @@
 import re
 from typing import List
+
+from dingo.config.config import DynamicRuleConfig
 from dingo.io import MetaData
 from dingo.model.model import Model
 from dingo.model.modelres import ModelRes
 from dingo.model.rule.base import BaseRule
-from dingo.config.config import DynamicRuleConfig
 
-@Model.rule_register('QUALITY_BAD_RELEVANCE', [])
+
+@Model.rule_register('QUALITY_BAD_RELEVANCE', ['test'])
 class CommonPatternDemo(BaseRule):
     """let user input pattern to search"""
     dynamic_config = DynamicRuleConfig(pattern = "blue")
@@ -23,18 +25,15 @@ class CommonPatternDemo(BaseRule):
         return res
 
 if __name__ == '__main__':
-    from dingo.io import InputArgs
     from dingo.exec import Executor
+    from dingo.io import InputArgs
 
     input_data = {
         "eval_group": "test",
         "input_path": "../../test/data/test_local_json.json",  # local filesystem dataset
         "dataset": "local",
         "data_format": "json",
-        "column_content": "prediction",
-        "custom_config": {
-            "rule_list": ["CommonPatternDemo"],
-        }
+        "column_content": "prediction"
     }
     input_args = InputArgs(**input_data)
     executor = Executor.exec_map["local"](input_args)

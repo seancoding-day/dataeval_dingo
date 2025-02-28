@@ -1,7 +1,6 @@
 import pytest
-
-from dingo.io import InputArgs
 from dingo.data.datasource.huggingface import HuggingFaceSource
+from dingo.io import InputArgs
 
 
 class TestHfDataset:
@@ -74,4 +73,3 @@ class TestHfDataset:
 
 if __name__ == "__main__":
     pytest.main(["-s", "-q"])
-

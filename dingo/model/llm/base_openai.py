@@ -1,8 +1,6 @@
 import json
 import time
-from typing import List, Dict
-
-from pydantic import ValidationError
+from typing import Dict, List
 
 from dingo.config.config import DynamicLLMConfig
 from dingo.io import MetaData
@@ -11,7 +9,8 @@ from dingo.model.modelres import ModelRes
 from dingo.model.prompt.base import BasePrompt
 from dingo.model.response.response_class import ResponseScoreReason
 from dingo.utils import log
-from dingo.utils.exception import ExceedMaxTokens, ConvertJsonError
+from dingo.utils.exception import ConvertJsonError, ExceedMaxTokens
+from pydantic import ValidationError
 
 
 class BaseOpenAI(BaseLLM):
@@ -42,10 +41,10 @@ class BaseOpenAI(BaseLLM):
 
     @classmethod
     def send_messages(cls, messages: List):
-        if cls.dynamic_config.model is None:
-            model_name = cls.client.models.list().data[0].id
-        else:
+        if cls.dynamic_config.model:
             model_name = cls.dynamic_config.model
+        else:
+            model_name = cls.client.models.list().data[0].id
 
         params = cls.dynamic_config.parameters
         cls.validate_config(params)

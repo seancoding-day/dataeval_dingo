@@ -16,13 +16,13 @@
 # limitations under the License.
 
 import json
-from functools import wraps
 from abc import abstractmethod
-from typing import Any, Dict, Optional, Callable, Generator
+from functools import wraps
+from typing import Any, Callable, Dict, Generator, Optional
 
-from dingo.io import InputArgs, MetaData
+from dingo.data.converter import BaseConverter, converters
 from dingo.data.datasource.base import DataSource
-from dingo.data.converter import converters, BaseConverter
+from dingo.io import InputArgs, MetaData
 from dingo.utils import log
 
 

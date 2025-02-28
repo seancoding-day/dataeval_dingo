@@ -1,8 +1,8 @@
+from typing import Any, Dict, Generator, Optional
+
 import boto3
 import boto3.s3
 from botocore.config import Config
-from typing import Any, Dict, Optional, Generator
-
 from dingo.data.datasource.base import DataSource
 from dingo.io import InputArgs
 

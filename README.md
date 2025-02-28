@@ -9,7 +9,17 @@
 
 </div>
 
-[English](README.md) | [简体中文](README_CN.md)
+[English](README.md) | [简体中文](README_zh-CN.md)
+
+<div align="center">
+  <a href="https://discord.gg/Jhgb2eKWh8" style="text-decoration:none;">
+    <img src="https://user-images.githubusercontent.com/25839884/218347213-c080267f-cbb6-443e-8532-8e1ed9a58ea9.png" width="3%" alt="" /></a>
+  <img src="https://user-images.githubusercontent.com/25839884/218346358-56cc8e2f-a2b8-487f-9088-32480cceabcf.png" width="3%" alt="" />
+  <a href="https://huggingface.co/spaces/DataEval/dingo" style="text-decoration:none;">
+    <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.png" width="3%" alt="Hugging Face" /></a>
+  <img src="https://user-images.githubusercontent.com/25839884/218346358-56cc8e2f-a2b8-487f-9088-32480cceabcf.png" width="3%" alt="" />
+</div>
+
 
 # Changelog
 
@@ -83,7 +93,7 @@ $ cat test/data/config_gpt.json
   "llm_config": {
     "openai": {
       "model": "gpt-4o",
-      "key": "xxxx", 
+      "key": "xxxx",
       "api_url": "https://api.openai.com/v1/chat/completions"
     }
   }
@@ -99,7 +109,10 @@ If the user wants to manually start a frontend page, you need to enter the follo
 python -m dingo.run.vsl --input xxx
 ```
 
-The input followed is the directory of the quality inspection results. Users need to ensure that there is a summary.json file when the directory is opened.
+The input followed is the directory of the quality inspection results. Users need to ensure that there is a summary.json file when the directory is opened. Frontend page of output looks like:![GUI output](docs/assets/dingo_gui.png)
+
+## Online Demo
+Try dingo on our online demo: [(Hugging Face)🤗](https://huggingface.co/spaces/DataEval/dingo)
 
 # Feature List
 
@@ -153,17 +166,17 @@ then you can refer to: [Install Dependencies](requirements)
 
 ## Register Rules/Prompts/Models
 
-If the heuristic rules inside the project do not meet the user's quality inspection requirements, users can also customize rules or models.  
+If the heuristic rules inside the project do not meet the user's quality inspection requirements, users can also customize rules or models.
 
 ### Register Rules
 
-If the user wants to create a new rule `CommonPatternDemo`, then the first step is to add a decorator to the rule to inject the rule into the project.  
-Secondly, the `metric_type` type, such as `QUALITY_BAD_RELEVANCE`, needs to be set for the rule, and `group` does not need to be set.  
-Then the user needs to define the `DynamicRuleConfig` object, so that the properties of the rule can be configured dynamically.  
-In addition, the method name of the rule must be `eval` and it needs to be a class method.  
-The return value of the last step should be a `ModelRes` object.  
+If the user wants to create a new rule `CommonPatternDemo`, then the first step is to add a decorator to the rule to inject the rule into the project.
+Secondly, the `metric_type` type, such as `QUALITY_BAD_RELEVANCE`, needs to be set for the rule, and `group` does not need to be set.
+Then the user needs to define the `DynamicRuleConfig` object, so that the properties of the rule can be configured dynamically.
+In addition, the method name of the rule must be `eval` and it needs to be a class method.
+The return value of the last step should be a `ModelRes` object.
 
-For example: [Register Rules](examples/register/sdk_register_rule.py) 
+For example: [Register Rules](examples/register/sdk_register_rule.py)
 
 ### Register Prompts
 
@@ -173,8 +186,8 @@ For example: [Register Prompts](examples/register/sdk_register_prompt.py)
 
 ### Register Models
 
-The way to register models is slightly different, users need to implement a call_api method, accept MetaData type parameters, and return ModelRes type results.  
-There are already implemented basic model classes [BaseOpenAI](dingo/model/llm/base_openai.py) in the project, users can directly inherit.  
+The way to register models is slightly different, users need to implement a call_api method, accept MetaData type parameters, and return ModelRes type results.
+There are already implemented basic model classes [BaseOpenAI](dingo/model/llm/base_openai.py) in the project, users can directly inherit.
 If the user has special functions to implement, then you can rewrite the corresponding methods.
 
 For example: [Register Models](examples/register/sdk_register_llm.py)
@@ -185,7 +198,7 @@ For example: [Register Models](examples/register/sdk_register_llm.py)
 
 ## Execution Engine
 
-`Dingo` can run locally or on a spark cluster.  
+`Dingo` can run locally or on a spark cluster.
 Regardless of the choice of engine, the executor supports some common methods:
 
 | function name      | description              |
@@ -203,9 +216,9 @@ When choosing the spark engine, users can freely choose rules, models for qualit
 
 ### Spark Mode
 
-When choosing the spark engine, users can only choose rules for quality inspection, and models cannot be used.  
-And only `eval_group`,`save_data`,`save_correct`,`custom_config` in `InputArgs` are still valid.  
-Therefore, the user needs to input `spark_session` to initialize spark, and input `spark_rdd` (composed of `MetaData` structure) as data for quality inspection.  
+When choosing the spark engine, users can only choose rules for quality inspection, and models cannot be used.
+And only `eval_group`,`save_data`,`save_correct`,`custom_config` in `InputArgs` are still valid.
+Therefore, the user needs to input `spark_session` to initialize spark, and input `spark_rdd` (composed of `MetaData` structure) as data for quality inspection.
 It should be noted that if `save_data` is `False`, then the data in memory will be cleared immediately after the quality inspection is completed, and `spark_session` will also stop immediately.
 
 [Spark Example](examples/spark/sdk_spark.py)
@@ -275,6 +288,7 @@ If you find this project useful, please consider citing our tool:
 ```
 @misc{dingo,
   title={Dingo: A Comprehensive Data Quality Evaluation Tool for Large Models},
+  author={Dingo Contributors},
   howpublished={\url{https://github.com/DataEval/dingo}},
   year={2024}
 }

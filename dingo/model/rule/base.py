@@ -1,8 +1,8 @@
 from typing import List
 
-from dingo.model.modelres import ModelRes
-from dingo.io import MetaData
 from dingo.config.config import DynamicRuleConfig
+from dingo.io import MetaData
+from dingo.model.modelres import ModelRes
 
 
 class BaseRule:

@@ -1,6 +1,6 @@
+from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
-from dingo.model.model import Model
 
 @Model.prompt_register("QUALITY_BAD_SIMILARITY", [])
 class PromptRepeat(BasePrompt):
@@ -46,7 +46,28 @@ class PromptWordStick(BasePrompt):
     Return your answer in JSON format: {"score": 0, "type": "xxx", "reason": "xxx"}.
     Here are the data you need to evaluate:
     """
-
+@Model.prompt_register("CODE_LIST_ISSUE", [])
+class PromptUnreadIssue(BasePrompt):
+    content = """
+    ### Role
+    You are a data quality assessment expert with fluent English communication skills, and you have insight into the considerations of Chinese professionals in your field.
+    ### Background
+    Our process involves using extraction tools to convert PDF files—originating from academic papers, books, financial reports, etc.—into markdown format. Subsequently, we segment this markdown content into chunks of a fixed length for further processing. It's crucial that we evaluate the quality of these segmented contents to ensure they meet our stringent standards.
+    ### Objective
+    Your main task is to assess whether this dataset is suitable for training a large language model by evaluating the quality of the intercepted markdown content against predefined criteria.
+    ### Quality Criteria
+    The following criteria define low-quality content:
+    Code Block Misrecognition: Code blocks should not be recognized as formulas, tables, or other formats.
+    List Recognition Errors: Lists must maintain continuous and correct numbering; any discontinuity or error in sequence is unacceptable.
+    ### Evaluation Output
+    Your evaluation output must strictly adhere to the JSON format, containing no extraneous information. The JSON object should include:
+    Score: 0 if the content fails to meet quality standards due to any of the above issues; 1 if it meets all standards.
+    Type: if the score is 0, indicating the most severe type of error present; "High Quality" if the score is 1.
+    Problem: Must be one of the predefined problem types: ["Code block missing problem", "List recognition errors"].
+    Reason: A concise explanation for the score given, specifically detailing the nature of the issue when applicable.
+    Return your answer in JSON format: {"score": 0, "type": "xxx", "reason": "xxx"}.
+    Here are the data you need to evaluate:
+    """
 @Model.prompt_register("UNREAD_ISSUE", [])
 class PromptUnreadIssue(BasePrompt):
     content = """
@@ -66,8 +87,8 @@ class PromptUnreadIssue(BasePrompt):
     2. Calculate the total length of the evaluated string, denoted as b.
     3. If the ratio of a/b is greater than 0.01, then it is considered low-quality data.
     ### Quality Standard
-    After workflow, you can judge 
-    1. low-quality：If the ratio of a/b is greater than 0.01, then it is considered low-quality data. 
+    After workflow, you can judge
+    1. low-quality：If the ratio of a/b is greater than 0.01, then it is considered low-quality data.
     2. high-quality:If the ratio of a/b is smaller than 0.01，it is considered high-quality data.
     ### Warning
     Please remember to output only JSON data, without additional content.

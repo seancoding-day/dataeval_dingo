@@ -16,8 +16,8 @@
 # limitations under the License.
 
 import json
-from functools import wraps
 from abc import abstractmethod
+from functools import wraps
 from typing import Any, Dict, Iterable
 
 from dingo.io import InputArgs

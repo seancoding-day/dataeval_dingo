@@ -3,24 +3,23 @@ import time
 import uuid
 from typing import Any, Callable, Dict, Generator, List, Optional, Union
 
+from dingo.config import GlobalConfig
+from dingo.data import Dataset, DataSource, dataset_map, datasource_map
+from dingo.exec.base import ExecProto, Executor
+from dingo.io import InputArgs, MetaData, ResultInfo, SummaryModel
+from dingo.model import Model
+from dingo.model.llm.base import BaseLLM
+from dingo.model.modelres import ModelRes
+from dingo.model.prompt.base import BasePrompt
+from dingo.model.rule.base import BaseRule
+from dingo.utils import log
 from pyspark import SparkConf, SparkContext
 from pyspark.rdd import RDD
 from pyspark.sql import DataFrame, Row, SparkSession
 
-from dingo.config import GlobalConfig
-from dingo.data import Dataset, DataSource, dataset_map, datasource_map
-from dingo.exec.base import Executor
-from dingo.io import InputArgs, MetaData, ResultInfo, SummaryModel
-from dingo.model import Model
-from dingo.model.modelres import ModelRes
-from dingo.model.prompt.base import BasePrompt
-from dingo.model.rule.base import BaseRule
-from dingo.model.llm.base import BaseLLM
-from dingo.utils import log
-
 
 @Executor.register('spark')
-class SparkExecutor(Executor):
+class SparkExecutor(ExecProto):
     """
     Spark executor
     """
@@ -112,7 +111,7 @@ class SparkExecutor(Executor):
                 task_id=str(uuid.uuid1()),
                 task_name=self.input_args.task_name,
                 eval_group=self.input_args.eval_group,
-                input_path=self.input_args.input_path,
+                input_path=self.input_args.input_path if not self.spark_rdd else '',
                 output_path='',
                 create_time=create_time,
                 score=0,
@@ -139,6 +138,7 @@ class SparkExecutor(Executor):
         return [self.summary]
 
     def evaluate(self, data_rdd_item) -> Dict[str, Any]:
+        Model.apply_config_for_spark_driver(self.input_args.custom_config, self.input_args.eval_group)
         # eval with models ( Big Data Caution ）
         data: MetaData = data_rdd_item
         result_info = ResultInfo(data_id=data.data_id, prompt=data.prompt, content=data.content)

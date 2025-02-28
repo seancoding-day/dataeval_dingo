@@ -1,15 +1,15 @@
 import importlib
+import inspect
 import os
 from functools import wraps
 from typing import Callable, Dict, List, Optional
-
-from pydantic import BaseModel
 
 from dingo.config import GlobalConfig
 from dingo.model.llm.base import BaseLLM
 from dingo.model.prompt.base import BasePrompt
 from dingo.model.rule.base import BaseRule
 from dingo.utils import log
+from pydantic import BaseModel
 
 
 class BaseEvalModel(BaseModel):
@@ -184,11 +184,7 @@ class Model:
             cls.rule_metric_type_map[metric_type].append(root_class)
             root_class.metric_type = metric_type
 
-            @wraps(root_class)
-            def wrapped_function(*args, **kwargs):
-                return root_class(*args, **kwargs)
-
-            return wrapped_function
+            return root_class
 
         return decorator
 
@@ -199,14 +195,13 @@ class Model:
         Args:
             llm_id (str): Name of llm model class.
         """
-        def decorator(root_method):
-            cls.llm_name_map[llm_id] = root_method
+        def decorator(root_class):
+            cls.llm_name_map[llm_id] = root_class
 
-            @wraps(root_method)
-            def wrapped_function(*args, **kwargs):
-                return root_method(*args, **kwargs)
-
-            return wrapped_function
+            if inspect.isclass(root_class):
+                return root_class
+            else:
+                raise ValueError("root_class must be a class")
 
         return decorator
 
@@ -214,7 +209,7 @@ class Model:
     @classmethod
     def prompt_register(cls, metric_type: str, group: List[str]) -> Callable:
         def decorator(root_class):
-
+            # group
             for group_name in group:
                 if group_name not in cls.prompt_groups:
                     cls.prompt_groups[group_name] = []
@@ -228,18 +223,12 @@ class Model:
             cls.prompt_metric_type_map[metric_type].append(root_class)
             root_class.metric_type = metric_type
 
-            @wraps(root_class)
-            def wrapped_function(*args, **kwargs):
-                return root_class(*args, **kwargs)
-
-            return wrapped_function
+            return root_class
 
         return decorator
 
-
     @classmethod
-    def apply_config(cls, custom_config: Optional[str|dict], eval_group: str = ''):
-        GlobalConfig.read_config_file(custom_config)
+    def apply_config_rule(cls):
         if GlobalConfig.config and GlobalConfig.config.rule_config:
             for rule, rule_config in GlobalConfig.config.rule_config.items():
                 if rule not in cls.rule_name_map:
@@ -248,10 +237,13 @@ class Model:
                 log.debug(f"[Rule config]: config {rule_config} for {rule}")
                 cls_rule: BaseRule = cls.rule_name_map[rule]
                 config_default = getattr(cls_rule, 'dynamic_config')
-                for k,v in rule_config:
+                for k, v in rule_config:
                     if v is not None:
                         setattr(config_default, k, v)
                 setattr(cls_rule, 'dynamic_config', config_default)
+
+    @classmethod
+    def apply_config_llm(cls):
         if GlobalConfig.config and GlobalConfig.config.llm_config:
             for llm, llm_config in GlobalConfig.config.llm_config.items():
                 if llm not in cls.llm_name_map.keys():
@@ -264,10 +256,10 @@ class Model:
                     if v is not None:
                         setattr(config_default, k, v)
                 setattr(cls_llm, 'dynamic_config', config_default)
-        if GlobalConfig.config and GlobalConfig.config.rule_list:
-            if eval_group in Model.rule_groups or eval_group in Model.prompt_groups:
-                raise KeyError(f'eval model: [{eval_group}] already in Model, please input other name.')
 
+    @classmethod
+    def apply_config_rule_list(cls, eval_group: str = ''):
+        if GlobalConfig.config and GlobalConfig.config.rule_list:
             model: List[BaseRule] = []
             for rule in GlobalConfig.config.rule_list:
                 assert isinstance(rule, str)
@@ -275,10 +267,10 @@ class Model:
                     raise KeyError(f"{rule} not in Model.rule_name_map, there are {str(Model.rule_name_map.keys())}")
                 model.append(Model.rule_name_map[rule])
             Model.rule_groups[eval_group] = model
-        if GlobalConfig.config and GlobalConfig.config.prompt_list:
-            if eval_group in Model.rule_groups or eval_group in Model.prompt_groups:
-                raise KeyError(f'eval model: [{eval_group}] already in Model, please input other name.')
 
+    @classmethod
+    def apply_config_prompt_list(cls, eval_group: str = ''):
+        if GlobalConfig.config and GlobalConfig.config.prompt_list:
             model: List[BasePrompt] = []
             for prompt in GlobalConfig.config.prompt_list:
                 assert isinstance(prompt, str)
@@ -286,6 +278,26 @@ class Model:
                     raise KeyError(f"{prompt} not in Model.prompt_name_map, there are {str(Model.prompt_name_map.keys())}")
                 model.append(Model.prompt_name_map[prompt])
             Model.prompt_groups[eval_group] = model
+
+    @classmethod
+    def apply_config(cls, custom_config: Optional[str|dict], eval_group: str = ''):
+        GlobalConfig.read_config_file(custom_config)
+        cls.apply_config_rule()
+        cls.apply_config_llm()
+        if GlobalConfig.config:
+            if GlobalConfig.config.rule_list or GlobalConfig.config.prompt_list:
+                if eval_group in Model.rule_groups or eval_group in Model.prompt_groups:
+                    raise KeyError(f'eval group: [{eval_group}] already in Model, please input other name.')
+        cls.apply_config_rule_list(eval_group)
+        cls.apply_config_prompt_list(eval_group)
+
+    @classmethod
+    def apply_config_for_spark_driver(cls, custom_config: Optional[str|dict], eval_group: str = ''):
+        GlobalConfig.read_config_file(custom_config)
+        cls.apply_config_rule()
+        cls.apply_config_llm()
+        cls.apply_config_rule_list(eval_group)
+        cls.apply_config_prompt_list(eval_group)
 
     @classmethod
     def load_model(cls):
