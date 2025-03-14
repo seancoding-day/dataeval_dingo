@@ -16,8 +16,8 @@ input_data = {
                 {
                     "detect_text_quality_detail":
                         {
-                            "key": "EMPTY",
-                            "api_url": "http://10.140.54.48:29999/v1",
+                            "key": "",
+                            "api_url": "",
                         }
                 },
             "multi_turn_mode": "all"
