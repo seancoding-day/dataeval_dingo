@@ -21,11 +21,9 @@
 
 <div align="center">
   <a href="https://discord.gg/Jhgb2eKWh8" style="text-decoration:none;">
-    <img src="https://user-images.githubusercontent.com/25839884/218347213-c080267f-cbb6-443e-8532-8e1ed9a58ea9.png" width="3%" alt="Discord" /></a>
-  <img src="https://user-images.githubusercontent.com/25839884/218346358-56cc8e2f-a2b8-487f-9088-32480cceabcf.png" width="3%" alt="" />
+    <img src="https://user-images.githubusercontent.com/25839884/218347213-c080267f-cbb6-443e-8532-8e1ed9a58ea9.png" width="8%" alt="Discord" /></a>
   <a href="https://huggingface.co/spaces/DataEval/dingo" style="text-decoration:none;">
-    <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.png" width="3%" alt="Hugging Face" /></a>
-  <img src="https://user-images.githubusercontent.com/25839884/218346358-56cc8e2f-a2b8-487f-9088-32480cceabcf.png" width="3%" alt="" />
+    <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.png" width="8%" alt="Hugging Face" /></a>
 </div>
 
 
@@ -452,6 +450,12 @@ Example summary:
     }
 }
 ```
+
+# Research & Publications
+
+- **"Comprehensive Data Quality Assessment for Multilingual WebData"** : [WanJuanSiLu: A High-Quality Open-Source Webtext
+Dataset for Low-Resource Languages](https://arxiv.org/pdf/2501.14506)
+
 
 # Future Plans
 
