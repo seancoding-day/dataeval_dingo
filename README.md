@@ -461,6 +461,14 @@ Example summary:
 }
 ```
 
+
+# MCP Server (Experimental)
+
+Dingo includes an experimental Model Context Protocol (MCP) server. For details on running the server and integrating it with clients like Cursor, please see the dedicated documentation:
+
+[**Dingo MCP Server Documentation (README_mcp.md)**](README_mcp.md)
+
+
 # Research & Publications
 
 - **"Comprehensive Data Quality Assessment for Multilingual WebData"** : [WanJuanSiLu: A High-Quality Open-Source Webtext
