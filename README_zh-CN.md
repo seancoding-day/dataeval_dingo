@@ -15,13 +15,28 @@
   <a href="https://github.com/DataEval/dingo/issues"><img src="https://img.shields.io/github/issues/DataEval/dingo" alt="GitHub 问题"></a>
 </p>
 
+
+<div align="center">
+
+[English](README.md) · [简体中文](README_zh-CN.md)
+
+</div>
+
+
+<div align="center">
+  <a href="https://discord.gg/Jhgb2eKWh8" style="text-decoration:none;">
+    <img src="https://user-images.githubusercontent.com/25839884/218347213-c080267f-cbb6-443e-8532-8e1ed9a58ea9.png" width="3%" alt="Discord" /></a>
+  <a href="https://huggingface.co/spaces/DataEval/dingo" style="text-decoration:none;">
+    <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.png" width="3%" alt="Hugging Face" /></a>
+</div>
+
 </div>
 
 # Changelog
 
 - 2024/12/27: Project Initialization
 
-# 一、介绍
+# 介绍
 
 Dingo是一款数据质量评估工具，帮助你自动化检测数据集中的数据质量问题。Dingo提供了多种内置的规则和模型评估方法，同时也支持自定义评估方法。Dingo支持常用的文本数据集和多模态数据集，包括预训练数据集、微调数据集和评测数据集。此外，Dingo支持多种使用方式，包括本地CLI和SDK，便于集成到各种评测平台，如[OpenCompass](https://github.com/open-compass/opencompass)等。
 
@@ -30,7 +45,7 @@ Dingo是一款数据质量评估工具，帮助你自动化检测数据集中的
 ![Architecture of dingo](./docs/assets/architeture.png)
 
 
-# 二、快速启动
+# 快速启动
 
 ## 1. 安装
 
@@ -40,7 +55,43 @@ pip install dingo-python
 
 ## 2. 使用示例
 
-### 2.1 评估本地文本文件（纯文本）
+### 2.1 使用评估核心方法
+
+```python
+from dingo.config.config import DynamicLLMConfig
+from dingo.io.input.MetaData import MetaData
+from dingo.model.llm.llm_text_quality_model_base import LLMTextQualityModelBase
+from dingo.model.rule.rule_common import RuleEnterAndSpace
+
+
+def llm():
+    data = MetaData(
+        data_id='123',
+        prompt="hello, introduce the world",
+        content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
+    )
+
+    LLMTextQualityModelBase.dynamic_config = DynamicLLMConfig(
+        key='',
+        api_url='',
+        # model='',
+    )
+    res = LLMTextQualityModelBase.eval(data)
+    print(res)
+
+
+def rule():
+    data = MetaData(
+        data_id='123',
+        prompt="hello, introduce the world",
+        content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
+    )
+
+    res = RuleEnterAndSpace().eval(data)
+    print(res)
+```
+
+### 2.2 评估本地文本文件（纯文本）
 
 ```python
 from dingo.io import InputArgs
@@ -61,7 +112,7 @@ result = executor.execute()
 print(result)
 ```
 
-### 2.2 评估Hugging Face数据集
+### 2.3 评估Hugging Face数据集
 
 ```python
 from dingo.io import InputArgs
@@ -81,7 +132,7 @@ result = executor.execute()
 print(result)
 ```
 
-### 2.3 评估JSON/JSONL格式
+### 2.4 评估JSON/JSONL格式
 
 ```python
 from dingo.io import InputArgs
@@ -103,7 +154,7 @@ result = executor.execute()
 print(result)
 ```
 
-### 2.4 使用LLM进行评估
+### 2.5 使用LLM进行评估
 
 ```python
 from dingo.io import InputArgs
@@ -175,7 +226,7 @@ python -m dingo.run.vsl --input 输出目录
 ## 5. 在线演示
 尝试我们的在线演示: [(Hugging Face)🤗](https://huggingface.co/spaces/DataEval/dingo)
 
-# 三、数据质量指标
+# 数据质量指标
 
 Dingo将数据质量问题分为7个维度的质量指标。每个维度可以通过基于规则的方法和基于LLM的prompt进行评估：
 
@@ -218,6 +269,7 @@ Dingo在`dingo/model/prompt`目录下提供了多种基于LLM的评估方法。�
 |-------------|--------|-------------|
 | `TEXT_QUALITY_KAOTI` | 考题质量 | 专门评估考试题目的质量，关注公式渲染、表格格式、段落结构和答案格式 |
 | `Html_Abstract` | HTML提取质量 | 比较从HTML提取Markdown的不同方法，评估完整性、格式准确性和语义连贯性 |
+| `DATAMAN_ASSESSMENT` | 数据质量与领域 | 使用DataMan方法论（14个标准，15个领域）评估预训练数据质量。分配分数（0/1）、领域类型、质量状态和原因。 |
 
 ### 分类Prompt
 
@@ -256,7 +308,7 @@ input_data = {
 
 每条规则都针对文本质量的特定方面进行检查，并映射到这些指标之一。运行评估时，Dingo将提供每个维度的分数并识别触发了哪些规则。
 
-# 四、规则组
+# 规则组
 
 Dingo为不同类型的数据集提供预配置的规则组：
 
@@ -275,7 +327,7 @@ input_data = {
 }
 ```
 
-# 五、功能亮点
+# 功能亮点
 
 ## 1. 多源和多模态支持
 
@@ -301,7 +353,7 @@ input_data = {
 - **质量指标**：7维质量评估
 - **可追溯性**：异常追踪的详细报告
 
-# 六、使用指南
+# 使用指南
 
 ## 1. 自定义规则、Prompt和模型
 
@@ -411,27 +463,40 @@ result = executor.execute()
 }
 ```
 
-# 七、未来计划
+# MCP 服务端 (实验性)
+
+Dingo 包含一个实验性的模型上下文协议 (MCP) 服务端。有关运行服务端以及将其与 Cursor 等客户端集成的详细信息，请参阅专门的文档：
+
+[**中文文档 (README_mcp_zh-CN.md)**](README_mcp_zh-CN.md)
+
+
+# 研究与学术成果
+
+
+- **"多语言网页数据的数据质量评估"** : [WanJuanSiLu: A High-Quality Open-Source Webtext Dataset for Low-Resource Languages](https://arxiv.org/pdf/2501.14506)
+- **"使用DataMan方法论评估预训练数据质量"** : [DataMan: Data Manager for Pre-training Large Language Models](https://openreview.net/pdf?id=eNbA8Fqir4)
+
+# 未来计划
 
 - [ ] 更丰富的图文评测指标
 - [ ] 音频和视频数据模态评测
 - [ ] 小模型评测（如fasttext、Qurating）
 - [ ] 数据多样性评测
 
-# 八、局限性
+# 局限性
 
 当前内置的检测规则和模型方法主要关注常见的数据质量问题。对于特殊评估需求，我们建议定制化检测规则。
 
-# 九、致谢
+# 致谢
 
 - [RedPajama-Data](https://github.com/togethercomputer/RedPajama-Data)
 - [mlflow](https://github.com/mlflow/mlflow)
 
-# 十、贡献
+# 贡献
 
 我们感谢所有的贡献者为改进和提升 `Dingo` 所作出的努力。请参考[贡献指南](docs/en/CONTRIBUTING.md)来了解参与项目贡献的相关指引。
 
-# 十一、开源许可证
+# 开源许可证
 
 该项目采用 [Apache 2.0 开源许可证](LICENSE)。
 

@@ -8,8 +8,8 @@ from dingo.model.modelres import ModelRes
 from dingo.utils import log
 
 
-@Model.llm_register('detect_perspective')
-class Perspective(BaseLLM):
+@Model.llm_register('LLMPerspective')
+class LLMPerspective(BaseLLM):
     client = None
 
     dynamic_config = DynamicLLMConfig(
@@ -40,7 +40,7 @@ class Perspective(BaseLLM):
                 )
 
     @classmethod
-    def call_api(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: MetaData) -> ModelRes:
         cls.create_client()
         analyze_request = {
             'comment': {'text': input_data.content},

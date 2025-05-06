@@ -2,7 +2,7 @@ from dingo.exec import Executor
 from dingo.io import InputArgs
 
 input_data = {
-    "input_path": "../../test/data/test_local_jsonl.jsonl",  # local filesystem dataset
+    "input_path": "../../test/data/test_dataman_jsonl.jsonl",  # local filesystem dataset
     "save_data": True,
     "save_correct": True,
     "dataset": "local",
@@ -10,14 +10,13 @@ input_data = {
     "column_content": "content",
     "custom_config":
         {
-            "prompt_list": ["PromptRepeat"],
+            "prompt_list": ["PromptDataManAssessment"],
             "llm_config":
                 {
-                    "LLMTextQualityPromptBase":
+                    "dataman_assessment":
                         {
-                            "model": "enter your llm, such as:deepseek-chat",
-                            "key": "enter your key, such as:sk-123456789012345678901234567890xx",
-                            "api_url": "enter remote llm api url, such as:https://api.deepseek.com/v1",
+                            "key": "enter your key, such as:EMPTY",
+                            "api_url": "enter your local llm api url, such as:http://127.0.0.1:8080/v1",
                         }
                 }
         },

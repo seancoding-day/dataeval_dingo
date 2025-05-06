@@ -17,15 +17,19 @@
 
 </div>
 
-[English](README.md) | [简体中文](README_zh-CN.md)
+
+<div align="center">
+
+[English](README.md) · [简体中文](README_zh-CN.md)
+
+</div>
+
 
 <div align="center">
   <a href="https://discord.gg/Jhgb2eKWh8" style="text-decoration:none;">
     <img src="https://user-images.githubusercontent.com/25839884/218347213-c080267f-cbb6-443e-8532-8e1ed9a58ea9.png" width="3%" alt="Discord" /></a>
-  <img src="https://user-images.githubusercontent.com/25839884/218346358-56cc8e2f-a2b8-487f-9088-32480cceabcf.png" width="3%" alt="" />
   <a href="https://huggingface.co/spaces/DataEval/dingo" style="text-decoration:none;">
     <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.png" width="3%" alt="Hugging Face" /></a>
-  <img src="https://user-images.githubusercontent.com/25839884/218346358-56cc8e2f-a2b8-487f-9088-32480cceabcf.png" width="3%" alt="" />
 </div>
 
 
@@ -51,7 +55,43 @@ pip install dingo-python
 
 ## Example Use Cases
 
-### 1. Evaluate Local Text File (Plaintext)
+### 1. Using Evaluate Core
+
+```python
+from dingo.config.config import DynamicLLMConfig
+from dingo.io.input.MetaData import MetaData
+from dingo.model.llm.llm_text_quality_model_base import LLMTextQualityModelBase
+from dingo.model.rule.rule_common import RuleEnterAndSpace
+
+
+def llm():
+    data = MetaData(
+        data_id='123',
+        prompt="hello, introduce the world",
+        content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
+    )
+
+    LLMTextQualityModelBase.dynamic_config = DynamicLLMConfig(
+        key='',
+        api_url='',
+        # model='',
+    )
+    res = LLMTextQualityModelBase.eval(data)
+    print(res)
+
+
+def rule():
+    data = MetaData(
+        data_id='123',
+        prompt="hello, introduce the world",
+        content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
+    )
+
+    res = RuleEnterAndSpace().eval(data)
+    print(res)
+```
+
+### 2. Evaluate Local Text File (Plaintext)
 
 ```python
 from dingo.io import InputArgs
@@ -72,7 +112,7 @@ result = executor.execute()
 print(result)
 ```
 
-### 2. Evaluate Hugging Face Dataset
+### 3. Evaluate Hugging Face Dataset
 
 ```python
 from dingo.io import InputArgs
@@ -92,7 +132,7 @@ result = executor.execute()
 print(result)
 ```
 
-### 3. Evaluate JSON/JSONL Format
+### 4. Evaluate JSON/JSONL Format
 
 ```python
 from dingo.io import InputArgs
@@ -114,7 +154,7 @@ result = executor.execute()
 print(result)
 ```
 
-### 4. Using LLM for Evaluation
+### 5. Using LLM for Evaluation
 
 ```python
 from dingo.io import InputArgs
@@ -229,6 +269,7 @@ Dingo provides several LLM-based assessment methods defined by prompts in the `d
 |-------------|--------|-------------|
 | `TEXT_QUALITY_KAOTI` | Exam question quality | Specialized assessment for evaluating the quality of exam questions, focusing on formula rendering, table formatting, paragraph structure, and answer formatting |
 | `Html_Abstract` | HTML extraction quality | Compares different methods of extracting Markdown from HTML, evaluating completeness, formatting accuracy, and semantic coherence |
+| `DATAMAN_ASSESSMENT` | Data Quality & Domain | Evaluates pre-training data quality using the DataMan methodology (14 standards, 15 domains). Assigns a score (0/1), domain type, quality status, and reason. |
 
 ### Classification Prompts
 
@@ -419,6 +460,21 @@ Example summary:
     }
 }
 ```
+
+
+# MCP Server (Experimental)
+
+Dingo includes an experimental Model Context Protocol (MCP) server. For details on running the server and integrating it with clients like Cursor, please see the dedicated documentation:
+
+[**Dingo MCP Server Documentation (README_mcp.md)**](README_mcp.md)
+
+
+# Research & Publications
+
+- **"Comprehensive Data Quality Assessment for Multilingual WebData"** : [WanJuanSiLu: A High-Quality Open-Source Webtext
+Dataset for Low-Resource Languages](https://arxiv.org/pdf/2501.14506)
+- **"Pre-training data quality using the DataMan methodology"** : [DataMan: Data Manager for Pre-training Large Language Models](https://openreview.net/pdf?id=eNbA8Fqir4)
+
 
 # Future Plans
 

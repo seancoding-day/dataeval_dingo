@@ -8,8 +8,12 @@ from dingo.utils import log
 from dingo.utils.exception import ConvertJsonError
 
 
-@Model.llm_register('detect_text_quality_detail')
-class DetectTextQualityDetail(BaseOpenAI):
+@Model.llm_register('dataman_assessment')
+class DatamanAssessment(BaseOpenAI):
+    """
+    Implementation of DataMan assessment using OpenAI API.
+    Evaluates text based on 14 quality standards and assigns a domain type.
+    """
     @classmethod
     def process_response(cls, response: str) -> ModelRes:
         log.info(response)
@@ -20,21 +24,29 @@ class DetectTextQualityDetail(BaseOpenAI):
             response = response[3:]
         if response.endswith('```'):
             response = response[:-3]
+
         try:
             response_json = json.loads(response)
         except json.JSONDecodeError:
             raise ConvertJsonError(f'Convert to JSON format failed: {response}')
 
+        # Parse the response using the ResponseScoreTypeNameReason model
         response_model = ResponseScoreTypeNameReason(**response_json)
 
         result = ModelRes()
-        # error_status
+        # Set error_status based on score (1 = good quality, 0 = low quality)
         if response_model.score == 1:
-            result.reason = [response_model.reason]
+            result.error_status = False
         else:
             result.error_status = True
-            result.type = response_model.type
-            result.name = response_model.name
-            result.reason = [response_model.reason]
+
+        # Set type to the domain classification
+        result.type = response_model.type
+
+        # Set name to the quality category
+        result.name = response_model.name
+
+        # Set reason to the detailed assessment
+        result.reason = [response_model.reason]
 
         return result
