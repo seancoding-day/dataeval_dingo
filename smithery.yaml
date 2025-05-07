@@ -29,7 +29,7 @@ startCommand:
 
       # Default maximum number of workers for parallel processing
       defaultMaxWorkers:
-        type: integer
+        type: number
         title: "Default Max Workers"
         description: "Maximum number of parallel workers for evaluations."
         default: 1
@@ -37,7 +37,7 @@ startCommand:
       
       # Default batch size for processing
       defaultBatchSize:
-        type: integer
+        type: number
         title: "Default Batch Size"
         description: "Number of items to process in each batch."
         default: 1
