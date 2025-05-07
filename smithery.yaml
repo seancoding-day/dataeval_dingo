@@ -1,0 +1,134 @@
+# smithery.yaml
+# Configures the Smithery deployment for the Dingo MCP server.
+
+# 'build' section tells Smithery how to build your Docker image.
+build:
+  # Specifies the Dockerfile to use, relative to this file.
+  dockerfile: Dockerfile
+  # Specifies the Docker build context path, relative to this file.
+  dockerBuildPath: .
+
+# 'startCommand' defines how to start your MCP server once the image is built.
+startCommand:
+  # Use "stdio" for standard I/O communication between Smithery and the server.
+  type: stdio
+
+  # Defines deployment-time configuration options.
+  # These are passed as environment variables to the container.
+  # The mcp_server.py script should be adapted to read these environment variables
+  # to set default behaviors if not overridden by specific tool arguments.
+  configSchema:
+    type: object
+    properties:
+      # Default base directory for evaluation outputs
+      defaultOutputDir:
+        type: string
+        title: "Default Output Directory"
+        description: "Default directory for evaluation outputs. Path is inside the container."
+        default: "/app/outputs"
+
+      # Default maximum number of workers for parallel processing
+      defaultMaxWorkers:
+        type: integer
+        title: "Default Max Workers"
+        description: "Maximum number of parallel workers for evaluations."
+        default: 1
+        minimum: 1
+      
+      # Default batch size for processing
+      defaultBatchSize:
+        type: integer
+        title: "Default Batch Size"
+        description: "Number of items to process in each batch."
+        default: 1
+        minimum: 1
+      
+      # Whether to save detailed JSONL output by default
+      defaultSaveData:
+        type: boolean
+        title: "Save Detailed Output"
+        description: "Whether to save detailed JSONL output files by default."
+        default: true
+      
+      # Whether to save correct data by default
+      defaultSaveCorrect:
+        type: boolean
+        title: "Save Correct Data"
+        description: "Whether to save correct data files by default."
+        default: true
+      
+      # Default data format if not specified
+      defaultDataFormat:
+        type: string
+        title: "Default Data Format"
+        description: "Default format for input data if not specified."
+        enum: ["json", "jsonl", "plaintext"]
+      
+      # Default dataset type if not specified
+      defaultDatasetType:
+        type: string
+        title: "Default Dataset Type"
+        description: "Default dataset type if not specified."
+        enum: ["local", "hugging_face"]
+        default: "local"
+      
+      # Log level for the Dingo application
+      logLevel:
+        type: string
+        title: "Log Level"
+        description: "Logging verbosity for the Dingo application."
+        enum: ["debug", "info", "warning", "error"]
+        default: "info"
+        
+  # Provides the command and environment for starting the server in the container.
+  commandFunction: |
+    (config) => {
+      const envVars = {
+        "PYTHONUNBUFFERED": "1", // Ensures Python output is sent directly to logs.
+        // Used by mcp_server.py to select stdio transport for Smithery deployment.
+        "SMITHERY_DEPLOYMENT_MODE": "true" 
+      };
+
+      // Set environment variables based on Smithery configuration.
+      if (config.defaultOutputDir) {
+        envVars["DEFAULT_OUTPUT_DIR"] = config.defaultOutputDir;
+      }
+      // Check for null/undefined as 0 is a valid (though unlikely) value for maxWorkers.
+      if (config.defaultMaxWorkers != null) { 
+        envVars["DEFAULT_MAX_WORKERS"] = config.defaultMaxWorkers.toString();
+      }
+      
+      if (config.defaultBatchSize != null) {
+        envVars["DEFAULT_BATCH_SIZE"] = config.defaultBatchSize.toString();
+      }
+      
+      if (config.defaultSaveData != null) {
+        envVars["DEFAULT_SAVE_DATA"] = config.defaultSaveData.toString();
+      }
+      
+      if (config.defaultSaveCorrect != null) {
+        envVars["DEFAULT_SAVE_CORRECT"] = config.defaultSaveCorrect.toString();
+      }
+      
+      if (config.defaultDataFormat) {
+        envVars["DEFAULT_DATA_FORMAT"] = config.defaultDataFormat;
+      }
+      
+      if (config.defaultDatasetType) {
+        envVars["DEFAULT_DATASET_TYPE"] = config.defaultDatasetType;
+      }
+      
+      if (config.logLevel) {
+        envVars["LOG_LEVEL"] = config.logLevel;
+      }
+
+      // API keys, temperature, and other sensitive/complex LLM configurations
+      // should be passed via the 'custom_config' kwarg in the run_dingo_evaluation tool,
+      // as per the server's design (see README_mcp.md).
+
+      return {
+        command: 'python',
+        args: ['mcp_server.py'],
+        env: envVars
+      };
+    }

@@ -309,4 +309,7 @@ def list_dingo_components() -> Dict[str, List[str]]:
         raise RuntimeError(f"Failed to list Dingo components: {e}") from e
 
 if __name__ == "__main__":
-    mcp.run(transport="sse")
+    if os.environ.get("SMITHERY_DEPLOYMENT_MODE") == "true":
+        mcp.run()
+    else:
+        mcp.run(transport="sse")
