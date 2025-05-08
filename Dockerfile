@@ -4,12 +4,11 @@ FROM python:3.11-bullseye
 WORKDIR /app
 
 # Copy dependency files first to leverage Docker cache
-COPY requirements/ ./requirements/
-COPY requirements.txt .
+COPY requirements/runtime.txt ./requirements/
 COPY setup.cfg .
 
-# Update pip and install project dependencies
-RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r requirements.txt
+# Update pip and install only runtime dependencies
+RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r requirements/runtime.txt
 
 # Copy application code after installing dependencies to avoid reinstalling when code changes
 COPY mcp_server.py .
