@@ -47,7 +47,8 @@ def run_dingo_evaluation(
                 API keys for LLMs should be set via environment variables in mcp.json.
 
     Returns:
-        The absolute path to the primary output file (summary.json or first .jsonl).
+        For Smithery deployment: The content of the result file (summary.json or first .jsonl)
+        Otherwise: The absolute path to the primary output file (summary.json or first .jsonl).
     """
     log.info(f"Received Dingo request: type={evaluation_type}, group={eval_group_name}, input={input_path}")
 
@@ -250,26 +251,43 @@ def run_dingo_evaluation(
              return abs_output_dir
 
         # --- Find Primary Output File ---
+        result_file_path = None
+        file_content = None
+        
         # Priority 1: summary.json
         summary_path = os.path.join(result_output_dir, "summary.json")
         if os.path.isfile(summary_path):
-             summary_path_abs = os.path.abspath(summary_path).replace("\\", "/")
-             log.info(f"Found summary.json. Returning path: {summary_path_abs}")
-             return summary_path_abs
+            result_file_path = os.path.abspath(summary_path).replace("\\", "/")
+            log.info(f"Found summary.json at: {result_file_path}")
         else:
             log.warning(f"summary.json not found in {result_output_dir}. Searching recursively for first .jsonl file...")
             # Priority 2: First .jsonl file recursively
-            first_jsonl_path = None
             for root, _, files in os.walk(result_output_dir):
                 for file in files:
                     if file.endswith(".jsonl"):
-                        first_jsonl_path = os.path.join(root, file).replace("\\", "/")
-                        log.info(f"Found first .jsonl: {first_jsonl_path}. Returning this path.")
+                        result_file_path = os.path.join(root, file).replace("\\", "/")
+                        log.info(f"Found first .jsonl at: {result_file_path}")
                         break
-                if first_jsonl_path: break
-
-            if first_jsonl_path:
-                return first_jsonl_path
+                if result_file_path: break
+        
+        # If running in Smithery, read and return the file content
+        if os.environ.get("SMITHERY_DEPLOYMENT_MODE") == "true":
+            if result_file_path:
+                try:
+                    with open(result_file_path, 'r', encoding='utf-8') as f:
+                        file_content = f.read()
+                    log.info(f"Successfully read content from {result_file_path}")
+                    return file_content
+                except Exception as e:
+                    log.error(f"Failed to read content from {result_file_path}: {e}", exc_info=True)
+                    return f"Error reading result file: {e}\nFile path: {result_file_path}"
+            else:
+                log.warning("No result file found. Returning directory path.")
+                return f"No result file found. Output directory: {result_output_dir}"
+        else:
+            # In non-Smithery mode, return the file path as before
+            if result_file_path:
+                return result_file_path
             else:
                 # Priority 3: Fallback to directory
                 log.error(f"Could not find summary.json or any .jsonl files within {result_output_dir}. Returning directory path.")
