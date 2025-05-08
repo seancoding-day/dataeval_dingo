@@ -13,6 +13,8 @@ RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r re
 # Copy application code after installing dependencies to avoid reinstalling when code changes
 COPY mcp_server.py .
 COPY dingo ./dingo/
+COPY test ./test/
+COPY examples ./examples/
 COPY smithery.yaml .
 
 # Create data output directory
