@@ -148,7 +148,7 @@ Cursor will prompt you for the necessary arguments.
 
 Lists available Dingo rule groups, registered LLM model identifiers, and prompt definitions.
 
-*   **Arguments**: 
+*   **Arguments**:
     *   `component_type` (Literal["rule_groups", "llm_models", "prompts", "all"]): Type of components to list. Default: "all".
     *   `include_details` (bool): Whether to include detailed descriptions and metadata for each component. Default: false.
 *   **Returns**: `Dict[str, List[str]]` - A dictionary containing `rule_groups`, `llm_models`, `prompts`, and/or `llm_prompt_mappings` based on component_type.

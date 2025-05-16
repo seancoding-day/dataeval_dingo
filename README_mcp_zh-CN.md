@@ -148,7 +148,7 @@ Cursor 将提示你输入必要的参数。
 
 列出可用的 Dingo 规则组、已注册的 LLM 模型标识符和提示定义。
 
-*   **参数**: 
+*   **参数**:
     *   `component_type` (Literal["rule_groups", "llm_models", "prompts", "all"]): 要列出的组件类型。默认值: "all"。
     *   `include_details` (bool): 是否包括每个组件的详细描述和元数据。默认值: false。
 *   **返回**: `Dict[str, List[str]]` - 包含 `rule_groups`、`llm_models`、`prompts` 和/或 `llm_prompt_mappings` 的字典（取决于 component_type）。
