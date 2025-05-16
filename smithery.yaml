@@ -15,7 +15,7 @@ startCommand:
 
   # Defines deployment-time configuration options.
   # These are passed as environment variables to the container.
-  # The mcp_server.py script should be adapted to read these environment variables
+  # The mcp_server.py script reads these environment variables
   # to set default behaviors if not overridden by specific tool arguments.
   configSchema:
     type: object
@@ -79,6 +79,26 @@ startCommand:
         description: "Logging verbosity for the Dingo application."
         enum: ["debug", "info", "warning", "error"]
         default: "info"
+      
+      # OpenAI API configuration (optional)
+      openaiApiKey:
+        type: string
+        title: "OpenAI API Key"
+        description: "API key for OpenAI API access. Required for LLM evaluations using OpenAI models."
+        format: "password"
+      
+      openaiBaseUrl:
+        type: string
+        title: "OpenAI Base URL"
+        description: "Base URL for OpenAI API. Use for proxies or alternative endpoints."
+        default: "https://api.openai.com/v1"
+      
+      openaiModel:
+        type: string
+        title: "OpenAI Model"
+        description: "Default model to use for OpenAI API calls."
+        default: "gpt-4"
+      
         
   # Provides the command and environment for starting the server in the container.
   commandFunction: |
@@ -86,7 +106,7 @@ startCommand:
       const envVars = {
         "PYTHONUNBUFFERED": "1", // Ensures Python output is sent directly to logs.
         // Used by mcp_server.py to select stdio transport for Smithery deployment.
-        "SMITHERY_DEPLOYMENT_MODE": "true" 
+        "LOCAL_DEPLOYMENT_MODE": "true" 
       };
 
       // Set environment variables based on Smithery configuration.
@@ -121,10 +141,22 @@ startCommand:
       if (config.logLevel) {
         envVars["LOG_LEVEL"] = config.logLevel;
       }
+      
+      // Handle LLM API configurations
+      if (config.openaiApiKey) {
+        envVars["OPENAI_API_KEY"] = config.openaiApiKey;
+      }
+      
+      if (config.openaiBaseUrl) {
+        envVars["OPENAI_BASE_URL"] = config.openaiBaseUrl;
+      }
+      
+      if (config.openaiModel) {
+        envVars["OPENAI_MODEL"] = config.openaiModel;
+      }
 
-      // API keys, temperature, and other sensitive/complex LLM configurations
-      // should be passed via the 'custom_config' kwarg in the run_dingo_evaluation tool,
-      // as per the server's design (see README_mcp.md).
+      // Complex LLM configurations should be passed via the 'custom_config' kwarg 
+      // in the run_dingo_evaluation tool as per the server's design.
 
       return {
         command: 'python',

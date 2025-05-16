@@ -17,11 +17,14 @@ COPY test ./test/
 COPY examples ./examples/
 COPY smithery.yaml .
 
-# Create data output directory
+# Create data output directory with appropriate permissions
 RUN mkdir -p /app/outputs && chmod 777 /app/outputs
 
 # Ensure Python output is sent directly to stdout without buffering
 ENV PYTHONUNBUFFERED=1
+
+# Use Smithery deployment mode by default in container
+ENV LOCAL_DEPLOYMENT_MODE=true
 
 # Startup command (specific parameters provided by smithery.yaml commandFunction)
 CMD ["python", "mcp_server.py"]
