@@ -8,7 +8,7 @@
 
 为了帮助您快速上手 Dingo MCP，我们制作了一个视频演示：
 
-<video src="docs/assets/mcp_demo.mp4" controls width="100%"></video>
+https://github.com/user-attachments/assets/8bdaa15d-2e5e-4e46-9a05-ff1dca21cdc8
 
 此视频展示了关于 Dingo MCP 服务端与 Cursor 一起使用的分步演示。
 
