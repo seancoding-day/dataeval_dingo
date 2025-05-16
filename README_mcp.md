@@ -4,12 +4,24 @@
 
 The `mcp_server.py` script provides an experimental Model Context Protocol (MCP) server for Dingo, powered by [FastMCP](https://github.com/modelcontextprotocol/fastmcp). This allows MCP clients, such as Cursor, to interact with Dingo's data evaluation capabilities programmatically.
 
+## Video Demonstration
+
+To help you get started quickly with Dingo MCP, we've created a video walkthrough:
+
+<video src="docs/assets/mcp_demo.mp4" controls width="100%"></video>
+
+This video demonstrates step-by-step how to use Dingo MCP server with Cursor.
+
 ## Features
 
 *   Exposes Dingo's evaluation logic via MCP.
-*   Provides two primary tools:
+*   Provides tools for:
     *   `run_dingo_evaluation`: Executes rule-based or LLM-based evaluations on specified data.
     *   `list_dingo_components`: Lists available rule groups and registered LLM models within Dingo.
+    *   `get_rule_details`: Gets detailed information about a specific rule.
+    *   `get_llm_details`: Gets detailed information about a specific LLM.
+    *   `get_prompt_details`: Gets detailed information about a specific prompt.
+    *   `run_quick_evaluation`: Runs a simplified evaluation based on a high-level goal.
 *   Enables interaction through MCP clients like Cursor.
 
 ## Installation
@@ -35,7 +47,27 @@ Navigate to the directory containing `mcp_server.py` and run it using Python:
 python mcp_server.py
 ```
 
-By default, the server starts using the Server-Sent Events (SSE) transport protocol. You can customize its behavior using arguments within the script's `mcp.run()` call:
+### Transmission Modes
+
+Dingo MCP server supports two transmission modes:
+
+1. **STDIO Transmission Mode**:
+   - Enabled by setting the environment variable `LOCAL_DEPLOYMENT_MODE=true`
+   - Uses standard input/output streams for communication
+   - Suitable for direct local execution or Smithery containerized deployment
+   - Configured with `command` and `args` in mcp.json
+
+2. **SSE Transmission Mode**:
+   - Default mode (when `LOCAL_DEPLOYMENT_MODE` is not set or is false)
+   - Uses HTTP Server-Sent Events for network communication
+   - Listens on a specified port after starting and can be accessed via URL
+   - Configured with `url` in mcp.json
+
+Choose the appropriate transmission mode based on your deployment needs:
+- Use STDIO mode for local execution or Smithery deployment
+- Use SSE mode for network service deployment
+
+When using SSE mode, you can customize the server's behavior using arguments in the script's `mcp.run()` call:
 
 ```python
 # Example customization in mcp_server.py
@@ -55,9 +87,9 @@ mcp.run(
 
 To connect Cursor to your running Dingo MCP server, you need to edit Cursor's MCP configuration file (`mcp.json`). This file is typically located in Cursor's user configuration directory (e.g., `~/.cursor/` or `%USERPROFILE%\.cursor\`).
 
-Add or modify the entry for your Dingo server within the `mcpServers` object. Use the `url` property to specify the address of your running server.
+Add or modify the entry for your Dingo server within the `mcpServers` object.
 
-**Example `mcp.json` entry:**
+**Example 1: SSE Transmission Mode Configuration**:
 
 ```json
 {
@@ -71,7 +103,32 @@ Add or modify the entry for your Dingo server within the `mcpServers` object. Us
 }
 ```
 
-*   Ensure the `url` exactly matches the `host`, `port`, and `transport` (currently only `sse` is supported for the URL scheme) your `mcp_server.py` is configured to use. If you didn't customize `mcp.run`, the default URL is likely `http://127.0.0.1:8000/sse` or `http://0.0.0.0:8000/sse`.
+**Example 2: STDIO Transmission Mode Configuration**:
+
+```json
+{
+  "mcpServers": {
+    "dingo_evaluator": {
+      "command": "python",
+      "args": ["path/to/mcp_server.py"],
+      "env": {
+        "LOCAL_DEPLOYMENT_MODE": "true",
+        "DEFAULT_OUTPUT_DIR": "/path/to/output",
+        "DEFAULT_SAVE_DATA": "true",
+        "DEFAULT_SAVE_CORRECT": "true",
+        "DEFAULT_DATASET_TYPE": "local",
+        "OPENAI_API_KEY": "your-api-key",
+        "OPENAI_BASE_URL": "https://api.openai.com/v1",
+        "OPENAI_MODEL": "gpt-4",
+        "LOG_LEVEL": "INFO"
+      }
+    }
+  }
+}
+```
+
+*   For SSE mode: Ensure the `url` exactly matches the `host`, `port`, and `transport` (currently only `sse` is supported for the URL scheme) your `mcp_server.py` is configured to use. If you didn't customize `mcp.run`, the default URL is likely `http://127.0.0.1:8000/sse` or `http://0.0.0.0:8000/sse`.
+*   For STDIO mode: Ensure `LOCAL_DEPLOYMENT_MODE` is set to `"true"` in the environment variables.
 *   Restart Cursor after saving changes to `mcp.json`.
 
 ### Usage in Cursor
@@ -80,6 +137,8 @@ Once configured, you can invoke the Dingo tools within Cursor:
 
 *   **List Components**: "Use the dingo_evaluator tool to list available Dingo components."
 *   **Run Evaluation**: "Use the dingo_evaluator tool to run a rule evaluation..." or "Use the dingo_evaluator tool to run an LLM evaluation..."
+*   **Get Details**: "Use the dingo_evaluator tool to get details about a specific rule/LLM/prompt..."
+*   **Quick Evaluation**: "Use the dingo_evaluator tool to quickly evaluate a file for..."
 
 Cursor will prompt you for the necessary arguments.
 
@@ -87,13 +146,113 @@ Cursor will prompt you for the necessary arguments.
 
 ### `list_dingo_components()`
 
-Lists available Dingo rule groups and registered LLM model identifiers.
+Lists available Dingo rule groups, registered LLM model identifiers, and prompt definitions.
 
-*   **Arguments**: None
-*   **Returns**: `Dict[str, List[str]]` - A dictionary containing `rule_groups` and `llm_models`.
+*   **Arguments**:
+    *   `component_type` (Literal["rule_groups", "llm_models", "prompts", "all"]): Type of components to list. Default: "all".
+    *   `include_details` (bool): Whether to include detailed descriptions and metadata for each component. Default: false.
+*   **Returns**: `Dict[str, List[str]]` - A dictionary containing `rule_groups`, `llm_models`, `prompts`, and/or `llm_prompt_mappings` based on component_type.
 
 **Example Cursor Usage**:
 > Use the dingo_evaluator tool to list dingo components.
+
+### `get_rule_details()`
+
+Get detailed information about a specific Dingo rule.
+
+*   **Arguments**:
+    *   `rule_name` (str): The name of the rule to get details for.
+*   **Returns**: A dictionary containing details about the rule, including its description, parameters, and evaluation characteristics.
+
+**Example Cursor Usage**:
+> Use the Dingo Evaluator tool to get details about the 'default' rule group.
+
+*(Cursor should propose a tool call like below)*
+```xml
+<use_mcp_tool>
+<server_name>dingo_evaluator</server_name>
+<tool_name>get_rule_details</tool_name>
+<arguments>
+{
+  "rule_name": "default"
+}
+</arguments>
+</use_mcp_tool>
+```
+
+### `get_llm_details()`
+
+Get detailed information about a specific Dingo LLM.
+
+*   **Arguments**:
+    *   `llm_name` (str): The name of the LLM to get details for.
+*   **Returns**: A dictionary containing details about the LLM, including its description, capabilities, and configuration parameters.
+
+**Example Cursor Usage**:
+> Use the Dingo Evaluator tool to get details about the 'LLMTextQualityModelBase' LLM.
+
+*(Cursor should propose a tool call like below)*
+```xml
+<use_mcp_tool>
+<server_name>dingo_evaluator</server_name>
+<tool_name>get_llm_details</tool_name>
+<arguments>
+{
+  "llm_name": "LLMTextQualityModelBase"
+}
+</arguments>
+</use_mcp_tool>
+```
+
+### `get_prompt_details()`
+
+Get detailed information about a specific Dingo prompt.
+
+*   **Arguments**:
+    *   `prompt_name` (str): The name of the prompt to get details for.
+*   **Returns**: A dictionary containing details about the prompt, including its description, associated metric type, and which groups it belongs to.
+
+**Example Cursor Usage**:
+> Use the Dingo Evaluator tool to get details about the 'PromptTextQuality' prompt.
+
+*(Cursor should propose a tool call like below)*
+```xml
+<use_mcp_tool>
+<server_name>dingo_evaluator</server_name>
+<tool_name>get_prompt_details</tool_name>
+<arguments>
+{
+  "prompt_name": "PromptTextQuality"
+}
+</arguments>
+</use_mcp_tool>
+```
+
+### `run_quick_evaluation()`
+
+Run a simplified Dingo evaluation based on a high-level goal.
+
+*   **Arguments**:
+    *   `input_path` (str): Path to the file to evaluate.
+    *   `evaluation_goal` (str): Description of what to evaluate (e.g., 'check for inappropriate content', 'evaluate text quality', 'assess helpfulness').
+*   **Returns**: A summary of the evaluation results or a path to the detailed results.
+
+**Example Cursor Usage**:
+> Use the Dingo Evaluator tool to quickly evaluate text quality in the file 'test/data/test_local_jsonl.jsonl'.
+
+*(Cursor should propose a tool call like below)*
+```xml
+<use_mcp_tool>
+<server_name>dingo_evaluator</server_name>
+<tool_name>run_quick_evaluation</tool_name>
+<arguments>
+{
+  "input_path": "test/data/test_local_jsonl.jsonl",
+  "evaluation_goal": "evaluate text quality and check for any issues"
+}
+</arguments>
+</use_mcp_tool>
+```
 
 ### `run_dingo_evaluation(...)`
 
