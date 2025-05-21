@@ -55,7 +55,7 @@ pip install dingo-python
 
 ## Example Use Cases
 
-### 1. Using Evaluate Core
+### 1. Evaluate LLM chat data
 
 ```python
 from dingo.config.config import DynamicLLMConfig
@@ -63,56 +63,28 @@ from dingo.io.input.MetaData import MetaData
 from dingo.model.llm.llm_text_quality_model_base import LLMTextQualityModelBase
 from dingo.model.rule.rule_common import RuleEnterAndSpace
 
+data = MetaData(
+    data_id='123',
+    prompt="hello, introduce the world",
+    content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
+)
 
 def llm():
-    data = MetaData(
-        data_id='123',
-        prompt="hello, introduce the world",
-        content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
-    )
-
     LLMTextQualityModelBase.dynamic_config = DynamicLLMConfig(
-        key='',
-        api_url='',
-        # model='',
+        key='YOUR_API_KEY',
+        api_url='https://api.openai.com/v1/chat/completions',
+        model='gpt-4o',
     )
     res = LLMTextQualityModelBase.eval(data)
     print(res)
 
 
 def rule():
-    data = MetaData(
-        data_id='123',
-        prompt="hello, introduce the world",
-        content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
-    )
-
     res = RuleEnterAndSpace().eval(data)
     print(res)
 ```
 
-### 2. Evaluate Local Text File (Plaintext)
-
-```python
-from dingo.io import InputArgs
-from dingo.exec import Executor
-
-# Evaluate a plaintext file
-input_data = {
-    "eval_group": "sft",          # Rule set for SFT data
-    "input_path": "data.txt",      # Path to local text file
-    "dataset": "local",
-    "data_format": "plaintext",    # Format: plaintext
-    "save_data": True              # Save evaluation results
-}
-
-input_args = InputArgs(**input_data)
-executor = Executor.exec_map["local"](input_args)
-result = executor.execute()
-print(result)
-```
-
-### 3. Evaluate Hugging Face Dataset
+### 2. Evaluate Dataset
 
 ```python
 from dingo.io import InputArgs
@@ -124,58 +96,6 @@ input_data = {
     "input_path": "tatsu-lab/alpaca", # Dataset from Hugging Face
     "data_format": "plaintext",    # Format: plaintext
     "save_data": True              # Save evaluation results
-}
-
-input_args = InputArgs(**input_data)
-executor = Executor.exec_map["local"](input_args)
-result = executor.execute()
-print(result)
-```
-
-### 4. Evaluate JSON/JSONL Format
-
-```python
-from dingo.io import InputArgs
-from dingo.exec import Executor
-
-# Evaluate a JSON file
-input_data = {
-    "eval_group": "default",       # Default rule set
-    "input_path": "data.json",     # Path to local JSON file
-    "dataset": "local",
-    "data_format": "json",         # Format: json
-    "column_content": "text",      # Column containing the text to evaluate
-    "save_data": True              # Save evaluation results
-}
-
-input_args = InputArgs(**input_data)
-executor = Executor.exec_map["local"](input_args)
-result = executor.execute()
-print(result)
-```
-
-### 5. Using LLM for Evaluation
-
-```python
-from dingo.io import InputArgs
-from dingo.exec import Executor
-
-# Evaluate using GPT model
-input_data = {
-    "input_path": "data.jsonl",    # Path to local JSONL file
-    "dataset": "local",
-    "data_format": "jsonl",
-    "column_content": "content",
-    "custom_config": {
-        "prompt_list": ["PromptRepeat"],  # Prompt to use
-        "llm_config": {
-            "detect_text_quality": {
-                "model": "gpt-4o",
-                "key": "YOUR_API_KEY",
-                "api_url": "https://api.openai.com/v1/chat/completions"
-            }
-        }
-    }
 }
 
 input_args = InputArgs(**input_data)
@@ -471,10 +391,15 @@ Dingo includes an experimental Model Context Protocol (MCP) server. For details 
 
 # Research & Publications
 
-- **"Comprehensive Data Quality Assessment for Multilingual WebData"** : [WanJuanSiLu: A High-Quality Open-Source Webtext
-Dataset for Low-Resource Languages](https://arxiv.org/pdf/2501.14506)
-- **"Pre-training data quality using the DataMan methodology"** : [DataMan: Data Manager for Pre-training Large Language Models](https://openreview.net/pdf?id=eNbA8Fqir4)
+## Research Powered by Dingo
+- **WanJuanSiLu**: [A High-Quality Open-Source Webtext Dataset for Low-Resource Languages](https://arxiv.org/pdf/2501.14506)
+  *Uses Dingo for comprehensive data quality assessment of multilingual web data*
 
+## Methodologies Implemented in Dingo
+- **DataMan Methodology**: [DataMan: Data Manager for Pre-training Large Language Models](https://openreview.net/pdf?id=eNbA8Fqir4)
+  *Dingo implements the DataMan methodology for pre-training data quality assessment*
+- **RedPajama-Data-v2**: [RedPajama-Data](https://github.com/togethercomputer/RedPajama-Data)
+  *Dingo implements parts of the RedPajama-Data-v2 methodology for web text quality assessment and filtering*
 
 # Future Plans
 
