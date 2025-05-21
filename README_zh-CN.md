@@ -53,7 +53,7 @@ pip install dingo-python
 
 ## 2. 使用示例
 
-### 2.1 评估流式数据
+### 2.1 评估LLM对话数据
 
 ```python
 from dingo.config.config import DynamicLLMConfig
@@ -69,9 +69,9 @@ data = MetaData(
 
 def llm():
     LLMTextQualityModelBase.dynamic_config = DynamicLLMConfig(
-        key='',
-        api_url='',
-        # model='',
+        key='YOUR_API_KEY',
+        api_url='https://api.openai.com/v1/chat/completions',
+        model='gpt-4o',
     )
     res = LLMTextQualityModelBase.eval(data)
     print(res)
@@ -82,7 +82,7 @@ def rule():
     print(res)
 ```
 
-### 2.2 评估Hugging Face数据集
+### 2.2 评估数据集
 
 ```python
 from dingo.io import InputArgs
@@ -94,36 +94,6 @@ input_data = {
     "input_path": "tatsu-lab/alpaca", # Hugging Face的数据集
     "data_format": "plaintext",    # 格式: plaintext
     "save_data": True              # 保存评估结果
-}
-
-input_args = InputArgs(**input_data)
-executor = Executor.exec_map["local"](input_args)
-result = executor.execute()
-print(result)
-```
-
-### 2.3 使用LLM进行评估
-
-```python
-from dingo.io import InputArgs
-from dingo.exec import Executor
-
-# 使用GPT模型评估
-input_data = {
-    "input_path": "data.jsonl",    # 本地JSONL文件路径
-    "dataset": "local",
-    "data_format": "jsonl",
-    "column_content": "content",
-    "custom_config": {
-        "prompt_list": ["PromptRepeat"],  # 使用的prompt
-        "llm_config": {
-            "detect_text_quality": {
-                "model": "gpt-4o",
-                "key": "您的API密钥",
-                "api_url": "https://api.openai.com/v1/chat/completions"
-            }
-        }
-    }
 }
 
 input_args = InputArgs(**input_data)
