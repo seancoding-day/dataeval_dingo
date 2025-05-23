@@ -424,7 +424,7 @@ Dingo 包含一个实验性的模型上下文协议 (MCP) 服务端。有关运�
 
 该项目采用 [Apache 2.0 开源许可证](LICENSE)。
 
-本项目目前使用fasttext进行语言检测功能。fasttext采用MIT许可证，与我们的Apache 2.0许可证兼容，为各种使用场景提供了灵活性。
+本项目部分功能使用fasttext进行语言检测功能。fasttext采用MIT许可证，与我们的Apache 2.0许可证兼容，为各种使用场景提供了灵活性。
 
 # Citation
 
