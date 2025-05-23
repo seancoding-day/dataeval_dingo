@@ -425,6 +425,8 @@ We appreciate all the contributors for their efforts to improve and enhance `Din
 
 This project uses the [Apache 2.0 Open Source License](LICENSE).
 
+This project currently uses fasttext for language detection functionality. fasttext is licensed under the MIT License, which is compatible with our Apache 2.0 license and provides flexibility for various usage scenarios.
+
 # Citation
 
 If you find this project useful, please consider citing our tool:
