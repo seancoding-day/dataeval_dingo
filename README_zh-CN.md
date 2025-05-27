@@ -24,12 +24,9 @@
 </div>
 
 
-<div align="center">
-  <a href="https://discord.gg/Jhgb2eKWh8" style="text-decoration:none;">
-    <img src="https://user-images.githubusercontent.com/25839884/218347213-c080267f-cbb6-443e-8532-8e1ed9a58ea9.png" width="3%" alt="Discord" /></a>
-  <a href="https://huggingface.co/spaces/DataEval/dingo" style="text-decoration:none;">
-    <img src="https://huggingface.co/datasets/huggingface/brand-assets/resolve/main/hf-logo.png" width="3%" alt="Hugging Face" /></a>
-</div>
+<p align="center">
+    👋 加入我们 <a href="https://discord.gg/Jhgb2eKWh8" target="_blank">Discord</a> 和 <a href="./docs/assets/wechat.jpg" target="_blank">微信</a>
+</p>
 
 </div>
 
@@ -56,7 +53,7 @@ pip install dingo-python
 
 ## 2. 使用示例
 
-### 2.1 使用评估核心方法
+### 2.1 评估LLM对话数据
 
 ```python
 from dingo.config.config import DynamicLLMConfig
@@ -64,56 +61,28 @@ from dingo.io.input.MetaData import MetaData
 from dingo.model.llm.llm_text_quality_model_base import LLMTextQualityModelBase
 from dingo.model.rule.rule_common import RuleEnterAndSpace
 
+data = MetaData(
+    data_id='123',
+    prompt="hello, introduce the world",
+    content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
+)
 
 def llm():
-    data = MetaData(
-        data_id='123',
-        prompt="hello, introduce the world",
-        content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
-    )
-
     LLMTextQualityModelBase.dynamic_config = DynamicLLMConfig(
-        key='',
-        api_url='',
-        # model='',
+        key='YOUR_API_KEY',
+        api_url='https://api.openai.com/v1/chat/completions',
+        model='gpt-4o',
     )
     res = LLMTextQualityModelBase.eval(data)
     print(res)
 
 
 def rule():
-    data = MetaData(
-        data_id='123',
-        prompt="hello, introduce the world",
-        content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
-    )
-
     res = RuleEnterAndSpace().eval(data)
     print(res)
 ```
 
-### 2.2 评估本地文本文件（纯文本）
-
-```python
-from dingo.io import InputArgs
-from dingo.exec import Executor
-
-# 评估纯文本文件
-input_data = {
-    "eval_group": "sft",          # SFT数据的规则集
-    "input_path": "data.txt",      # 本地文本文件路径
-    "dataset": "local",
-    "data_format": "plaintext",    # 格式: plaintext
-    "save_data": True              # 保存评估结果
-}
-
-input_args = InputArgs(**input_data)
-executor = Executor.exec_map["local"](input_args)
-result = executor.execute()
-print(result)
-```
-
-### 2.3 评估Hugging Face数据集
+### 2.2 评估数据集
 
 ```python
 from dingo.io import InputArgs
@@ -125,58 +94,6 @@ input_data = {
     "input_path": "tatsu-lab/alpaca", # Hugging Face的数据集
     "data_format": "plaintext",    # 格式: plaintext
     "save_data": True              # 保存评估结果
-}
-
-input_args = InputArgs(**input_data)
-executor = Executor.exec_map["local"](input_args)
-result = executor.execute()
-print(result)
-```
-
-### 2.4 评估JSON/JSONL格式
-
-```python
-from dingo.io import InputArgs
-from dingo.exec import Executor
-
-# 评估JSON文件
-input_data = {
-    "eval_group": "default",       # 默认规则集
-    "input_path": "data.json",     # 本地JSON文件路径
-    "dataset": "local",
-    "data_format": "json",         # 格式: json
-    "column_content": "text",      # 包含要评估文本的列
-    "save_data": True              # 保存评估结果
-}
-
-input_args = InputArgs(**input_data)
-executor = Executor.exec_map["local"](input_args)
-result = executor.execute()
-print(result)
-```
-
-### 2.5 使用LLM进行评估
-
-```python
-from dingo.io import InputArgs
-from dingo.exec import Executor
-
-# 使用GPT模型评估
-input_data = {
-    "input_path": "data.jsonl",    # 本地JSONL文件路径
-    "dataset": "local",
-    "data_format": "jsonl",
-    "column_content": "content",
-    "custom_config": {
-        "prompt_list": ["PromptRepeat"],  # 使用的prompt
-        "llm_config": {
-            "detect_text_quality": {
-                "model": "gpt-4o",
-                "key": "您的API密钥",
-                "api_url": "https://api.openai.com/v1/chat/completions"
-            }
-        }
-    }
 }
 
 input_args = InputArgs(**input_data)
@@ -473,9 +390,15 @@ Dingo 包含一个实验性的模型上下文协议 (MCP) 服务端。有关运�
 
 # 研究与学术成果
 
+## Dingo驱动的研究
+- **WanJuanSiLu**: [A High-Quality Open-Source Webtext Dataset for Low-Resource Languages](https://arxiv.org/pdf/2501.14506)
+  *使用Dingo对多语言网页数据进行全面的数据质量评估*
 
-- **"多语言网页数据的数据质量评估"** : [WanJuanSiLu: A High-Quality Open-Source Webtext Dataset for Low-Resource Languages](https://arxiv.org/pdf/2501.14506)
-- **"使用DataMan方法论评估预训练数据质量"** : [DataMan: Data Manager for Pre-training Large Language Models](https://openreview.net/pdf?id=eNbA8Fqir4)
+## Dingo实现的方法论
+- **DataMan方法论**: [DataMan: Data Manager for Pre-training Large Language Models](https://openreview.net/pdf?id=eNbA8Fqir4)
+  *Dingo实现了DataMan方法论用于预训练数据质量评估*
+- **RedPajama-Data-v2**: [RedPajama-Data](https://github.com/togethercomputer/RedPajama-Data)
+  *Dingo实现了部分RedPajama-Data-v2方法论用于网页文本质量评估和过滤*
 
 # 未来计划
 
@@ -500,6 +423,8 @@ Dingo 包含一个实验性的模型上下文协议 (MCP) 服务端。有关运�
 # 开源许可证
 
 该项目采用 [Apache 2.0 开源许可证](LICENSE)。
+
+本项目部分功能使用fasttext进行语言检测功能。fasttext采用MIT许可证，与我们的Apache 2.0许可证兼容，为各种使用场景提供了灵活性。
 
 # Citation
 
