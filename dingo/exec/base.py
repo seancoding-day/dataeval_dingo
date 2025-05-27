@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from functools import wraps
 from typing import Any, Dict, List, Protocol, Type, Union
 
-from dingo.io import MetaData, SummaryModel
+from dingo.io import Data, SummaryModel
 
 
 class ExecProto(Protocol):

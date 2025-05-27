@@ -3,7 +3,7 @@ from typing import List
 
 import numpy as np
 from dingo.config.config import DynamicRuleConfig
-from dingo.io import MetaData
+from dingo.io import Data
 from dingo.model.model import Model
 from dingo.model.modelres import ModelRes
 from dingo.model.rule.base import BaseRule
@@ -17,7 +17,7 @@ class RuleImageValid(BaseRule):
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         if isinstance(input_data.image[0], str):
             img = Image.open(input_data.image[0])
@@ -40,7 +40,7 @@ class RuleImageSizeValid(BaseRule):
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         if isinstance(input_data.image[0], str):
             img = Image.open(input_data.image[0])
@@ -63,7 +63,7 @@ class RuleImageQuality(BaseRule):
     dynamic_config = DynamicRuleConfig(threshold = 5.5)
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         import pyiqa
         import torch
 
@@ -91,7 +91,7 @@ class RuleImageRepeat(BaseRule):
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from imagededup.methods import CNN, PHash
         res = ModelRes()
         image_dir = input_data.content
@@ -115,13 +115,14 @@ class RuleImageRepeat(BaseRule):
             res.reason = [f'{image} -> {duplicates_cnn[image]}' for image in common_duplicates]
             res.reason.append({"duplicate_ratio": len(common_duplicates) / len(os.listdir(image_dir))})
         return res
+
 @Model.rule_register('QUALITY_BAD_EFFECTIVENESS', [])
 class RuleImageTextSimilarity(BaseRule):
 
     dynamic_config = DynamicRuleConfig(threshold=0.17)
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         import nltk
         nltk.download('punkt_tab')
         from dingo.model.rule.utils.image_util import download_similar_tool
@@ -155,7 +156,7 @@ class RuleImageTextSimilarity(BaseRule):
 
 
 if __name__ == '__main__':
-    data = MetaData(
+    data = Data(
         data_id = '',
         prompt = '',
         content = ''

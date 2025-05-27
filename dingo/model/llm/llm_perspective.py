@@ -1,7 +1,7 @@
 import time
 
 from dingo.config.config import DynamicLLMConfig
-from dingo.io import MetaData
+from dingo.io import Data
 from dingo.model import Model
 from dingo.model.llm.base import BaseLLM
 from dingo.model.modelres import ModelRes
@@ -40,7 +40,7 @@ class LLMPerspective(BaseLLM):
                 )
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         cls.create_client()
         analyze_request = {
             'comment': {'text': input_data.content},

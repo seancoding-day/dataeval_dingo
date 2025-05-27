@@ -3,7 +3,7 @@ import string
 from typing import List, Tuple
 
 from dingo.config.config import DynamicRuleConfig
-from dingo.io import MetaData
+from dingo.io import Data
 from dingo.model.model import Model
 from dingo.model.modelres import ModelRes
 from dingo.model.rule.base import BaseRule
@@ -14,7 +14,7 @@ class RuleAbnormalChar(BaseRule):
     # consist of [RuleSpecialCharacter, RuleInvisibleChar]
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         for r in [RuleSpecialCharacter, RuleInvisibleChar]:
             tmp_res = r.eval(input_data)
@@ -31,7 +31,7 @@ class RuleAbnormalHtml(BaseRule):
     # consist of [RuleHtmlEntity, RuleHtmlTag]
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         for r in [RuleHtmlEntity, RuleHtmlTag]:
             tmp_res = r.eval(input_data)
@@ -50,7 +50,7 @@ class RuleAbnormalNumber(BaseRule):
     dynamic_config = DynamicRuleConfig(pattern=r'\n{4}\d+\n{4}')
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         content = input_data.content
         match = re.search(cls.dynamic_config.pattern, content)
@@ -69,7 +69,7 @@ class RuleAlphaWords(BaseRule):
     dynamic_config = DynamicRuleConfig(threshold=0.6)
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from nltk.tokenize import word_tokenize
 
         res = ModelRes()
@@ -98,7 +98,7 @@ class RuleCapitalWords(BaseRule):
     dynamic_config = DynamicRuleConfig(threshold=0.2)
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from nltk.tokenize import WordPunctTokenizer
 
         res = ModelRes()
@@ -124,7 +124,7 @@ class RuleCharNumber(BaseRule):
     dynamic_config = DynamicRuleConfig(threshold = 100)
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         text = input_data.content
         text = text.strip()
@@ -147,7 +147,7 @@ class RuleCharSplit(BaseRule):
     dynamic_config = DynamicRuleConfig(pattern=r"(?:(?:[a-zA-Z]\s){5}[a-zA-Z])", threshold=3)
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         content = input_data.content
         matches = re.findall(cls.dynamic_config.pattern, content)
@@ -167,7 +167,7 @@ class RuleColonEnd(BaseRule):
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         content = input_data.content
         if len(content) <= 0:
@@ -189,7 +189,7 @@ class RuleContentNull(BaseRule):
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         count = len(input_data.content.strip())
         if count == 0:
@@ -206,7 +206,7 @@ class RuleContentShort(BaseRule):
     dynamic_config = DynamicRuleConfig(threshold = 20)
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         content = input_data.content.encode('utf-8')
         if len(content) <= cls.dynamic_config.threshold:
@@ -225,7 +225,7 @@ class RuleContentShortMultiLan(BaseRule):
     dynamic_config = DynamicRuleConfig(threshold=20)
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from nltk.tokenize import WordPunctTokenizer
 
         res = ModelRes()
@@ -247,7 +247,7 @@ class RuleCurlyBracket(BaseRule):
     dynamic_config = DynamicRuleConfig(threshold=0.025)
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         content = input_data.content
         if len(content) == 0:
@@ -272,7 +272,7 @@ class RuleDocRepeat(BaseRule):
     dynamic_config = DynamicRuleConfig(threshold=80)
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import \
           base_rps_frac_chars_in_dupe_ngrams
 
@@ -291,7 +291,7 @@ class RuleEnterAndSpace(BaseRule):
     # consist of [RuleEnterMore, RuleEnterRatioMore, RuleSpaceMore]
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         for r in [RuleEnterMore, RuleEnterRatioMore, RuleSpaceMore]:
             tmp_res = r.eval(input_data)
@@ -312,7 +312,7 @@ class RuleEnterMore(BaseRule):
     dynamic_config = DynamicRuleConfig(key_list=[r"\n{8,}", r"\r\n{8,}"])
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         content = input_data.content
         for p in cls.dynamic_config.key_list:
@@ -336,7 +336,7 @@ class RuleEnterRatioMore(BaseRule):
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         content = input_data.content
         if len(content) == 0:
@@ -358,7 +358,7 @@ class RuleHeadWordAr(BaseRule):
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.multi_lan_util import get_xyz_head_word
 
         res = ModelRes()
@@ -380,7 +380,7 @@ class RuleHeadWordCs(BaseRule):
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.multi_lan_util import get_xyz_head_word
 
         res = ModelRes()
@@ -402,7 +402,7 @@ class RuleHeadWordHu(BaseRule):
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.multi_lan_util import get_xyz_head_word
 
         res = ModelRes()
@@ -424,7 +424,7 @@ class RuleHeadWordKo(BaseRule):
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.multi_lan_util import get_xyz_head_word
 
         res = ModelRes()
@@ -446,7 +446,7 @@ class RuleHeadWordRu(BaseRule):
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.multi_lan_util import get_xyz_head_word
 
         res = ModelRes()
@@ -468,7 +468,7 @@ class RuleHeadWordSr(BaseRule):
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.multi_lan_util import get_xyz_head_word
 
         res = ModelRes()
@@ -490,7 +490,7 @@ class RuleHeadWordTh(BaseRule):
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.multi_lan_util import get_xyz_head_word
 
         res = ModelRes()
@@ -512,7 +512,7 @@ class RuleHeadWordVi(BaseRule):
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.multi_lan_util import get_xyz_head_word
 
         res = ModelRes()
@@ -550,7 +550,7 @@ class RuleHtmlEntity(BaseRule):
     ])
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         content = input_data.content
         if len(content) == 0:
@@ -592,7 +592,7 @@ class RuleHtmlTag(BaseRule):
     dynamic_config = DynamicRuleConfig(key_list=['<img', '<p>', '</p>', '<o:p', '</o:p>'])
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         content = input_data.content
         if len(content) == 0:
@@ -615,7 +615,7 @@ class RuleIDCard(BaseRule):
     dynamic_config = DynamicRuleConfig(pattern = r"(身\s{0,10}份|id\s{0,10}number\s{0,10}|identification|identity|\s{0,10}ID\s{0,10}No\s{0,10}|id\s{0,10}card\s{0,10}|NRIC\s{0,10}number\s{0,10}|IC\s{0,10}number\s{0,10}|resident\s{0,10}registration\s{0,10}|I.D.\s{0,10}Number\s{0,10})")
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import Extractor
 
         res = ModelRes()
@@ -638,7 +638,7 @@ class RuleInvisibleChar(BaseRule):
     dynamic_config = DynamicRuleConfig(pattern=r"[\u2000-\u200F\u202F\u205F\u3000\uFEFF\u00A0\u2060-\u206F\uFEFF\xa0]")
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         content = input_data.content
         if len(content) == 0:
@@ -661,7 +661,7 @@ class RuleLatexSpecialChar(BaseRule):
     dynamic_config = DynamicRuleConfig(pattern=r'\$\$(.*?\!\!.*?)\$\$')
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         content = input_data.content
         match = re.search(cls.dynamic_config.pattern, content)
@@ -680,7 +680,7 @@ class RuleLineEndWithEllipsis(BaseRule):
     dynamic_config = DynamicRuleConfig(threshold=0.3, key_list = ["...", "…"])
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import TextSlice, split_paragraphs
 
         res = ModelRes()
@@ -706,10 +706,10 @@ class RuleLineEndWithEllipsis(BaseRule):
 class RuleLineEndWithTerminal(BaseRule):
     """check whether the ratio of line ends with terminal punctuation mark > 0.6 """
 
-    dynamic_config = DynamicRuleConfig(threshold=0.6, key_list = [".", "!", "?", "”", "\""])
+    dynamic_config = DynamicRuleConfig(threshold=0.6, key_list = [".", "!", "?", "\"", "\""])
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import TextSlice, split_paragraphs
 
         res = ModelRes()
@@ -753,7 +753,7 @@ class RuleLineStartWithBulletpoint(BaseRule):
     )
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import TextSlice, split_paragraphs
 
         res = ModelRes()
@@ -782,7 +782,7 @@ class RuleLineJavascriptCount(BaseRule):
     dynamic_config = DynamicRuleConfig(threshold=3)
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import (TextSlice, normalize,
                                                  split_paragraphs)
 
@@ -812,7 +812,7 @@ class RuleLoremIpsum(BaseRule):
     dynamic_config = DynamicRuleConfig(threshold=3e-08)
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import normalize
 
         res = ModelRes()
@@ -839,7 +839,7 @@ class RuleMeanWordLength(BaseRule):
     dynamic_config = DynamicRuleConfig(key_list=['3', '10'])
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import normalize
 
         res = ModelRes()
@@ -871,7 +871,7 @@ class RuleNoPunc(BaseRule):
     dynamic_config = DynamicRuleConfig(threshold=112)
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         content = input_data.content
 
@@ -903,7 +903,7 @@ class RulePatternSearch(BaseRule):
     dynamic_config = DynamicRuleConfig(pattern = "your pattern")
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         matches = re.findall(cls.dynamic_config.pattern, input_data.content)
         if matches:
@@ -921,7 +921,7 @@ class RuleSentenceNumber(BaseRule):
     dynamic_config = DynamicRuleConfig(key_list=['3', '7500'])
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         raw_content = input_data.content
 
@@ -944,7 +944,7 @@ class RuleSpaceMore(BaseRule):
     dynamic_config = DynamicRuleConfig(pattern=" {500,}")
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         content = input_data.content
         SEARCH_REGEX = re.compile(cls.dynamic_config.pattern)
@@ -975,7 +975,7 @@ class RuleSpecialCharacter(BaseRule):
     )
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         content = input_data.content
         if len(content) == 0:
@@ -1002,7 +1002,7 @@ class RuleStopWord(BaseRule):
     dynamic_config = DynamicRuleConfig(threshold=0.06)
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import get_stop_words
         from nltk.tokenize import WordPunctTokenizer
 
@@ -1032,7 +1032,7 @@ class RuleSymbolWordRatio(BaseRule):
     dynamic_config = DynamicRuleConfig(threshold=0.4, key_list = ["#", "...", "…"])
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from nltk.tokenize import WordPunctTokenizer
 
         res = ModelRes()
@@ -1063,7 +1063,7 @@ class RuleUniqueWords(BaseRule):
     dynamic_config = DynamicRuleConfig(threshold=0.1)
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import normalize
 
         res = ModelRes()
@@ -1093,7 +1093,7 @@ class RuleUnsafeWords(BaseRule):
     dynamic_config = DynamicRuleConfig(refer_path=[])
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         import ahocorasick
         from dingo.model.rule.utils.util import get_unsafe_words
 
@@ -1125,7 +1125,7 @@ class RuleOnlyUrl(BaseRule):
     dynamic_config = DynamicRuleConfig(pattern = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         content = input_data.content
         if len(content.strip()) == 0:
@@ -1147,7 +1147,7 @@ class RuleWatermark(BaseRule):
     dynamic_config = DynamicRuleConfig(key_list = [])
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         matches = re.findall('|'.join(cls.dynamic_config.key_list), input_data.content)
         if matches:
@@ -1165,7 +1165,7 @@ class RuleWordNumber(BaseRule):
     dynamic_config = DynamicRuleConfig(key_list=['20', '100000'])
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import normalize
 
         res = ModelRes()
@@ -1189,7 +1189,7 @@ class RuleWordSplit(BaseRule):
     dynamic_config = DynamicRuleConfig(pattern=r'[A-Za-z]+-\s*$')
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         content = input_data.content
         match = re.findall(cls.dynamic_config.pattern, content)
@@ -1218,7 +1218,7 @@ class RuleWordStuck(BaseRule):
     )
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         import wordninja
         from dingo.model.rule.utils.detect_lang import (decide_language_by_str,
                                                         set_fasttext)
@@ -1247,7 +1247,7 @@ class RuleWordStuck(BaseRule):
 
 
 if __name__ == '__main__':
-    data = MetaData(
+    data = Data(
         data_id = '',
         prompt = '',
         content = "\n \n \n \n hello \n \n "

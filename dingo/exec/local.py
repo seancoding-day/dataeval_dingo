@@ -10,7 +10,7 @@ from typing import Generator, List, Optional
 from dingo.config import GlobalConfig
 from dingo.data import Dataset, DataSource, dataset_map, datasource_map
 from dingo.exec.base import ExecProto, Executor
-from dingo.io import InputArgs, MetaData, ResultInfo, SummaryModel
+from dingo.io import InputArgs, Data, ResultInfo, SummaryModel
 from dingo.model import Model
 from dingo.model.llm.base import BaseLLM
 from dingo.model.modelres import ModelRes
@@ -28,14 +28,14 @@ class LocalExecutor(ExecProto):
         self.llm: Optional[BaseLLM] = None
         self.summary: SummaryModel = SummaryModel()
 
-    def load_data(self) -> Generator[MetaData, None, None]:
+    def load_data(self) -> Generator[Data, None, None]:
         """
         Reads data from given path.
 
         **Run in executor.**
 
         Returns:
-            Generator[MetaData]
+            Generator[Data]
         """
         datasource_cls = datasource_map[self.input_args.dataset]
         dataset_cls = dataset_map[self.input_args.dataset]
@@ -123,7 +123,7 @@ class LocalExecutor(ExecProto):
 
         log.debug('[Summary]: ' + str(self.summary))
 
-    def evaluate_single_data(self, group_type, group, data: MetaData):
+    def evaluate_single_data(self, group_type, group, data: Data):
         result_info = ResultInfo(data_id=data.data_id, prompt=data.prompt, content=data.content)
         if self.input_args.save_raw:
             result_info.raw_data = data.raw_data
@@ -167,7 +167,7 @@ class LocalExecutor(ExecProto):
                     result_info.reason_list.append(reason)
         return result_info
 
-    def evaluate_rule(self, group: List[BaseRule], d: MetaData) -> ResultInfo:
+    def evaluate_rule(self, group: List[BaseRule], d: Data) -> ResultInfo:
         result_info = ResultInfo(data_id=d.data_id, prompt=d.prompt, content=d.content)
         log.debug("[RuleGroup]: " + str(group))
         bad_type_list = []
@@ -199,7 +199,7 @@ class LocalExecutor(ExecProto):
             result_info.reason_list = good_reason_list
         return result_info
 
-    def evaluate_prompt(self, group: List[BasePrompt], d: MetaData) -> ResultInfo:
+    def evaluate_prompt(self, group: List[BasePrompt], d: Data) -> ResultInfo:
         result_info = ResultInfo(data_id=d.data_id, prompt=d.prompt, content=d.content)
         log.debug("[PromptGroup]: " + str(group))
         bad_type_list = []

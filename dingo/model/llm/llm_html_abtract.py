@@ -2,7 +2,7 @@ import json
 import re
 from typing import Dict, List
 
-from dingo.io import MetaData
+from dingo.io import Data
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.model.modelres import ModelRes
@@ -17,7 +17,7 @@ class LLMHtmlAbstract(BaseOpenAI):
     prompt = PromptHtmlAbstract
 
     @classmethod
-    def build_messages(cls, input_data: MetaData) -> List:
+    def build_messages(cls, input_data: Data) -> List:
         messages = [{"role": "user",
                      "content": cls.prompt.content.format(input_data.content, input_data.raw_data['markdown_ours'], input_data.raw_data['markdown_m10'])}]
         return messages

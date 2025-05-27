@@ -2,7 +2,7 @@ import re
 from typing import List
 
 from dingo.config.config import DynamicRuleConfig
-from dingo.io import MetaData
+from dingo.io import Data
 from dingo.model.model import Model
 from dingo.model.modelres import ModelRes
 from dingo.model.rule.base import BaseRule
@@ -14,7 +14,7 @@ class CommonPatternDemo(BaseRule):
     dynamic_config = DynamicRuleConfig(pattern = "blue")
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         matches = re.findall(cls.dynamic_config.pattern, input_data.content)
         if matches:
