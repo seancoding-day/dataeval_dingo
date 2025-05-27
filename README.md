@@ -59,11 +59,11 @@ pip install dingo-python
 
 ```python
 from dingo.config.config import DynamicLLMConfig
-from dingo.io.input.MetaData import MetaData
+from dingo.io.input.Data import Data
 from dingo.model.llm.llm_text_quality_model_base import LLMTextQualityModelBase
 from dingo.model.rule.rule_common import RuleEnterAndSpace
 
-data = MetaData(
+data = Data(
     data_id='123',
     prompt="hello, introduce the world",
     content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
@@ -283,7 +283,7 @@ If the built-in rules don't meet your requirements, you can create custom ones:
 from dingo.model import Model
 from dingo.model.rule.base import BaseRule
 from dingo.config.config import DynamicRuleConfig
-from dingo.io import MetaData
+from dingo.io import Data
 from dingo.model.modelres import ModelRes
 
 @Model.rule_register('QUALITY_BAD_RELEVANCE', ['default'])
@@ -293,7 +293,7 @@ class MyCustomRule(BaseRule):
     dynamic_config = DynamicRuleConfig(pattern=r'your_pattern_here')
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         # Your rule implementation here
         return res
@@ -343,7 +343,7 @@ from pyspark.sql import SparkSession
 
 # Initialize Spark
 spark = SparkSession.builder.appName("Dingo").getOrCreate()
-spark_rdd = spark.sparkContext.parallelize([...])  # Your data as MetaData objects
+spark_rdd = spark.sparkContext.parallelize([...])  # Your data as Data objects
 
 input_args = InputArgs(eval_group="default", save_data=True)
 executor = Executor.exec_map["spark"](input_args, spark_session=spark, spark_rdd=spark_rdd)

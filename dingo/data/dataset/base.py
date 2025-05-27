@@ -22,7 +22,7 @@ from typing import Any, Callable, Dict, Generator, Optional
 
 from dingo.data.converter import BaseConverter, converters
 from dingo.data.datasource.base import DataSource
-from dingo.io import InputArgs, MetaData
+from dingo.io import Data, InputArgs
 from dingo.utils import log
 
 
@@ -102,7 +102,7 @@ class Dataset:
         }
 
     @abstractmethod
-    def get_data(self, **kwargs) -> Generator[MetaData, None, None]:
+    def get_data(self, **kwargs) -> Generator[Data, None, None]:
         """Eval Data Generator.
         """
 

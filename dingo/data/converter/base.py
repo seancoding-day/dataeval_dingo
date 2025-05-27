@@ -3,7 +3,7 @@ from functools import reduce, wraps
 from typing import Callable, Dict, List, Protocol, Union
 
 from dingo.data.converter.img_utils import find_s3_image
-from dingo.io import InputArgs, MetaData
+from dingo.io import Data, InputArgs
 
 
 class ConverterProto(Protocol):
@@ -73,7 +73,7 @@ class ChatMLConvertor(BaseConverter):
                 prompt += dialogs[-1]["role"]
                 content += dialogs[-1]["content"]
 
-            return MetaData(**{
+            return Data(**{
                 'data_id': j["_id"],
                 'prompt': prompt,
                 'content': content,
@@ -134,7 +134,7 @@ class MultiTurnDialogConverter(BaseConverter):
                         content += '\n\n'
                     content += f"user: {turn.get('user', '')}"
                     content += f"\n\nassistant: {turn.get('bot', '')}"
-                yield MetaData(**{
+                yield Data(**{
                     'data_id': cls.find_levels_data(j, input_args.column_id) if input_args.column_id != '' else str(cls.data_id),
                     'prompt': '',
                     'content': content,
@@ -160,7 +160,7 @@ class JsonConverter(BaseConverter):
             if isinstance(raw, str):
                 j = json.loads(raw)
             for k, v in j.items():
-                yield MetaData(**{
+                yield Data(**{
                     'data_id': cls.find_levels_data(v, input_args.column_id) if input_args.column_id != '' else str(k),
                     'prompt': cls.find_levels_data(v, input_args.column_prompt) if input_args.column_prompt != '' else '',
                     'content': cls.find_levels_data(v, input_args.column_content) if input_args.column_content != '' else '',
@@ -185,7 +185,7 @@ class PlainConverter(BaseConverter):
         def _convert(raw: Union[str, Dict]):
             if isinstance(raw, Dict):
                 raw = json.dumps(raw)
-            data = MetaData(**{
+            data = Data(**{
                 'data_id': str(cls.data_id),
                 'prompt': '',
                 'content': raw,
@@ -214,7 +214,7 @@ class JsonLineConverter(BaseConverter):
             if isinstance(raw, str):
                 j = json.loads(raw)
             cls.data_id += 1
-            return MetaData(**{
+            return Data(**{
                 'data_id': cls.find_levels_data(j, input_args.column_id) if input_args.column_id != '' else str(cls.data_id),
                 'prompt': cls.find_levels_data(j, input_args.column_prompt) if input_args.column_prompt != '' else '',
                 'content': cls.find_levels_data(j, input_args.column_content) if input_args.column_content != '' else '',
@@ -242,7 +242,7 @@ class ListJsonConverter(BaseConverter):
             if isinstance(raw, str):
                 l_j = json.loads(raw)
             for j in l_j:
-                yield MetaData(**{
+                yield Data(**{
                     'data_id': cls.find_levels_data(j, input_args.column_id) if input_args.column_id != '' else str(cls.data_id),
                     'prompt': cls.find_levels_data(j, input_args.column_prompt) if input_args.column_prompt != '' else '',
                     'content': cls.find_levels_data(j, input_args.column_content) if input_args.column_content != '' else '',
@@ -271,7 +271,7 @@ class ImageConverter(BaseConverter):
             if isinstance(raw, str):
                 j = json.loads(raw)
             cls.data_id += 1
-            return MetaData(**{
+            return Data(**{
                 'data_id': cls.find_levels_data(j, input_args.column_id) if input_args.column_id != '' else str(cls.data_id),
                 'prompt': cls.find_levels_data(j, input_args.column_prompt) if input_args.column_prompt != '' else '',
                 'content': cls.find_levels_data(j, input_args.column_content) if input_args.column_content != '' else '',
@@ -300,7 +300,7 @@ class S3ImageConverter(BaseConverter):
             if isinstance(raw, str):
                 j = json.loads(raw)
             cls.data_id += 1
-            return MetaData(**{
+            return Data(**{
                 'data_id': cls.find_levels_data(j, input_args.column_id) if input_args.column_id != '' else str(cls.data_id),
                 'prompt': cls.find_levels_data(j, input_args.column_prompt) if input_args.column_prompt != '' else '',
                 'content': cls.find_levels_data(j, input_args.column_content) if input_args.column_content != '' else '',

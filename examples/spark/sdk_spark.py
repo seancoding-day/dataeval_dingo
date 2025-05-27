@@ -1,14 +1,14 @@
 import json
 
 from dingo.exec import Executor
-from dingo.io import InputArgs, MetaData
+from dingo.io import Data, InputArgs
 from pyspark.sql import DataFrame, SparkSession
 
 ##################
 # please prepare #
 spark: SparkSession = None # please input
 input_df: DataFrame = None # please input
-input_rdd = input_df.rdd.map(lambda x: MetaData(
+input_rdd = input_df.rdd.map(lambda x: Data(
     data_id= str(json.loads(x)['id']),
     prompt=str(json.loads(x)['prompt']),
     content=str(json.loads(x)['content']),

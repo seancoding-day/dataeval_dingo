@@ -3,7 +3,7 @@ import time
 from typing import List
 
 from dingo.config.config import DynamicLLMConfig
-from dingo.io import MetaData
+from dingo.io import Data
 from dingo.model.llm.base import BaseLLM
 from dingo.model.modelres import ModelRes
 from dingo.model.prompt.base import BasePrompt
@@ -32,7 +32,7 @@ class BaseLmdeployApiClient(BaseLLM):
             cls.client = APIClient(cls.dynamic_config.api_url)
 
     @classmethod
-    def build_messages(cls, input_data: MetaData) -> List:
+    def build_messages(cls, input_data: Data) -> List:
         messages = [{"role": "user",
                      "content": cls.prompt.content + input_data.content}]
         return messages
@@ -74,7 +74,7 @@ class BaseLmdeployApiClient(BaseLLM):
         return result
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         if cls.client is None:
             cls.create_client()
 

@@ -4,7 +4,7 @@ from typing import Any, Dict, Generator, Optional, Union
 from dingo.data.dataset.base import Dataset
 from dingo.data.datasource import DataSource
 from dingo.data.utils.digit import compute_pandas_digest
-from dingo.io import MetaData
+from dingo.io import Data
 from dingo.utils import log
 
 
@@ -75,7 +75,7 @@ class SparkDataset(Dataset):
         )
         return config
 
-    def get_data(self) -> Generator[MetaData, None, None]:
+    def get_data(self) -> Generator[Data, None, None]:
         """
         Returns the input model for the dataset.
         But convert data in executor.
@@ -83,8 +83,8 @@ class SparkDataset(Dataset):
         for data_raw in self._ds:
             if self.source.get_source_type() == "hugging_face" and self.input_args.data_format == "plaintext":
                 data_raw = data_raw[self.input_args.column_content]
-            data: Union[Generator[MetaData, None, None], MetaData] = self.converter(data_raw)
-            if not isinstance(data, MetaData):
+            data: Union[Generator[Data, None, None], Data] = self.converter(data_raw)
+            if not isinstance(data, Data):
                 for d in data:
                     try:
                         yield d

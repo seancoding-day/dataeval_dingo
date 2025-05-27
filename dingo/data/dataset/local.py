@@ -4,7 +4,7 @@ from typing import Any, Dict, Generator, Optional, Union
 from dingo.data.dataset.base import Dataset
 from dingo.data.datasource import DataSource
 from dingo.data.datasource.local import LocalDataSource
-from dingo.io import MetaData
+from dingo.io import Data
 
 
 @Dataset.register()
@@ -58,13 +58,13 @@ class LocalDataset(Dataset):
         )
         return config
 
-    def get_data(self) -> Generator[MetaData, None, None]:
+    def get_data(self) -> Generator[Data, None, None]:
         """
         Returns the input model for the dataset.
         Convert data here.
         """
         for data_raw in self._ds:
-            data: Union[Generator[MetaData], MetaData] = self.converter(data_raw)
+            data: Union[Generator[Data], Data] = self.converter(data_raw)
             if isinstance(data, Generator):
                 for d in data:
                     yield d

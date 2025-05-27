@@ -3,9 +3,9 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel
 
 
-class MetaData(BaseModel):
+class Data(BaseModel):
     """
-    Metadata, output of converter.
+    Data, output of converter.
     """
     data_id: str
     prompt: str = None

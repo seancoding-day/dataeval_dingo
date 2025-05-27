@@ -1,7 +1,7 @@
 import json
 
 from dingo.config.config import DynamicLLMConfig
-from dingo.io.input.MetaData import MetaData
+from dingo.io.input.Data import Data
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.model.modelres import ModelRes

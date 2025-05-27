@@ -1,11 +1,11 @@
 from dingo.config.config import DynamicLLMConfig
-from dingo.io.input.MetaData import MetaData
+from dingo.io.input.Data import Data
 from dingo.model.llm.llm_text_quality_model_base import LLMTextQualityModelBase
 from dingo.model.rule.rule_common import RuleEnterAndSpace
 
 
 def llm():
-    data = MetaData(
+    data = Data(
         data_id='123',
         prompt="hello, introduce the world",
         content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
@@ -20,7 +20,7 @@ def llm():
     print(res)
 
 def rule():
-    data = MetaData(
+    data = Data(
         data_id='123',
         prompt="hello, introduce the world",
         content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."

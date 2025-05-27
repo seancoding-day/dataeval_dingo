@@ -1,7 +1,7 @@
 from typing import List
 
 from dingo.config.config import DynamicRuleConfig
-from dingo.io import MetaData
+from dingo.io import Data
 from dingo.model.modelres import ModelRes
 
 
@@ -11,5 +11,5 @@ class BaseRule:
     dynamic_config:  DynamicRuleConfig
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         raise NotImplementedError()

@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, Generator, List, Optional, Union
 from dingo.config import GlobalConfig
 from dingo.data import Dataset, DataSource, dataset_map, datasource_map
 from dingo.exec.base import ExecProto, Executor
-from dingo.io import InputArgs, MetaData, ResultInfo, SummaryModel
+from dingo.io import Data, InputArgs, ResultInfo, SummaryModel
 from dingo.model import Model
 from dingo.model.llm.base import BaseLLM
 from dingo.model.modelres import ModelRes
@@ -146,7 +146,7 @@ class SparkExecutor(ExecProto):
 
     def evaluate_item(self, data_rdd_item, broadcast_group, broadcast_llm) -> Dict[str, Any]:
         """Evaluate a single data item using broadcast variables."""
-        data: MetaData = data_rdd_item
+        data: Data = data_rdd_item
         result_info = ResultInfo(data_id=data.data_id, prompt=data.prompt, content=data.content)
 
         if self.input_args.save_raw:
@@ -192,7 +192,7 @@ class SparkExecutor(ExecProto):
 
         return result_info.to_dict()
 
-    def evaluate_rule(self, group: List[BaseRule], data: MetaData) -> ResultInfo:
+    def evaluate_rule(self, group: List[BaseRule], data: Data) -> ResultInfo:
         """Evaluate data against a group of rules."""
         result_info = ResultInfo(data_id=data.data_id, prompt=data.prompt, content=data.content)
 
@@ -224,7 +224,7 @@ class SparkExecutor(ExecProto):
 
         return result_info
 
-    def evaluate_prompt(self, group: List[BasePrompt], data: MetaData, llm: BaseLLM) -> ResultInfo:
+    def evaluate_prompt(self, group: List[BasePrompt], data: Data, llm: BaseLLM) -> ResultInfo:
         """Evaluate data against a group of prompts using LLM."""
         if llm is None:
             raise ValueError("LLM is required for prompt evaluation")

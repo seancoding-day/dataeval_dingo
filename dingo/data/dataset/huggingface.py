@@ -6,7 +6,7 @@ from dingo.data.dataset.base import Dataset
 from dingo.data.datasource import DataSource
 from dingo.data.datasource.huggingface import HuggingFaceSource
 from dingo.data.utils.digit import compute_pandas_digest
-from dingo.io import MetaData
+from dingo.io import Data
 
 _MAX_ROWS_FOR_DIGEST_COMPUTATION_AND_SCHEMA_INFERENCE = 10000
 
@@ -73,7 +73,7 @@ class HuggingFaceDataset(Dataset):
         )
         return config
 
-    def get_data(self) -> Generator[MetaData, None, None]:
+    def get_data(self) -> Generator[Data, None, None]:
         """
         Returns the input model for the dataset.
         Convert data here.
@@ -81,7 +81,7 @@ class HuggingFaceDataset(Dataset):
         for data_raw in self._ds:
             if self._converter == "plaintext":
                 data_raw = data_raw[self._targets]
-            data: Union[Generator[MetaData], MetaData] = self.converter(data_raw)
+            data: Union[Generator[Data], Data] = self.converter(data_raw)
             if isinstance(data, Generator):
                 for d in data:
                     yield d
