@@ -10,7 +10,7 @@ from typing import Generator, List, Optional
 from dingo.config import GlobalConfig
 from dingo.data import Dataset, DataSource, dataset_map, datasource_map
 from dingo.exec.base import ExecProto, Executor
-from dingo.io import InputArgs, Data, ResultInfo, SummaryModel
+from dingo.io import Data, InputArgs, ResultInfo, SummaryModel
 from dingo.model import Model
 from dingo.model.llm.base import BaseLLM
 from dingo.model.modelres import ModelRes
