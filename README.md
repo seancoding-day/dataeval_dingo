@@ -21,7 +21,7 @@
 
 <div align="center">
 
-[English](README.md) · [简体中文](README_zh-CN.md)
+[English](README.md) · [简体中文](README_zh-CN.md) · [日本語](README_ja.md)
 
 </div>
 
@@ -145,6 +145,22 @@ Where `output_directory` contains the evaluation results with a `summary.json` f
 
 ## Online Demo
 Try Dingo on our online demo: [(Hugging Face)🤗](https://huggingface.co/spaces/DataEval/dingo)
+
+
+# MCP Server
+
+Dingo includes an experimental Model Context Protocol (MCP) server. For details on running the server and integrating it with clients like Cursor, please see the dedicated documentation:
+
+[English](README_mcp.md) · [简体中文](README_mcp_zh-CN.md) · [日本語](README_mcp_ja.md)
+
+## Video Demonstration
+
+To help you get started quickly with Dingo MCP, we've created a video walkthrough:
+
+https://github.com/user-attachments/assets/aca26f4c-3f2e-445e-9ef9-9331c4d7a37b
+
+This video demonstrates step-by-step how to use Dingo MCP server with Cursor.
+
 
 # Data Quality Metrics
 
@@ -380,13 +396,6 @@ Example summary:
     }
 }
 ```
-
-
-# MCP Server (Experimental)
-
-Dingo includes an experimental Model Context Protocol (MCP) server. For details on running the server and integrating it with clients like Cursor, please see the dedicated documentation:
-
-[**Dingo MCP Server Documentation (README_mcp.md)**](README_mcp.md)
 
 
 # Research & Publications

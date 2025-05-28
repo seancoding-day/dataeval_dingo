@@ -19,7 +19,7 @@
 
 <div align="center">
 
-[English](README.md) · [简体中文](README_zh-CN.md)
+[English](README.md) · [简体中文](README_zh-CN.md) · [日本語](README_ja.md)
 
 </div>
 
@@ -143,6 +143,22 @@ python -m dingo.run.vsl --input 输出目录
 
 ## 5. 在线演示
 尝试我们的在线演示: [(Hugging Face)🤗](https://huggingface.co/spaces/DataEval/dingo)
+
+
+# MCP 服务端
+
+Dingo 包含一个实验性的模型上下文协议 (MCP) 服务端。有关运行服务端以及将其与 Cursor 等客户端集成的详细信息，请参阅专门的文档：
+
+[English](README_mcp.md) · [简体中文](README_mcp_zh-CN.md) · [日本語](README_mcp_ja.md)
+
+## 视频演示
+
+为了帮助您快速上手 Dingo MCP，我们制作了视频演示：
+
+https://github.com/user-attachments/assets/aca26f4c-3f2e-445e-9ef9-9331c4d7a37b
+
+此视频展示了关于 Dingo MCP 服务端与 Cursor 一起使用的分步演示。
+
 
 # 数据质量指标
 
@@ -380,13 +396,6 @@ result = executor.execute()
     }
 }
 ```
-
-# MCP 服务端 (实验性)
-
-Dingo 包含一个实验性的模型上下文协议 (MCP) 服务端。有关运行服务端以及将其与 Cursor 等客户端集成的详细信息，请参阅专门的文档：
-
-[**中文文档 (README_mcp_zh-CN.md)**](README_mcp_zh-CN.md)
-
 
 # 研究与学术成果
 
