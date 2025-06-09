@@ -22,7 +22,7 @@ from typing import Any, Callable, Dict, Generator, Optional
 
 from dingo.data.converter import BaseConverter, converters
 from dingo.data.datasource.base import DataSource
-from dingo.io import Data, InputArgs
+from dingo.io import Data
 from dingo.utils import log
 
 
@@ -60,7 +60,9 @@ class Dataset:
         try:
             converter_cls: BaseConverter = converters[self._converter]
         except KeyError as e:
-            log.error(f'Convertor "{self._converter}" not exist in {str(converters.keys())}')
+            log.error(
+                f'Convertor "{self._converter}" not in {str(converters.keys())}'
+            )
             raise e
 
         self.converter: Callable = converter_cls.convertor(self.input_args)

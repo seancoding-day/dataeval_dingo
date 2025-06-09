@@ -1,6 +1,6 @@
 import re
 import string
-from typing import List, Tuple
+from typing import Tuple
 
 from dingo.config.config import DynamicRuleConfig
 from dingo.io import Data
@@ -9,7 +9,7 @@ from dingo.model.modelres import ModelRes
 from dingo.model.rule.base import BaseRule
 
 
-@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['qa_standard_v1'])
+@Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["qa_standard_v1"])
 class RuleAbnormalChar(BaseRule):
     # consist of [RuleSpecialCharacter, RuleInvisibleChar]
 
@@ -26,7 +26,7 @@ class RuleAbnormalChar(BaseRule):
         return res
 
 
-@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['qa_standard_v1'])
+@Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["qa_standard_v1"])
 class RuleAbnormalHtml(BaseRule):
     # consist of [RuleHtmlEntity, RuleHtmlTag]
 
@@ -43,11 +43,11 @@ class RuleAbnormalHtml(BaseRule):
         return res
 
 
-@Model.rule_register('QUALITY_BAD_FLUENCY', ['pdf_all'])
+@Model.rule_register("QUALITY_BAD_FLUENCY", ["pdf_all"])
 class RuleAbnormalNumber(BaseRule):
     """check pdf content abnormal book page or index number."""
 
-    dynamic_config = DynamicRuleConfig(pattern=r'\n{4}\d+\n{4}')
+    dynamic_config = DynamicRuleConfig(pattern=r"\n{4}\d+\n{4}")
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -62,9 +62,9 @@ class RuleAbnormalNumber(BaseRule):
         return res
 
 
-@Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ['pretrain'])
+@Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pretrain"])
 class RuleAlphaWords(BaseRule):
-    """check whether the ratio of words that contain at least one alphabetic character > 0.6 """
+    """check whether the ratio of words that contain at least one alphabetic character > 0.6"""
 
     dynamic_config = DynamicRuleConfig(threshold=0.6)
 
@@ -87,11 +87,14 @@ class RuleAlphaWords(BaseRule):
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = ["The ratio of words that contain at least one alphabetic character is: " + str(ratio)]
+            res.reason = [
+                "The ratio of words that contain at least one alphabetic character is: "
+                + str(ratio)
+            ]
         return res
 
 
-@Model.rule_register("QUALITY_BAD_UNDERSTANDABILITY", ['pretrain'])
+@Model.rule_register("QUALITY_BAD_UNDERSTANDABILITY", ["pretrain"])
 class RuleCapitalWords(BaseRule):
     """check whether capital words ratio > 0.2"""
 
@@ -113,15 +116,15 @@ class RuleCapitalWords(BaseRule):
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = ['ratio: '+ str(ratio)]
+            res.reason = ["ratio: " + str(ratio)]
         return res
 
 
-@Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ['pretrain'])
+@Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pretrain"])
 class RuleCharNumber(BaseRule):
-    """check whether the number of char > 100 """
+    """check whether the number of char > 100"""
 
-    dynamic_config = DynamicRuleConfig(threshold = 100)
+    dynamic_config = DynamicRuleConfig(threshold=100)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -140,11 +143,13 @@ class RuleCharNumber(BaseRule):
         return res
 
 
-@Model.rule_register('QUALITY_BAD_FLUENCY', ['pdf_all'])
+@Model.rule_register("QUALITY_BAD_FLUENCY", ["pdf_all"])
 class RuleCharSplit(BaseRule):
     """check pdf content char split."""
 
-    dynamic_config = DynamicRuleConfig(pattern=r"(?:(?:[a-zA-Z]\s){5}[a-zA-Z])", threshold=3)
+    dynamic_config = DynamicRuleConfig(
+        pattern=r"(?:(?:[a-zA-Z]\s){5}[a-zA-Z])", threshold=3
+    )
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -160,7 +165,10 @@ class RuleCharSplit(BaseRule):
         return res
 
 
-@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['default','sft','pretrain','benchmark','llm_base', 'text_base_all'])
+@Model.rule_register(
+    "QUALITY_BAD_EFFECTIVENESS",
+    ["default", "sft", "pretrain", "benchmark", "llm_base", "text_base_all"],
+)
 class RuleColonEnd(BaseRule):
     """check whether the last char is ':'"""
 
@@ -172,7 +180,7 @@ class RuleColonEnd(BaseRule):
         content = input_data.content
         if len(content) <= 0:
             return res
-        if content[-1] == ':':
+        if content[-1] == ":":
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
@@ -180,9 +188,27 @@ class RuleColonEnd(BaseRule):
         return res
 
 
-@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['default','sft','pretrain','benchmark','text_base_all',
-                                                   'llm_base','multi_lan_ar','multi_lan_ko','multi_lan_ru','multi_lan_th','multi_lan_vi',
-                                                   'multi_lan_cs','multi_lan_hu','multi_lan_sr','qa_standard_v1','pdf'])
+@Model.rule_register(
+    "QUALITY_BAD_EFFECTIVENESS",
+    [
+        "default",
+        "sft",
+        "pretrain",
+        "benchmark",
+        "text_base_all",
+        "llm_base",
+        "multi_lan_ar",
+        "multi_lan_ko",
+        "multi_lan_ru",
+        "multi_lan_th",
+        "multi_lan_vi",
+        "multi_lan_cs",
+        "multi_lan_hu",
+        "multi_lan_sr",
+        "qa_standard_v1",
+        "pdf",
+    ],
+)
 class RuleContentNull(BaseRule):
     """check whether content is null"""
 
@@ -196,29 +222,41 @@ class RuleContentNull(BaseRule):
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = ['Content is empty.']
+            res.reason = ["Content is empty."]
         return res
 
 
-@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all', 'qa_standard_v1','pdf'])
+@Model.rule_register(
+    "QUALITY_BAD_EFFECTIVENESS", ["text_base_all", "qa_standard_v1", "pdf"]
+)
 class RuleContentShort(BaseRule):
-
-    dynamic_config = DynamicRuleConfig(threshold = 20)
+    dynamic_config = DynamicRuleConfig(threshold=20)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
-        content = input_data.content.encode('utf-8')
+        content = input_data.content.encode("utf-8")
         if len(content) <= cls.dynamic_config.threshold:
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = ['Content is too short.']
+            res.reason = ["Content is too short."]
         return res
 
 
-@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['multi_lan_ar','multi_lan_ko','multi_lan_ru','multi_lan_th',
-                                                   'multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr'])
+@Model.rule_register(
+    "QUALITY_BAD_EFFECTIVENESS",
+    [
+        "multi_lan_ar",
+        "multi_lan_ko",
+        "multi_lan_ru",
+        "multi_lan_th",
+        "multi_lan_vi",
+        "multi_lan_cs",
+        "multi_lan_hu",
+        "multi_lan_sr",
+    ],
+)
 class RuleContentShortMultiLan(BaseRule):
     """check whether content is too short."""
 
@@ -236,7 +274,7 @@ class RuleContentShortMultiLan(BaseRule):
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = ['Content is too short.']
+            res.reason = ["Content is too short."]
         return res
 
 
@@ -253,19 +291,38 @@ class RuleCurlyBracket(BaseRule):
         if len(content) == 0:
             return res
 
-        num = content.count('{') + content.count('}')
+        num = content.count("{") + content.count("}")
         ratio = num / len(content)
         if ratio > cls.dynamic_config.threshold:
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = ['The ratio of curly bracket and characters is : ' + str(ratio)]
+            res.reason = [
+                "The ratio of curly bracket and characters is : " + str(ratio)
+            ]
         return res
 
 
-@Model.rule_register('QUALITY_BAD_SIMILARITY', ['default','sft','pretrain','benchmark','text_base_all',
-                                                'llm_base','multi_lan_ar','multi_lan_ko','multi_lan_ru','multi_lan_th',
-                                                'multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr','pdf'])
+@Model.rule_register(
+    "QUALITY_BAD_SIMILARITY",
+    [
+        "default",
+        "sft",
+        "pretrain",
+        "benchmark",
+        "text_base_all",
+        "llm_base",
+        "multi_lan_ar",
+        "multi_lan_ko",
+        "multi_lan_ru",
+        "multi_lan_th",
+        "multi_lan_vi",
+        "multi_lan_cs",
+        "multi_lan_hu",
+        "multi_lan_sr",
+        "pdf",
+    ],
+)
 class RuleDocRepeat(BaseRule):
     """check whether content repeats"""
 
@@ -274,7 +331,7 @@ class RuleDocRepeat(BaseRule):
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import \
-          base_rps_frac_chars_in_dupe_ngrams
+            base_rps_frac_chars_in_dupe_ngrams
 
         res = ModelRes()
         repeat_score = base_rps_frac_chars_in_dupe_ngrams(6, input_data.content)
@@ -282,11 +339,13 @@ class RuleDocRepeat(BaseRule):
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = ['Repeatability of text is too high, with ratio： ' + str(repeat_score)]
+            res.reason = [
+                "Repeatability of text is too high, with ratio： " + str(repeat_score)
+            ]
         return res
 
 
-@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['qa_standard_v1'])
+@Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["qa_standard_v1"])
 class RuleEnterAndSpace(BaseRule):
     # consist of [RuleEnterMore, RuleEnterRatioMore, RuleSpaceMore]
 
@@ -303,9 +362,22 @@ class RuleEnterAndSpace(BaseRule):
         return res
 
 
-@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','llm_base','multi_lan_ar','multi_lan_ko',
-                                                   'multi_lan_ru','multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu',
-                                                   'multi_lan_sr','pdf'])
+@Model.rule_register(
+    "QUALITY_BAD_EFFECTIVENESS",
+    [
+        "text_base_all",
+        "llm_base",
+        "multi_lan_ar",
+        "multi_lan_ko",
+        "multi_lan_ru",
+        "multi_lan_th",
+        "multi_lan_vi",
+        "multi_lan_cs",
+        "multi_lan_hu",
+        "multi_lan_sr",
+        "pdf",
+    ],
+)
 class RuleEnterMore(BaseRule):
     """check whether content has 8 consecutive carriage returns."""
 
@@ -322,14 +394,27 @@ class RuleEnterMore(BaseRule):
                 res.error_status = True
                 res.type = cls.metric_type
                 res.name = cls.__name__
-                res.reason = ['Content has 8 consecutive carriage returns.']
+                res.reason = ["Content has 8 consecutive carriage returns."]
                 return res
         return res
 
 
-@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','llm_base','multi_lan_ar','multi_lan_ko',
-                                                   'multi_lan_ru','multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu',
-                                                   'multi_lan_sr','pdf'])
+@Model.rule_register(
+    "QUALITY_BAD_EFFECTIVENESS",
+    [
+        "text_base_all",
+        "llm_base",
+        "multi_lan_ar",
+        "multi_lan_ko",
+        "multi_lan_ru",
+        "multi_lan_th",
+        "multi_lan_vi",
+        "multi_lan_cs",
+        "multi_lan_hu",
+        "multi_lan_sr",
+        "pdf",
+    ],
+)
 class RuleEnterRatioMore(BaseRule):
     """check whether the number of enter / the number of content > 25%"""
 
@@ -347,11 +432,11 @@ class RuleEnterRatioMore(BaseRule):
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = ['The number of enter / the number of content > 25%.']
+            res.reason = ["The number of enter / the number of content > 25%."]
         return res
 
 
-@Model.rule_register('QUALITY_BAD_RELEVANCE', ['multi_lan_ar'])
+@Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_ar"])
 class RuleHeadWordAr(BaseRule):
     """check whether ar content contains irrelevance tail source info."""
 
@@ -369,11 +454,11 @@ class RuleHeadWordAr(BaseRule):
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = ['Content has irrelevance tail source info.']
+            res.reason = ["Content has irrelevance tail source info."]
         return res
 
 
-@Model.rule_register('QUALITY_BAD_RELEVANCE', ['multi_lan_cs'])
+@Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_cs"])
 class RuleHeadWordCs(BaseRule):
     """check whether cs content contains irrelevance tail source info."""
 
@@ -391,11 +476,11 @@ class RuleHeadWordCs(BaseRule):
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = ['Content has irrelevance tail source info.']
+            res.reason = ["Content has irrelevance tail source info."]
         return res
 
 
-@Model.rule_register('QUALITY_BAD_RELEVANCE', ['multi_lan_hu'])
+@Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_hu"])
 class RuleHeadWordHu(BaseRule):
     """check whether hu content contains irrelevance tail source info."""
 
@@ -413,11 +498,11 @@ class RuleHeadWordHu(BaseRule):
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = ['Content has irrelevance tail source info.']
+            res.reason = ["Content has irrelevance tail source info."]
         return res
 
 
-@Model.rule_register('QUALITY_BAD_RELEVANCE', ['multi_lan_ko'])
+@Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_ko"])
 class RuleHeadWordKo(BaseRule):
     """check whether ko content contains irrelevance tail source info."""
 
@@ -435,11 +520,11 @@ class RuleHeadWordKo(BaseRule):
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = ['Content has irrelevance tail source info.']
+            res.reason = ["Content has irrelevance tail source info."]
         return res
 
 
-@Model.rule_register('QUALITY_BAD_RELEVANCE', ['multi_lan_ru'])
+@Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_ru"])
 class RuleHeadWordRu(BaseRule):
     """check whether ru content contains irrelevance tail source info."""
 
@@ -457,11 +542,11 @@ class RuleHeadWordRu(BaseRule):
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = ['Content has irrelevance tail source info.']
+            res.reason = ["Content has irrelevance tail source info."]
         return res
 
 
-@Model.rule_register('QUALITY_BAD_RELEVANCE', ['multi_lan_sr'])
+@Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_sr"])
 class RuleHeadWordSr(BaseRule):
     """check whether sr content contains irrelevance tail source info."""
 
@@ -479,11 +564,11 @@ class RuleHeadWordSr(BaseRule):
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = ['Content has irrelevance tail source info.']
+            res.reason = ["Content has irrelevance tail source info."]
         return res
 
 
-@Model.rule_register('QUALITY_BAD_RELEVANCE', ['multi_lan_th'])
+@Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_th"])
 class RuleHeadWordTh(BaseRule):
     """check whether th content contains irrelevance tail source info."""
 
@@ -501,11 +586,11 @@ class RuleHeadWordTh(BaseRule):
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = ['Content has irrelevance tail source info.']
+            res.reason = ["Content has irrelevance tail source info."]
         return res
 
 
-@Model.rule_register('QUALITY_BAD_RELEVANCE', ['multi_lan_vi'])
+@Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_vi"])
 class RuleHeadWordVi(BaseRule):
     """check whether vi content contains irrelevance tail source info."""
 
@@ -523,31 +608,49 @@ class RuleHeadWordVi(BaseRule):
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = ['Content has irrelevance tail source info.']
+            res.reason = ["Content has irrelevance tail source info."]
         return res
 
 
-@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['default','sft','pretrain','benchmark','text_base_all',
-                                                   'multi_lan_ar','multi_lan_ko','multi_lan_ru','multi_lan_th','multi_lan_vi',
-                                                   'multi_lan_cs','multi_lan_hu','multi_lan_sr','pdf'])
+@Model.rule_register(
+    "QUALITY_BAD_EFFECTIVENESS",
+    [
+        "default",
+        "sft",
+        "pretrain",
+        "benchmark",
+        "text_base_all",
+        "multi_lan_ar",
+        "multi_lan_ko",
+        "multi_lan_ru",
+        "multi_lan_th",
+        "multi_lan_vi",
+        "multi_lan_cs",
+        "multi_lan_hu",
+        "multi_lan_sr",
+        "pdf",
+    ],
+)
 class RuleHtmlEntity(BaseRule):
     """check whether content has html entity"""
 
-    dynamic_config = DynamicRuleConfig(key_list=[
-        "nbsp",
-        "lt",
-        "gt",
-        "amp",
-        "quot",
-        "apos",
-        "hellip",
-        "ndash",
-        "mdash",
-        "lsquo",
-        "rsquo",
-        "ldquo",
-        "rdquo",
-    ])
+    dynamic_config = DynamicRuleConfig(
+        key_list=[
+            "nbsp",
+            "lt",
+            "gt",
+            "amp",
+            "quot",
+            "apos",
+            "hellip",
+            "ndash",
+            "mdash",
+            "lsquo",
+            "rsquo",
+            "ldquo",
+            "rdquo",
+        ]
+    )
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -561,7 +664,9 @@ class RuleHtmlEntity(BaseRule):
         full_entities_2 = [f"&{entity};" for entity in entities]
         full_entities_3 = [f"＆{entity};" for entity in entities]
         full_entities_4 = [f"＆{entity}；" for entity in entities]
-        full_entities = full_entities_1 + full_entities_2 + full_entities_3 + full_entities_4
+        full_entities = (
+            full_entities_1 + full_entities_2 + full_entities_3 + full_entities_4
+        )
         # half_entity_1 = [f"{entity}；" for entity in entities]
         half_entity_2 = [f"＆{entity}" for entity in entities]
         half_entity_3 = [f"&{entity}" for entity in entities]
@@ -584,12 +689,27 @@ class RuleHtmlEntity(BaseRule):
         return res
 
 
-@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','multi_lan_ar','multi_lan_ko','multi_lan_ru',
-                                                   'multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr','pdf'])
+@Model.rule_register(
+    "QUALITY_BAD_EFFECTIVENESS",
+    [
+        "text_base_all",
+        "multi_lan_ar",
+        "multi_lan_ko",
+        "multi_lan_ru",
+        "multi_lan_th",
+        "multi_lan_vi",
+        "multi_lan_cs",
+        "multi_lan_hu",
+        "multi_lan_sr",
+        "pdf",
+    ],
+)
 class RuleHtmlTag(BaseRule):
     """check whether content has image links or html tags."""
 
-    dynamic_config = DynamicRuleConfig(key_list=['<img', '<p>', '</p>', '<o:p', '</o:p>'])
+    dynamic_config = DynamicRuleConfig(
+        key_list=["<img", "<p>", "</p>", "<o:p", "</o:p>"]
+    )
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -598,7 +718,7 @@ class RuleHtmlTag(BaseRule):
         if len(content) == 0:
             return res
 
-        matches = re.findall('|'.join(cls.dynamic_config.key_list), content)
+        matches = re.findall("|".join(cls.dynamic_config.key_list), content)
         num = len(matches)
         if num / len(content) >= 0.01:
             res.error_status = True
@@ -608,11 +728,13 @@ class RuleHtmlTag(BaseRule):
         return res
 
 
-@Model.rule_register('QUALITY_BAD_SECURITY', ['default','pretrain','benchmark'])
+@Model.rule_register("QUALITY_BAD_SECURITY", ["default", "pretrain", "benchmark"])
 class RuleIDCard(BaseRule):
-    """check if the content contains ID card. """
+    """check if the content contains ID card."""
 
-    dynamic_config = DynamicRuleConfig(pattern = r"(身\s{0,10}份|id\s{0,10}number\s{0,10}|identification|identity|\s{0,10}ID\s{0,10}No\s{0,10}|id\s{0,10}card\s{0,10}|NRIC\s{0,10}number\s{0,10}|IC\s{0,10}number\s{0,10}|resident\s{0,10}registration\s{0,10}|I.D.\s{0,10}Number\s{0,10})")
+    dynamic_config = DynamicRuleConfig(
+        pattern=r"(身\s{0,10}份|id\s{0,10}number\s{0,10}|identification|identity|\s{0,10}ID\s{0,10}No\s{0,10}|id\s{0,10}card\s{0,10}|NRIC\s{0,10}number\s{0,10}|IC\s{0,10}number\s{0,10}|resident\s{0,10}registration\s{0,10}|I.D.\s{0,10}Number\s{0,10})"
+    )
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -630,12 +752,26 @@ class RuleIDCard(BaseRule):
         return res
 
 
-@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','multi_lan_ar','multi_lan_ko','multi_lan_ru',
-                                                   'multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr',])
+@Model.rule_register(
+    "QUALITY_BAD_EFFECTIVENESS",
+    [
+        "text_base_all",
+        "multi_lan_ar",
+        "multi_lan_ko",
+        "multi_lan_ru",
+        "multi_lan_th",
+        "multi_lan_vi",
+        "multi_lan_cs",
+        "multi_lan_hu",
+        "multi_lan_sr",
+    ],
+)
 class RuleInvisibleChar(BaseRule):
     """check whether content has invisible chars."""
 
-    dynamic_config = DynamicRuleConfig(pattern=r"[\u2000-\u200F\u202F\u205F\u3000\uFEFF\u00A0\u2060-\u206F\uFEFF\xa0]")
+    dynamic_config = DynamicRuleConfig(
+        pattern=r"[\u2000-\u200F\u202F\u205F\u3000\uFEFF\u00A0\u2060-\u206F\uFEFF\xa0]"
+    )
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -654,11 +790,11 @@ class RuleInvisibleChar(BaseRule):
         return res
 
 
-@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['pdf_all'])
+@Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pdf_all"])
 class RuleLatexSpecialChar(BaseRule):
     """check pdf content latex abnormal char."""
 
-    dynamic_config = DynamicRuleConfig(pattern=r'\$\$(.*?\!\!.*?)\$\$')
+    dynamic_config = DynamicRuleConfig(pattern=r"\$\$(.*?\!\!.*?)\$\$")
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -673,11 +809,11 @@ class RuleLatexSpecialChar(BaseRule):
         return res
 
 
-@Model.rule_register("QUALITY_BAD_COMPLETENESS", ['pretrain','benchmark'])
+@Model.rule_register("QUALITY_BAD_COMPLETENESS", ["pretrain", "benchmark"])
 class RuleLineEndWithEllipsis(BaseRule):
-    """check whether the ratio of line ends with ellipsis < 0.3 """
+    """check whether the ratio of line ends with ellipsis < 0.3"""
 
-    dynamic_config = DynamicRuleConfig(threshold=0.3, key_list = ["...", "…"])
+    dynamic_config = DynamicRuleConfig(threshold=0.3, key_list=["...", "…"])
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -692,7 +828,12 @@ class RuleLineEndWithEllipsis(BaseRule):
         if num_lines == 0:
             return res
 
-        num_occurrences = sum([line.text.rstrip().endswith(tuple(cls.dynamic_config.key_list)) for line in raw_lines])
+        num_occurrences = sum(
+            [
+                line.text.rstrip().endswith(tuple(cls.dynamic_config.key_list))
+                for line in raw_lines
+            ]
+        )
         ratio = num_occurrences / num_lines
         if ratio > cls.dynamic_config.threshold:
             res.error_status = True
@@ -702,54 +843,12 @@ class RuleLineEndWithEllipsis(BaseRule):
         return res
 
 
-@Model.rule_register("QUALITY_BAD_COMPLETENESS", ['pretrain'])
+@Model.rule_register("QUALITY_BAD_COMPLETENESS", ["pretrain"])
 class RuleLineEndWithTerminal(BaseRule):
-    """check whether the ratio of line ends with terminal punctuation mark > 0.6 """
-
-    dynamic_config = DynamicRuleConfig(threshold=0.6, key_list = [".", "!", "?", "\"", "\""])
-
-    @classmethod
-    def eval(cls, input_data: Data) -> ModelRes:
-        from dingo.model.rule.utils.util import TextSlice, split_paragraphs
-
-        res = ModelRes()
-        raw_content = input_data.content
-        raw_lines: Tuple[TextSlice] = split_paragraphs(
-            text=raw_content, normalizer=lambda x: x, remove_empty=True
-        )
-        num_lines = len(raw_lines)
-        if num_lines == 0:
-            return res
-
-        terminal_marks = [line.text.rstrip()[-1] for line in raw_lines if line.text and line.text.rstrip()[-1] not in cls.dynamic_config.key_list]
-        num_occurrences = sum([line.text.rstrip().endswith(tuple(cls.dynamic_config.key_list)) for line in raw_lines])
-        ratio = num_occurrences / num_lines
-        if ratio < cls.dynamic_config.threshold:
-            res.error_status = True
-            res.type = cls.metric_type
-            res.name = cls.__name__
-            res.reason = list(set(terminal_marks))
-        return res
-
-
-@Model.rule_register("QUALITY_BAD_UNDERSTANDABILITY", ['sft','pretrain','benchmark'])
-class RuleLineStartWithBulletpoint(BaseRule):
-    """check whether the ratio of line starts with bullet points < 0.9 """
+    """check whether the ratio of line ends with terminal punctuation mark > 0.6"""
 
     dynamic_config = DynamicRuleConfig(
-        threshold = 0.9,
-        key_list = [
-        "\u2022",  # bullet point
-        "\u2023",  # triangular bullet point
-        "\u25B6",  # black right pointing triangle
-        "\u25C0",  # black left pointing triangle
-        "\u25E6",  # white bullet point
-        "\u25A0",  # black square
-        "\u25A1",  # white square
-        "\u25AA",  # black small square
-        "\u25AB",  # white small square
-        "\u2013",  # en dash
-        ]
+        threshold=0.6, key_list=[".", "!", "?", '"', '"']
     )
 
     @classmethod
@@ -765,7 +864,65 @@ class RuleLineStartWithBulletpoint(BaseRule):
         if num_lines == 0:
             return res
 
-        num_occurrences = sum([line.text.lstrip().startswith(tuple(cls.dynamic_config.key_list)) for line in raw_lines])
+        terminal_marks = [
+            line.text.rstrip()[-1]
+            for line in raw_lines
+            if line.text and line.text.rstrip()[-1] not in cls.dynamic_config.key_list
+        ]
+        num_occurrences = sum(
+            [
+                line.text.rstrip().endswith(tuple(cls.dynamic_config.key_list))
+                for line in raw_lines
+            ]
+        )
+        ratio = num_occurrences / num_lines
+        if ratio < cls.dynamic_config.threshold:
+            res.error_status = True
+            res.type = cls.metric_type
+            res.name = cls.__name__
+            res.reason = list(set(terminal_marks))
+        return res
+
+
+@Model.rule_register("QUALITY_BAD_UNDERSTANDABILITY", ["sft", "pretrain", "benchmark"])
+class RuleLineStartWithBulletpoint(BaseRule):
+    """check whether the ratio of line starts with bullet points < 0.9"""
+
+    dynamic_config = DynamicRuleConfig(
+        threshold=0.9,
+        key_list=[
+            "\u2022",  # bullet point
+            "\u2023",  # triangular bullet point
+            "\u25B6",  # black right pointing triangle
+            "\u25C0",  # black left pointing triangle
+            "\u25E6",  # white bullet point
+            "\u25A0",  # black square
+            "\u25A1",  # white square
+            "\u25AA",  # black small square
+            "\u25AB",  # white small square
+            "\u2013",  # en dash
+        ],
+    )
+
+    @classmethod
+    def eval(cls, input_data: Data) -> ModelRes:
+        from dingo.model.rule.utils.util import TextSlice, split_paragraphs
+
+        res = ModelRes()
+        raw_content = input_data.content
+        raw_lines: Tuple[TextSlice] = split_paragraphs(
+            text=raw_content, normalizer=lambda x: x, remove_empty=True
+        )
+        num_lines = len(raw_lines)
+        if num_lines == 0:
+            return res
+
+        num_occurrences = sum(
+            [
+                line.text.lstrip().startswith(tuple(cls.dynamic_config.key_list))
+                for line in raw_lines
+            ]
+        )
         ratio = num_occurrences / num_lines
         if ratio > cls.dynamic_config.threshold:
             res.error_status = True
@@ -775,9 +932,9 @@ class RuleLineStartWithBulletpoint(BaseRule):
         return res
 
 
-@Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ['pretrain','benchmark'])
+@Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pretrain", "benchmark"])
 class RuleLineJavascriptCount(BaseRule):
-    """check whether line with the word Javascript. """
+    """check whether line with the word Javascript."""
 
     dynamic_config = DynamicRuleConfig(threshold=3)
 
@@ -795,19 +952,21 @@ class RuleLineJavascriptCount(BaseRule):
         if num_lines == 0:
             return res
 
-        num_occurrences = sum(['javascript' in line.text for line in normalized_lines])
+        num_occurrences = sum(["javascript" in line.text for line in normalized_lines])
         num_not_occur = num_lines - num_occurrences
         if num_not_occur < cls.dynamic_config.threshold and num_lines > 3:
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = ["The lines with the word Javascript is: " + str(num_occurrences)]
+            res.reason = [
+                "The lines with the word Javascript is: " + str(num_occurrences)
+            ]
         return res
 
 
-@Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ['pretrain','benchmark'])
+@Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pretrain", "benchmark"])
 class RuleLoremIpsum(BaseRule):
-    """check whether the ratio of lorem ipsum < 3e-08 """
+    """check whether the ratio of lorem ipsum < 3e-08"""
 
     dynamic_config = DynamicRuleConfig(threshold=3e-08)
 
@@ -832,11 +991,11 @@ class RuleLoremIpsum(BaseRule):
         return res
 
 
-@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['pretrain'])
+@Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pretrain"])
 class RuleMeanWordLength(BaseRule):
-    """check whether the mean length of word in [3, 10] """
+    """check whether the mean length of word in [3, 10]"""
 
-    dynamic_config = DynamicRuleConfig(key_list=['3', '10'])
+    dynamic_config = DynamicRuleConfig(key_list=["3", "10"])
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -852,7 +1011,9 @@ class RuleMeanWordLength(BaseRule):
         num_chars = float(sum(map(len, normalized_words)))
         mean_length = num_chars / num_normalized_words
         mean_length = round(mean_length, 2)
-        if mean_length >= int(cls.dynamic_config.key_list[0]) and mean_length < int(cls.dynamic_config.key_list[1]):
+        if mean_length >= int(cls.dynamic_config.key_list[0]) and mean_length < int(
+            cls.dynamic_config.key_list[1]
+        ):
             pass
         else:
             res.error_status = True
@@ -862,9 +1023,25 @@ class RuleMeanWordLength(BaseRule):
         return res
 
 
-@Model.rule_register('QUALITY_BAD_FLUENCY', ['default','sft','pretrain','benchmark','text_base_all',
-                                             'llm_base','multi_lan_ar','multi_lan_ko','multi_lan_ru','multi_lan_th',
-                                             'multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr'])
+@Model.rule_register(
+    "QUALITY_BAD_FLUENCY",
+    [
+        "default",
+        "sft",
+        "pretrain",
+        "benchmark",
+        "text_base_all",
+        "llm_base",
+        "multi_lan_ar",
+        "multi_lan_ko",
+        "multi_lan_ru",
+        "multi_lan_th",
+        "multi_lan_vi",
+        "multi_lan_cs",
+        "multi_lan_hu",
+        "multi_lan_sr",
+    ],
+)
 class RuleNoPunc(BaseRule):
     """check whether paragraph has no punctuation."""
 
@@ -875,8 +1052,8 @@ class RuleNoPunc(BaseRule):
         res = ModelRes()
         content = input_data.content
 
-        paragraphs = content.split('\n')
-        longest_sentence = ''
+        paragraphs = content.split("\n")
+        longest_sentence = ""
         max_word_count = 0
         for paragraph in paragraphs:
             if len(paragraph.strip()) == 0:
@@ -896,11 +1073,11 @@ class RuleNoPunc(BaseRule):
         return res
 
 
-@Model.rule_register('QUALITY_BAD_RELEVANCE', [])
+@Model.rule_register("QUALITY_BAD_RELEVANCE", [])
 class RulePatternSearch(BaseRule):
     """let user input pattern to search"""
 
-    dynamic_config = DynamicRuleConfig(pattern = "your pattern")
+    dynamic_config = DynamicRuleConfig(pattern="your pattern")
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -914,20 +1091,22 @@ class RulePatternSearch(BaseRule):
         return res
 
 
-@Model.rule_register("QUALITY_BAD_COMPLETENESS", ['pretrain'])
+@Model.rule_register("QUALITY_BAD_COMPLETENESS", ["pretrain"])
 class RuleSentenceNumber(BaseRule):
-    """check whether the number of sentence in [3, 7500] """
+    """check whether the number of sentence in [3, 7500]"""
 
-    dynamic_config = DynamicRuleConfig(key_list=['3', '7500'])
+    dynamic_config = DynamicRuleConfig(key_list=["3", "7500"])
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         raw_content = input_data.content
 
-        SENT_PATTERN = re.compile(r'\b[^.!?\n]+[.!?]*', flags=re.UNICODE)
+        SENT_PATTERN = re.compile(r"\b[^.!?\n]+[.!?]*", flags=re.UNICODE)
         num_sentence = len(SENT_PATTERN.findall(raw_content))
-        if num_sentence < int(cls.dynamic_config.key_list[0]) or num_sentence > int(cls.dynamic_config.key_list[1]):
+        if num_sentence < int(cls.dynamic_config.key_list[0]) or num_sentence > int(
+            cls.dynamic_config.key_list[1]
+        ):
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
@@ -935,9 +1114,22 @@ class RuleSentenceNumber(BaseRule):
         return res
 
 
-@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','llm_base','multi_lan_ar','multi_lan_ko',
-                                                   'multi_lan_ru','multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu',
-                                                   'multi_lan_sr','pdf'])
+@Model.rule_register(
+    "QUALITY_BAD_EFFECTIVENESS",
+    [
+        "text_base_all",
+        "llm_base",
+        "multi_lan_ar",
+        "multi_lan_ko",
+        "multi_lan_ru",
+        "multi_lan_th",
+        "multi_lan_vi",
+        "multi_lan_cs",
+        "multi_lan_hu",
+        "multi_lan_sr",
+        "pdf",
+    ],
+)
 class RuleSpaceMore(BaseRule):
     """check whether content has 500 spaces."""
 
@@ -953,15 +1145,32 @@ class RuleSpaceMore(BaseRule):
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = ['Content has 500 spaces.']
+            res.reason = ["Content has 500 spaces."]
         return res
 
 
-@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['default','sft','pretrain','benchmark','text_base_all',
-                                                   'llm_base','multi_lan_ar','multi_lan_ko','multi_lan_ru','multi_lan_th',
-                                                   'multi_lan_vi','multi_lan_cs','multi_lan_hu','multi_lan_sr','pdf'])
+@Model.rule_register(
+    "QUALITY_BAD_EFFECTIVENESS",
+    [
+        "default",
+        "sft",
+        "pretrain",
+        "benchmark",
+        "text_base_all",
+        "llm_base",
+        "multi_lan_ar",
+        "multi_lan_ko",
+        "multi_lan_ru",
+        "multi_lan_th",
+        "multi_lan_vi",
+        "multi_lan_cs",
+        "multi_lan_hu",
+        "multi_lan_sr",
+        "pdf",
+    ],
+)
 class RuleSpecialCharacter(BaseRule):
-    """check whether content has special characters. """
+    """check whether content has special characters."""
 
     dynamic_config = DynamicRuleConfig(
         key_list=[
@@ -970,7 +1179,7 @@ class RuleSpecialCharacter(BaseRule):
             r"&#247;|\? :",
             r"[�□]|\{\/U\}",
             r"U\+26[0-F][0-D]|U\+273[3-4]|U\+1F[3-6][0-4][0-F]|U\+1F6[8-F][0-F]",
-            r"<\|.*?\|>"
+            r"<\|.*?\|>",
         ]
     )
 
@@ -995,7 +1204,7 @@ class RuleSpecialCharacter(BaseRule):
         return res
 
 
-@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['pretrain'])
+@Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pretrain"])
 class RuleStopWord(BaseRule):
     """check whether the ratio of stop word > 0.06"""
 
@@ -1003,8 +1212,9 @@ class RuleStopWord(BaseRule):
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
-        from dingo.model.rule.utils.util import get_stop_words
         from nltk.tokenize import WordPunctTokenizer
+
+        from dingo.model.rule.utils.util import get_stop_words
 
         res = ModelRes()
         raw_content = input_data.content
@@ -1025,11 +1235,11 @@ class RuleStopWord(BaseRule):
         return res
 
 
-@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['pretrain','benchmark'])
+@Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pretrain", "benchmark"])
 class RuleSymbolWordRatio(BaseRule):
     """check whether the ratio of symbol and word is > 0.4"""
 
-    dynamic_config = DynamicRuleConfig(threshold=0.4, key_list = ["#", "...", "…"])
+    dynamic_config = DynamicRuleConfig(threshold=0.4, key_list=["#", "...", "…"])
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -1043,9 +1253,9 @@ class RuleSymbolWordRatio(BaseRule):
             return res
 
         num_words = num_raw_words
-        num_symbols = float(sum(
-            raw_content.count(x) for x in cls.dynamic_config.key_list
-        ))
+        num_symbols = float(
+            sum(raw_content.count(x) for x in cls.dynamic_config.key_list)
+        )
 
         ratio = num_symbols / num_words
         if ratio > cls.dynamic_config.threshold:
@@ -1056,7 +1266,7 @@ class RuleSymbolWordRatio(BaseRule):
         return res
 
 
-@Model.rule_register("QUALITY_BAD_UNDERSTANDABILITY", ['pretrain'])
+@Model.rule_register("QUALITY_BAD_UNDERSTANDABILITY", ["pretrain"])
 class RuleUniqueWords(BaseRule):
     """check whether the ratio of unique words > 0.1"""
 
@@ -1095,6 +1305,7 @@ class RuleUnsafeWords(BaseRule):
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         import ahocorasick
+
         from dingo.model.rule.utils.util import get_unsafe_words
 
         res = ModelRes()
@@ -1107,7 +1318,10 @@ class RuleUnsafeWords(BaseRule):
         for index, key in enumerate(key_list):
             A.add_word(key, (index, key))
         A.make_automaton()
-        matches = [(end_index - len(value[1]) + 1, value[1]) for end_index, value in A.iter(content)]
+        matches = [
+            (end_index - len(value[1]) + 1, value[1])
+            for end_index, value in A.iter(content)
+        ]
         if matches:
             res.error_status = True
             res.type = cls.metric_type
@@ -1116,13 +1330,29 @@ class RuleUnsafeWords(BaseRule):
         return res
 
 
-@Model.rule_register('QUALITY_BAD_EFFECTIVENESS', ['text_base_all','llm_base','multi_lan_ar','multi_lan_ko',
-                                                   'multi_lan_ru','multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu',
-                                                   'multi_lan_sr','qa_standard_v1','pdf'])
+@Model.rule_register(
+    "QUALITY_BAD_EFFECTIVENESS",
+    [
+        "text_base_all",
+        "llm_base",
+        "multi_lan_ar",
+        "multi_lan_ko",
+        "multi_lan_ru",
+        "multi_lan_th",
+        "multi_lan_vi",
+        "multi_lan_cs",
+        "multi_lan_hu",
+        "multi_lan_sr",
+        "qa_standard_v1",
+        "pdf",
+    ],
+)
 class RuleOnlyUrl(BaseRule):
     """check whether content is only an url link."""
 
-    dynamic_config = DynamicRuleConfig(pattern = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+")
+    dynamic_config = DynamicRuleConfig(
+        pattern=r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
+    )
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -1136,7 +1366,7 @@ class RuleOnlyUrl(BaseRule):
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
-            res.reason = ['Content is only an url link.']
+            res.reason = ["Content is only an url link."]
         return res
 
 
@@ -1144,12 +1374,12 @@ class RuleOnlyUrl(BaseRule):
 class RuleWatermark(BaseRule):
     """check whether content has watermarks."""
 
-    dynamic_config = DynamicRuleConfig(key_list = [])
+    dynamic_config = DynamicRuleConfig(key_list=[])
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
-        matches = re.findall('|'.join(cls.dynamic_config.key_list), input_data.content)
+        matches = re.findall("|".join(cls.dynamic_config.key_list), input_data.content)
         if matches:
             res.error_status = True
             res.type = cls.metric_type
@@ -1158,11 +1388,11 @@ class RuleWatermark(BaseRule):
         return res
 
 
-@Model.rule_register("QUALITY_BAD_COMPLETENESS", ['pretrain'])
+@Model.rule_register("QUALITY_BAD_COMPLETENESS", ["pretrain"])
 class RuleWordNumber(BaseRule):
-    """check whether the number of word in [20, 100000] """
+    """check whether the number of word in [20, 100000]"""
 
-    dynamic_config = DynamicRuleConfig(key_list=['20', '100000'])
+    dynamic_config = DynamicRuleConfig(key_list=["20", "100000"])
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -1172,7 +1402,9 @@ class RuleWordNumber(BaseRule):
         normalized_content = normalize(input_data.content)
         normalized_words = tuple(normalized_content.split())
         num_normalized_words = len(normalized_words)
-        if num_normalized_words >= int(cls.dynamic_config.key_list[0]) and num_normalized_words < int(cls.dynamic_config.key_list[1]):
+        if num_normalized_words >= int(
+            cls.dynamic_config.key_list[0]
+        ) and num_normalized_words < int(cls.dynamic_config.key_list[1]):
             pass
         else:
             res.error_status = True
@@ -1182,11 +1414,11 @@ class RuleWordNumber(BaseRule):
         return res
 
 
-@Model.rule_register('QUALITY_BAD_FLUENCY', ['pdf_all'])
+@Model.rule_register("QUALITY_BAD_FLUENCY", ["pdf_all"])
 class RuleWordSplit(BaseRule):
     """check pdf word abnormal split such as "ca- se"."""
 
-    dynamic_config = DynamicRuleConfig(pattern=r'[A-Za-z]+-\s*$')
+    dynamic_config = DynamicRuleConfig(pattern=r"[A-Za-z]+-\s*$")
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -1201,9 +1433,21 @@ class RuleWordSplit(BaseRule):
         return res
 
 
-@Model.rule_register('QUALITY_BAD_FLUENCY', ['text_base_all','llm_base','multi_lan_ar','multi_lan_ko',
-                                             'multi_lan_ru','multi_lan_th','multi_lan_vi','multi_lan_cs','multi_lan_hu',
-                                             'multi_lan_sr'])
+@Model.rule_register(
+    "QUALITY_BAD_FLUENCY",
+    [
+        "text_base_all",
+        "llm_base",
+        "multi_lan_ar",
+        "multi_lan_ko",
+        "multi_lan_ru",
+        "multi_lan_th",
+        "multi_lan_vi",
+        "multi_lan_cs",
+        "multi_lan_hu",
+        "multi_lan_sr",
+    ],
+)
 class RuleWordStuck(BaseRule):
     """check whether words are stuck."""
 
@@ -1213,15 +1457,15 @@ class RuleWordStuck(BaseRule):
             r"\.pdf$",
             r"\w+\.bat",
             r"(\/.*\/.*)",
-            r"[01]+|[0-7]+|0x[0-9a-fA-F]+"
+            r"[01]+|[0-7]+|0x[0-9a-fA-F]+",
         ]
     )
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         import wordninja
-        from dingo.model.rule.utils.detect_lang import (decide_language_by_str,
-                                                        set_fasttext)
+
+        from dingo.model.rule.utils.detect_lang import decide_language_by_str
         from dingo.model.rule.utils.util import is_sha256
 
         res = ModelRes()
@@ -1230,11 +1474,13 @@ class RuleWordStuck(BaseRule):
         for p in cls.dynamic_config.key_list:
             content = re.sub(p, "", content)
         word_list = [
-            word.strip(string.punctuation) for word in
-            re.split(r"[⁃>#%-.—,–!?;:\s|_/   =\\@\((.*?)\)\[(.*?)\]]\s*", content)
+            word.strip(string.punctuation)
+            for word in re.split(
+                r"[⁃>#%-.—,–!?;:\s|_/   =\\@\((.*?)\)\[(.*?)\]]\s*", content
+            )
         ]
         for longest_string in word_list:
-            if len(longest_string) > 45 and is_sha256(longest_string) == False:
+            if len(longest_string) > 45 and not is_sha256(longest_string):
                 lan = decide_language_by_str(longest_string)
                 cut = wordninja.split(longest_string)
                 if lan == "en" and len(cut) > 1:
@@ -1246,11 +1492,7 @@ class RuleWordStuck(BaseRule):
         return res
 
 
-if __name__ == '__main__':
-    data = Data(
-        data_id = '',
-        prompt = '',
-        content = "\n \n \n \n hello \n \n "
-    )
+if __name__ == "__main__":
+    data = Data(data_id="", prompt="", content="\n \n \n \n hello \n \n ")
     tmp = RuleEnterAndSpace().eval(data)
     print(tmp)

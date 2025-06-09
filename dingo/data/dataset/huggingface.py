@@ -2,6 +2,7 @@ import json
 from typing import Any, Dict, Generator, Mapping, Optional, Sequence, Union
 
 import datasets
+
 from dingo.data.dataset.base import Dataset
 from dingo.data.datasource import DataSource
 from dingo.data.datasource.huggingface import HuggingFaceSource
@@ -18,10 +19,10 @@ class HuggingFaceDataset(Dataset):
     """
 
     def __init__(
-            self,
-            source: HuggingFaceSource,
-            name: Optional[str] = None,
-            digest: Optional[str] = None,
+        self,
+        source: HuggingFaceSource,
+        name: Optional[str] = None,
+        digest: Optional[str] = None,
     ):
         """
         Args:
@@ -34,7 +35,7 @@ class HuggingFaceDataset(Dataset):
         self._ds: datasets.Dataset = source.load()
         self._targets = "text"
         if source.input_args.data_format == "plaintext":
-            if source.input_args.column_content != '':
+            if source.input_args.column_content != "":
                 self._targets = source.input_args.column_content
             if self._targets is not None and self._targets not in self._ds.column_names:
                 raise RuntimeError(
@@ -55,7 +56,8 @@ class HuggingFaceDataset(Dataset):
         """
         df = next(
             self._ds.to_pandas(
-                batch_size=_MAX_ROWS_FOR_DIGEST_COMPUTATION_AND_SCHEMA_INFERENCE, batched=True
+                batch_size=_MAX_ROWS_FOR_DIGEST_COMPUTATION_AND_SCHEMA_INFERENCE,
+                batched=True,
             )
         )
         return compute_pandas_digest(df)
@@ -128,15 +130,17 @@ class HuggingFaceDataset(Dataset):
 
 
 def from_huggingface(
-        path: Optional[str] = None,
-        split: str = "train",
-        targets: Optional[str] = None,
-        data_dir: Optional[str] = None,
-        data_files: Optional[Union[str, Sequence[str], Mapping[str, Union[str, Sequence[str]]]]] = None,
-        revision=None,
-        name: Optional[str] = None,
-        digest: Optional[str] = None,
-        trust_remote_code: Optional[bool] = None,
+    path: Optional[str] = None,
+    split: str = "train",
+    targets: Optional[str] = None,
+    data_dir: Optional[str] = None,
+    data_files: Optional[
+        Union[str, Sequence[str], Mapping[str, Union[str, Sequence[str]]]]
+    ] = None,
+    revision=None,
+    name: Optional[str] = None,
+    digest: Optional[str] = None,
+    trust_remote_code: Optional[bool] = None,
 ) -> HuggingFaceDataset:
     """
     Create a `dingo.data.dataset.huggingface.HuggingFaceDataset` from a Hugging Face dataset.

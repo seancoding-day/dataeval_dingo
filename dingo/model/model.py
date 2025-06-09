@@ -1,15 +1,15 @@
 import importlib
 import inspect
 import os
-from functools import wraps
 from typing import Callable, Dict, List, Optional
+
+from pydantic import BaseModel
 
 from dingo.config import GlobalConfig
 from dingo.model.llm.base import BaseLLM
 from dingo.model.prompt.base import BasePrompt
 from dingo.model.rule.base import BaseRule
 from dingo.utils import log
-from pydantic import BaseModel
 
 
 class BaseEvalModel(BaseModel):
@@ -26,9 +26,9 @@ class Model:
     prompt_groups = {}
 
     rule_metric_type_map = {}   # such as: {'QUALITY_INEFFECTIVENESS': [<class.RuleAlphaWords>]}
-    prompt_metric_type_map = {} # such as: {'QUALITY_INEFFECTIVENESS': [<class.QaRepeat>]}
+    prompt_metric_type_map = {}  # such as: {'QUALITY_INEFFECTIVENESS': [<class.QaRepeat>]}
 
-    rule_name_map = {} # such as: {'RuleAlphaWords': <class.RuleAlphaWords>}
+    rule_name_map = {}  # such as: {'RuleAlphaWords': <class.RuleAlphaWords>}
     prompt_name_map = {}
     llm_name_map = {}
 
@@ -107,7 +107,7 @@ class Model:
         Returns:
             Rule name list.
         """
-        return [r.metric_type+'-'+r.__name__ for r in Model.get_rule_group(group_name)]
+        return [r.metric_type + '-' + r.__name__ for r in Model.get_rule_group(group_name)]
 
     @classmethod
     def get_rule_by_name(cls, name: str) -> Callable:
@@ -205,7 +205,6 @@ class Model:
 
         return decorator
 
-
     @classmethod
     def prompt_register(cls, metric_type: str, group: List[str]) -> Callable:
         def decorator(root_class):
@@ -252,7 +251,7 @@ class Model:
                 log.debug(f"[Rule config]: config {llm_config} for {llm}")
                 cls_llm: BaseLLM = cls.llm_name_map[llm]
                 config_default = getattr(cls_llm, 'dynamic_config')
-                for k,v in llm_config:
+                for k, v in llm_config:
                     if v is not None:
                         setattr(config_default, k, v)
                 setattr(cls_llm, 'dynamic_config', config_default)
@@ -275,12 +274,13 @@ class Model:
             for prompt in GlobalConfig.config.prompt_list:
                 assert isinstance(prompt, str)
                 if prompt not in Model.prompt_name_map:
-                    raise KeyError(f"{prompt} not in Model.prompt_name_map, there are {str(Model.prompt_name_map.keys())}")
+                    raise KeyError(f"{prompt} not in Model.prompt_name_map, there are {
+                                   str(Model.prompt_name_map.keys())}")
                 model.append(Model.prompt_name_map[prompt])
             Model.prompt_groups[eval_group] = model
 
     @classmethod
-    def apply_config(cls, custom_config: Optional[str|dict], eval_group: str = ''):
+    def apply_config(cls, custom_config: Optional[str | dict], eval_group: str = ''):
         GlobalConfig.read_config_file(custom_config)
         cls.apply_config_rule()
         cls.apply_config_llm()
@@ -292,7 +292,7 @@ class Model:
         cls.apply_config_prompt_list(eval_group)
 
     @classmethod
-    def apply_config_for_spark_driver(cls, custom_config: Optional[str|dict], eval_group: str = ''):
+    def apply_config_for_spark_driver(cls, custom_config: Optional[str | dict], eval_group: str = ''):
         GlobalConfig.read_config_file(custom_config)
         cls.apply_config_rule()
         cls.apply_config_llm()

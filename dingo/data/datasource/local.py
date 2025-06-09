@@ -38,7 +38,7 @@ def load_local_file(path: str, by_line: bool = True) -> Generator[str, None, Non
     elif os.path.exists(path) and os.path.isdir(path):
         find_all_files(path, f_list)
     for f in f_list:
-        with open(f, 'r', encoding='utf-8') as _f:
+        with open(f, "r", encoding="utf-8") as _f:
             if by_line:
                 for line in _f.readlines():
                     yield line
@@ -48,12 +48,10 @@ def load_local_file(path: str, by_line: bool = True) -> Generator[str, None, Non
 
 @DataSource.register()
 class LocalDataSource(DataSource):
-
     def __init__(
-            self,
-            input_args: InputArgs = None,
-            config_name: Optional[str] = None,
-
+        self,
+        input_args: InputArgs = None,
+        config_name: Optional[str] = None,
     ):
         """Create a `LocalDataSource` instance.
         Args:

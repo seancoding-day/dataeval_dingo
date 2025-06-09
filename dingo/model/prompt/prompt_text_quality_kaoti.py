@@ -31,7 +31,7 @@ Determine whether the formulas in the text can be correctly rendered by Markdown
 - LaTeX syntax errors
 - Missing formula markers (`$`)
 - Mathematical symbol errors
-- Missing or excessive backslashes (`\`)
+- Missing or excessive backslashes (`\\`)
 - Incorrect formula answers
 
 ### 1.2 Error_Table
