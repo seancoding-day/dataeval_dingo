@@ -1,2 +1,0 @@
-# 禁用 nbstripout 对特定 notebook 的处理
-examples/colab/dingo_colab_demo.ipynb filter=
