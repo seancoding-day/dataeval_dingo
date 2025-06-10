@@ -7,8 +7,6 @@ import time
 import uuid
 from typing import Generator, List, Optional
 
-from tqdm import tqdm
-
 from dingo.config import GlobalConfig
 from dingo.data import Dataset, DataSource, dataset_map, datasource_map
 from dingo.exec.base import ExecProto, Executor
@@ -19,6 +17,7 @@ from dingo.model.modelres import ModelRes
 from dingo.model.prompt.base import BasePrompt
 from dingo.model.rule.base import BaseRule
 from dingo.utils import log
+from tqdm import tqdm
 
 
 @Executor.register("local")

@@ -1,8 +1,7 @@
 from typing import Optional
 
-from pydantic import BaseModel
-
 from dingo.utils.log_util.logger import Logger
+from pydantic import BaseModel
 
 
 class LogConfig(BaseModel):

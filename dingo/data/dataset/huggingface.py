@@ -2,7 +2,6 @@ import json
 from typing import Any, Dict, Generator, Mapping, Optional, Sequence, Union
 
 import datasets
-
 from dingo.data.dataset.base import Dataset
 from dingo.data.datasource import DataSource
 from dingo.data.datasource.huggingface import HuggingFaceSource

@@ -1,13 +1,12 @@
 import os
 
 import numpy as np
-from PIL import Image
-
 from dingo.config.config import DynamicRuleConfig
 from dingo.io import Data
 from dingo.model.model import Model
 from dingo.model.modelres import ModelRes
 from dingo.model.rule.base import BaseRule
+from PIL import Image
 
 
 @Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["img"])
@@ -142,10 +141,9 @@ class RuleImageTextSimilarity(BaseRule):
         import nltk
 
         nltk.download("punkt_tab")
+        from dingo.model.rule.utils.image_util import download_similar_tool
         from nltk.tokenize import word_tokenize
         from similarities import ClipSimilarity
-
-        from dingo.model.rule.utils.image_util import download_similar_tool
 
         res = ModelRes()
         if not input_data.image or not input_data.content:
