@@ -274,8 +274,7 @@ class Model:
             for prompt in GlobalConfig.config.prompt_list:
                 assert isinstance(prompt, str)
                 if prompt not in Model.prompt_name_map:
-                    raise KeyError(f"{prompt} not in Model.prompt_name_map, there are {
-                                   str(Model.prompt_name_map.keys())}")
+                    raise KeyError(f"{prompt} not in Model.prompt_name_map, there are {str(Model.prompt_name_map.keys())}")
                 model.append(Model.prompt_name_map[prompt])
             Model.prompt_groups[eval_group] = model
 

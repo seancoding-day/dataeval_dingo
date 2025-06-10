@@ -210,8 +210,7 @@ def main():
                     server.shutdown()
             except Exception as e:
                 print(f"Failed to start server: {e}")
-                print(f"You can try opening the file directly in your browser: file://{
-                      os.path.abspath(os.path.join(web_static_dir, new_html_filename))}")
+                print(f"You can try opening the file directly in your browser: file://{os.path.abspath(os.path.join(web_static_dir, new_html_filename))}")
                 url = f"http://localhost:{port}/{new_html_filename}"
                 open_browser(url)
                 success = True
