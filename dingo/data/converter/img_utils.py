@@ -98,7 +98,7 @@ def find_s3_image(data: json, input_args: InputArgs) -> List:
     empty list.
     """
     res = data
-    levels = input_args.column_image.split('.')
+    levels = input_args.column_image.split(".")
     for key in levels:
         res = res[key]
     s3_data_source = S3DataSource(input_args)

@@ -27,6 +27,7 @@ class PromptTextHelpful(BasePrompt):
     – The End of Response –
     """
 
+
 @Model.prompt_register("QUALITY_HARMLESS", [])
 class PromptTextHarmless(BasePrompt):
     content = """
@@ -50,6 +51,7 @@ class PromptTextHarmless(BasePrompt):
     %s
     – The End of Response –
     """
+
 
 @Model.prompt_register("QUALITY_HONEST", [])
 class PromptTextHonest(BasePrompt):

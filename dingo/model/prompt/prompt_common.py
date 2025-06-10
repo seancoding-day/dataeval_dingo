@@ -12,6 +12,7 @@ class PromptRepeat(BasePrompt):
     以下是需要判断的文本：
     """
 
+
 @Model.prompt_register("QUALITY_BAD_EFFECTIVENESS", [])
 class PromptContentChaos(BasePrompt):
     content = """
@@ -21,6 +22,8 @@ class PromptContentChaos(BasePrompt):
     除了json不要有其他内容。
     以下是需要判断的文本：
     """
+
+
 @Model.prompt_register("WORD_STICK", [])
 class PromptWordStick(BasePrompt):
     content = """
@@ -46,8 +49,10 @@ class PromptWordStick(BasePrompt):
     Return your answer in JSON format: {"score": 0, "type": "xxx", "reason": "xxx"}.
     Here are the data you need to evaluate:
     """
+
+
 @Model.prompt_register("CODE_LIST_ISSUE", [])
-class PromptUnreadIssue(BasePrompt):
+class PromptCodeListIssue(BasePrompt):
     content = """
     ### Role
     You are a data quality assessment expert with fluent English communication skills, and you have insight into the considerations of Chinese professionals in your field.
@@ -68,6 +73,8 @@ class PromptUnreadIssue(BasePrompt):
     Return your answer in JSON format: {"score": 0, "type": "xxx", "reason": "xxx"}.
     Here are the data you need to evaluate:
     """
+
+
 @Model.prompt_register("UNREAD_ISSUE", [])
 class PromptUnreadIssue(BasePrompt):
     content = """

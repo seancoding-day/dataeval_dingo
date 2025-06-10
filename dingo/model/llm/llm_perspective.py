@@ -8,12 +8,12 @@ from dingo.model.modelres import ModelRes
 from dingo.utils import log
 
 
-@Model.llm_register('LLMPerspective')
+@Model.llm_register("LLMPerspective")
 class LLMPerspective(BaseLLM):
     client = None
 
     dynamic_config = DynamicLLMConfig(
-        api_url = 'https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1'
+        api_url="https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1"
     )
 
     @classmethod
@@ -22,10 +22,10 @@ class LLMPerspective(BaseLLM):
             from googleapiclient import discovery
         except ImportError:
             log.warning(
-                "=========== perspective register fail. Please check whether install googleapiclient. ===========")
+                "=========== perspective register fail. Please check whether install googleapiclient. ==========="
+            )
 
         if cls.client is None:
-
             if not cls.dynamic_config.key:
                 raise ValueError("key cannot be empty in llm config.")
             elif not cls.dynamic_config.api_url:
@@ -43,29 +43,29 @@ class LLMPerspective(BaseLLM):
     def eval(cls, input_data: Data) -> ModelRes:
         cls.create_client()
         analyze_request = {
-            'comment': {'text': input_data.content},
-            'requestedAttributes': {
-                'TOXICITY': {},
-                'SEVERE_TOXICITY': {},
-                'IDENTITY_ATTACK': {},
-                'INSULT': {},
-                'PROFANITY': {},
-                'THREAT': {},
+            "comment": {"text": input_data.content},
+            "requestedAttributes": {
+                "TOXICITY": {},
+                "SEVERE_TOXICITY": {},
+                "IDENTITY_ATTACK": {},
+                "INSULT": {},
+                "PROFANITY": {},
+                "THREAT": {},
                 # 'SEXUALLY_EXPLICIT': {},
                 # 'FLIRTATION': {},
-            }
+            },
         }
 
         attempts = 0
-        except_msg = ''
+        except_msg = ""
         while attempts < 3:
             try:
                 response = cls.client.comments().analyze(body=analyze_request).execute()
 
                 is_good = True
                 error_list = []
-                for e in response['attributeScores']:
-                    value = response['attributeScores'][e]['summaryScore']['value']
+                for e in response["attributeScores"]:
+                    value = response["attributeScores"][e]["summaryScore"]["value"]
                     if value > 0.6:
                         is_good = False
                         error_list.append(e)
@@ -75,9 +75,9 @@ class LLMPerspective(BaseLLM):
                 else:
                     return ModelRes(
                         error_status=True,
-                        type='QUALITY_BAD',
+                        type="QUALITY_BAD",
                         name="PERSPECTIVE",
-                        reason=error_list
+                        reason=error_list,
                     )
             except Exception as e:
                 attempts += 1
@@ -85,8 +85,5 @@ class LLMPerspective(BaseLLM):
                 except_msg = str(e)
 
         return ModelRes(
-            error_status=True,
-            type='QUALITY_BAD',
-            name="API_LOSS",
-            reason=[except_msg]
+            error_status=True, type="QUALITY_BAD", name="API_LOSS", reason=[except_msg]
         )

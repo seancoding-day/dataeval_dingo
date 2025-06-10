@@ -20,9 +20,8 @@ from dingo.utils import log
 from tqdm import tqdm
 
 
-@Executor.register('local')
+@Executor.register("local")
 class LocalExecutor(ExecProto):
-
     def __init__(self, input_args: InputArgs):
         self.input_args: InputArgs = input_args
         self.llm: Optional[BaseLLM] = None
@@ -46,10 +45,12 @@ class LocalExecutor(ExecProto):
 
     def execute(self) -> SummaryModel:
         log.setLevel(self.input_args.log_level)
-        create_time = time.strftime('%Y%m%d_%H%M%S', time.localtime())
+        create_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
         Model.apply_config(self.input_args.custom_config, self.input_args.eval_group)
         input_path = self.input_args.input_path
-        output_path = os.path.join(self.input_args.output_path, create_time + '_' + str(uuid.uuid1())[:8])
+        output_path = os.path.join(
+            self.input_args.output_path, create_time + "_" + str(uuid.uuid1())[:8]
+        )
 
         log.debug(str(self.input_args.eval_group))
         for group_name in [self.input_args.eval_group]:
@@ -65,8 +66,8 @@ class LocalExecutor(ExecProto):
                 task_name=self.input_args.task_name,
                 eval_group=group_name,
                 input_path=input_path,
-                output_path=output_path if self.input_args.save_data else '',
-                create_time=create_time
+                output_path=output_path if self.input_args.save_data else "",
+                create_time=create_time,
             )
             self.evaluate()
             self.summary = self.summarize(self.summary)
@@ -81,24 +82,48 @@ class LocalExecutor(ExecProto):
             group (Any): _description_
             group_type (str): _description_
         """
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self.input_args.max_workers) as thread_executor, \
-             concurrent.futures.ProcessPoolExecutor(max_workers=self.input_args.max_workers) as process_executor:
+        with concurrent.futures.ThreadPoolExecutor(
+            max_workers=self.input_args.max_workers
+        ) as thread_executor, concurrent.futures.ProcessPoolExecutor(
+            max_workers=self.input_args.max_workers
+        ) as process_executor:
             data_iter = self.load_data()
-            data_iter = itertools.islice(data_iter, self.input_args.start_index, self.input_args.end_index if self.input_args.end_index >= 0 else None )
-            pbar = tqdm(total=None, unit='items')
+            data_iter = itertools.islice(
+                data_iter,
+                self.input_args.start_index,
+                self.input_args.end_index if self.input_args.end_index >= 0 else None,
+            )
+            pbar = tqdm(total=None, unit="items")
 
             def process_batch(batch: List):
-                futures=[]
-                for group_type, group in Model.get_group(self.input_args.eval_group).items():
-                    if group_type == 'rule':
+                futures = []
+                for group_type, group in Model.get_group(
+                    self.input_args.eval_group
+                ).items():
+                    if group_type == "rule":
                         if os.environ.get("LOCAL_DEPLOYMENT_MODE") == "true":
-                            futures += [thread_executor.submit(self.evaluate_single_data, group_type, group, data) for data in batch]
+                            futures += [
+                                thread_executor.submit(
+                                    self.evaluate_single_data, group_type, group, data
+                                )
+                                for data in batch
+                            ]
                         else:
-                            futures += [process_executor.submit(self.evaluate_single_data, group_type, group, data) for data in batch]
-                    elif group_type == 'prompt':
-                        futures += [thread_executor.submit(self.evaluate_single_data, group_type, group, data) for data in batch]
+                            futures += [
+                                process_executor.submit(
+                                    self.evaluate_single_data, group_type, group, data
+                                )
+                                for data in batch
+                            ]
+                    elif group_type == "prompt":
+                        futures += [
+                            thread_executor.submit(
+                                self.evaluate_single_data, group_type, group, data
+                            )
+                            for data in batch
+                        ]
                     else:
-                        raise RuntimeError(f'Unsupported group type: {group_type}')
+                        raise RuntimeError(f"Unsupported group type: {group_type}")
 
                 for future in concurrent.futures.as_completed(futures):
                     result_info = future.result()
@@ -112,19 +137,28 @@ class LocalExecutor(ExecProto):
                         self.summary.num_good += 1
                     self.summary.total += 1
 
-                    self.write_single_data(self.summary.output_path, self.input_args, result_info)
+                    self.write_single_data(
+                        self.summary.output_path, self.input_args, result_info
+                    )
                     pbar.update()
-                self.write_summary(self.summary.output_path, self.input_args, self.summarize(self.summary))
+                self.write_summary(
+                    self.summary.output_path,
+                    self.input_args,
+                    self.summarize(self.summary),
+                )
+
             while True:
                 batch = list(itertools.islice(data_iter, self.input_args.batch_size))
                 if not batch:
                     break
                 process_batch(batch)
 
-        log.debug('[Summary]: ' + str(self.summary))
+        log.debug("[Summary]: " + str(self.summary))
 
     def evaluate_single_data(self, group_type, group, data: Data):
-        result_info = ResultInfo(data_id=data.data_id, prompt=data.prompt, content=data.content)
+        result_info = ResultInfo(
+            data_id=data.data_id, prompt=data.prompt, content=data.content
+        )
         if self.input_args.save_raw:
             result_info.raw_data = data.raw_data
         bad_type_list = []
@@ -134,12 +168,12 @@ class LocalExecutor(ExecProto):
         bad_reason_list = []
         good_reason_list = []
         # for group_type, group in Model.get_group(group_name).items():
-        if group_type == 'rule':
+        if group_type == "rule":
             r_i = self.evaluate_rule(group, data)
-        elif group_type == 'prompt':
+        elif group_type == "prompt":
             r_i = self.evaluate_prompt(group, data)
         else:
-            raise RuntimeError(f'Unsupported group type: {group_type}')
+            raise RuntimeError(f"Unsupported group type: {group_type}")
         if r_i.error_status:
             result_info.error_status = True
             bad_type_list = bad_type_list + r_i.type_list
@@ -183,11 +217,11 @@ class LocalExecutor(ExecProto):
             if tmp.error_status:
                 result_info.error_status = True
                 bad_type_list.append(tmp.type)
-                bad_name_list.append(tmp.type + '-' + tmp.name)
+                bad_name_list.append(tmp.type + "-" + tmp.name)
                 bad_reason_list.extend(tmp.reason)
             else:
                 good_type_list.append(tmp.type)
-                good_name_list.append(tmp.type + '-' + tmp.name)
+                good_name_list.append(tmp.type + "-" + tmp.name)
                 good_reason_list.extend(tmp.reason)
         if result_info.error_status:
             result_info.type_list = list(set(bad_type_list))
@@ -216,11 +250,11 @@ class LocalExecutor(ExecProto):
             if tmp.error_status:
                 result_info.error_status = True
                 bad_type_list.append(tmp.type)
-                bad_name_list.append(tmp.type + '-' + tmp.name)
+                bad_name_list.append(tmp.type + "-" + tmp.name)
                 bad_reason_list.extend(tmp.reason)
             else:
                 good_type_list.append(tmp.type)
-                good_name_list.append(tmp.type + '-' + tmp.name)
+                good_name_list.append(tmp.type + "-" + tmp.name)
                 good_reason_list.extend(tmp.reason)
         if result_info.error_status:
             result_info.type_list = list(set(bad_type_list))
@@ -238,16 +272,22 @@ class LocalExecutor(ExecProto):
             return new_summary
         new_summary.score = round(new_summary.num_good / new_summary.total * 100, 2)
         for t in new_summary.type_ratio:
-            new_summary.type_ratio[t] = round(new_summary.type_ratio[t] / new_summary.total, 6)
+            new_summary.type_ratio[t] = round(
+                new_summary.type_ratio[t] / new_summary.total, 6
+            )
         for n in new_summary.name_ratio:
-            new_summary.name_ratio[n] = round(new_summary.name_ratio[n] / new_summary.total, 6)
+            new_summary.name_ratio[n] = round(
+                new_summary.name_ratio[n] / new_summary.total, 6
+            )
         new_summary.type_ratio = dict(sorted(new_summary.type_ratio.items()))
         new_summary.name_ratio = dict(sorted(new_summary.name_ratio.items()))
 
-        new_summary.finish_time = time.strftime('%Y%m%d_%H%M%S', time.localtime())
+        new_summary.finish_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
         return new_summary
 
-    def write_single_data(self, path: str, input_args: InputArgs, result_info: ResultInfo):
+    def write_single_data(
+        self, path: str, input_args: InputArgs, result_info: ResultInfo
+    ):
         if not input_args.save_data:
             return
 
@@ -255,23 +295,23 @@ class LocalExecutor(ExecProto):
             return
 
         for new_name in result_info.name_list:
-            t = str(new_name).split('-')[0]
-            n = str(new_name).split('-')[1]
+            t = str(new_name).split("-")[0]
+            n = str(new_name).split("-")[1]
             p_t = os.path.join(path, t)
             if not os.path.exists(p_t):
                 os.makedirs(p_t)
             f_n = os.path.join(path, t, n) + ".jsonl"
-            with open(f_n, 'a', encoding='utf-8') as f:
+            with open(f_n, "a", encoding="utf-8") as f:
                 if input_args.save_raw:
                     str_json = json.dumps(result_info.to_raw_dict(), ensure_ascii=False)
                 else:
                     str_json = json.dumps(result_info.to_dict(), ensure_ascii=False)
-                f.write(str_json + '\n')
+                f.write(str_json + "\n")
 
     def write_summary(self, path: str, input_args: InputArgs, summary: SummaryModel):
         if not input_args.save_data:
             return
-        with open(path + '/summary.json', 'w', encoding='utf-8') as f:
+        with open(path + "/summary.json", "w", encoding="utf-8") as f:
             json.dump(summary.to_dict(), f, indent=4, ensure_ascii=False)
 
     def get_summary(self):

@@ -28,6 +28,7 @@ class DataSource:
     Represents the source of a dataset used in Dingo Tracking, providing information such as
     cloud storage location, delta table name / version, etc.
     """
+
     datasource_map = {}
 
     def __init__(self, input_args: InputArgs):

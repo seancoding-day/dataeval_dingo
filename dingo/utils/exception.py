@@ -2,6 +2,7 @@ from fastapi import HTTPException
 
 # tokens
 
+
 class TokensException(HTTPException):
     pass
 
@@ -14,6 +15,7 @@ class ExceedMaxTokens(TokensException):
 
 
 # convert
+
 
 class ConvertError(HTTPException):
     pass

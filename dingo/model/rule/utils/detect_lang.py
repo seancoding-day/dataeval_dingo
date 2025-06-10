@@ -5,28 +5,30 @@ from typing import Any, Dict, Tuple
 import fasttext
 import requests
 from dingo.utils import log
-from huggingface_hub import hf_hub_download
 from tqdm import tqdm
 
 _global_lang_detect = []
-_fasttext_path = ''
+_fasttext_path = ""
+
 
 def calculate_md5(file_path):
     """计算文件的MD5哈希值"""
     md5 = hashlib.md5()
-    with open(file_path, 'rb') as f:
+    with open(file_path, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
             md5.update(chunk)
     return md5.hexdigest()
+
 
 def set_fasttext(path: str):
     global _fasttext_path
     _fasttext_path = path
 
-def download_fasttext() -> str:
-    expected_md5 = '01810bc59c6a3d2b79c79e6336612f65'
 
-    def download_file_from_url(url, save_dir='downloads', filename='lid.176.bin'):
+def download_fasttext() -> str:
+    expected_md5 = "01810bc59c6a3d2b79c79e6336612f65"
+
+    def download_file_from_url(url, save_dir="downloads", filename="lid.176.bin"):
         os.makedirs(save_dir, exist_ok=True)
         save_path = os.path.join(save_dir, filename)
 
@@ -41,26 +43,26 @@ def download_fasttext() -> str:
                 except Exception as cleanup_error:
                     raise Exception(f"清理不完整下载文件失败: {cleanup_error}")
 
-        temp_path = save_path + '.download'
+        temp_path = save_path + ".download"
         if os.path.exists(temp_path):
             try:
                 os.remove(temp_path)
-            except:
+            except BaseException:
                 pass
 
         try:
             with requests.get(url, stream=True) as response:
                 response.raise_for_status()
 
-                total_size = int(response.headers.get('content-length', 0))
+                total_size = int(response.headers.get("content-length", 0))
 
-                with open(temp_path, 'wb') as f, tqdm(
-                        desc=filename,
-                        total=total_size,
-                        unit='B',
-                        unit_scale=True,
-                        unit_divisor=1024,
-                        miniters=1,
+                with open(temp_path, "wb") as f, tqdm(
+                    desc=filename,
+                    total=total_size,
+                    unit="B",
+                    unit_scale=True,
+                    unit_divisor=1024,
+                    miniters=1,
                 ) as bar:
                     for chunk in response.iter_content(chunk_size=8192):
                         if chunk:
@@ -86,7 +88,9 @@ def download_fasttext() -> str:
 
     if _fasttext_path:
         return _fasttext_path
-    file_path = download_file_from_url(url='https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin')
+    file_path = download_file_from_url(
+        url="https://dl.fbaipublicfiles.com/fasttext/supervised-models/lid.176.bin"
+    )
     return file_path
 
 
@@ -99,6 +103,7 @@ class LanguageIdentification:
             Predicts the language of the given text and returns the top 5 matching languages
             along with their probabilities.
     """
+
     def __init__(self) -> None:
         """
         Initializes the LanguageIdentification class with the pre-trained fastText model.
@@ -143,7 +148,9 @@ def release_lang_detect():
         del _global_lang_detect[0]
 
 
-def decide_language_by_prob(predictions: Tuple[str], probabilities: Tuple[float]) -> str:
+def decide_language_by_prob(
+    predictions: Tuple[str], probabilities: Tuple[float]
+) -> str:
     """
     Decides the final language based on the probabilities of the predicted languages.
 
@@ -172,7 +179,9 @@ def decide_language_by_prob(predictions: Tuple[str], probabilities: Tuple[float]
             final_lang = max(lang_prob_dict, key=lang_prob_dict.get)
             if final_lang == "hr":
                 final_lang = "sr"
-        elif max(lang_prob_dict.values()) > 0 and max(lang_prob_dict, key=lang_prob_dict.get) in ["sr", "hr"]:
+        elif max(lang_prob_dict.values()) > 0 and max(
+            lang_prob_dict, key=lang_prob_dict.get
+        ) in ["sr", "hr"]:
             final_lang = "sr"
         else:
             final_lang = "mix"
@@ -193,7 +202,7 @@ def decide_language_func(content_str: str, lang_detect: LanguageIdentification) 
     str_len = len(content_str)
     if str_len > 10000:
         start_idx = (str_len - 10000) // 2
-        content_str = content_str[start_idx: start_idx + 10000]
+        content_str = content_str[start_idx : start_idx + 10000]
 
     if len(content_str) == 0:
         return "empty"
@@ -227,7 +236,7 @@ def update_language_by_str(content_str: str) -> Dict[str, Any]:
     return {"language": decide_language_by_str(content_str)}
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     content = "你好，我很高兴见到你！"
     language = decide_language_by_str(content)
     print(language)

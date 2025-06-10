@@ -31,12 +31,15 @@ class BaseOpenAI(BaseLLM):
         elif not cls.dynamic_config.api_url:
             raise ValueError("api_url cannot be empty in llm config.")
         else:
-            cls.client = OpenAI(api_key=cls.dynamic_config.key, base_url=cls.dynamic_config.api_url)
+            cls.client = OpenAI(
+                api_key=cls.dynamic_config.key, base_url=cls.dynamic_config.api_url
+            )
 
     @classmethod
     def build_messages(cls, input_data: Data) -> List:
-        messages = [{"role": "user",
-                     "content": cls.prompt.content + input_data.content}]
+        messages = [
+            {"role": "user", "content": cls.prompt.content + input_data.content}
+        ]
         return messages
 
     @classmethod
@@ -52,15 +55,17 @@ class BaseOpenAI(BaseLLM):
         completions = cls.client.chat.completions.create(
             model=model_name,
             messages=messages,
-            temperature=params.get('temperature', 0.3) if params else 0.3,
-            top_p=params.get('top_p', 1) if params else 1,
-            max_tokens=params.get('max_tokens', 4000) if params else 4000,
-            presence_penalty=params.get('presence_penalty', 0) if params else 0,
-            frequency_penalty=params.get('frequency_penalty', 0) if params else 0
+            temperature=params.get("temperature", 0.3) if params else 0.3,
+            top_p=params.get("top_p", 1) if params else 1,
+            max_tokens=params.get("max_tokens", 4000) if params else 4000,
+            presence_penalty=params.get("presence_penalty", 0) if params else 0,
+            frequency_penalty=params.get("frequency_penalty", 0) if params else 0,
         )
 
         if completions.choices[0].finish_reason == "length":
-            raise ExceedMaxTokens(f"Exceed max tokens: {params.get('max_tokens', 4000) if params else 4000}")
+            raise ExceedMaxTokens(
+                f"Exceed max tokens: {params.get('max_tokens', 4000) if params else 4000}"
+            )
 
         return str(completions.choices[0].message.content)
 
@@ -97,26 +102,30 @@ class BaseOpenAI(BaseLLM):
 
         # validate presence_penalty
         if "presence_penalty" in parameters:
-            cls.validate_numeric_range(parameters["presence_penalty"], -2.0, 2.0, "presence_penalty")
+            cls.validate_numeric_range(
+                parameters["presence_penalty"], -2.0, 2.0, "presence_penalty"
+            )
 
         # validate frequency_penalty
         if "frequency_penalty" in parameters:
-            cls.validate_numeric_range(parameters["frequency_penalty"], -2.0, 2.0, "frequency_penalty")
+            cls.validate_numeric_range(
+                parameters["frequency_penalty"], -2.0, 2.0, "frequency_penalty"
+            )
 
     @classmethod
     def process_response(cls, response: str) -> ModelRes:
         log.info(response)
 
-        if response.startswith('```json'):
+        if response.startswith("```json"):
             response = response[7:]
-        if response.startswith('```'):
+        if response.startswith("```"):
             response = response[3:]
-        if response.endswith('```'):
+        if response.endswith("```"):
             response = response[:-3]
         try:
             response_json = json.loads(response)
         except json.JSONDecodeError:
-            raise ConvertJsonError(f'Convert to JSON format failed: {response}')
+            raise ConvertJsonError(f"Convert to JSON format failed: {response}")
 
         response_model = ResponseScoreReason(**response_json)
 
@@ -140,7 +149,7 @@ class BaseOpenAI(BaseLLM):
         messages = cls.build_messages(input_data)
 
         attempts = 0
-        except_msg = ''
+        except_msg = ""
         except_name = Exception.__class__.__name__
         while attempts < 3:
             try:
@@ -157,8 +166,5 @@ class BaseOpenAI(BaseLLM):
                 except_name = e.__class__.__name__
 
         return ModelRes(
-            error_status=True,
-            type='QUALITY_BAD',
-            name=except_name,
-            reason=[except_msg]
+            error_status=True, type="QUALITY_BAD", name=except_name, reason=[except_msg]
         )

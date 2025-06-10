@@ -28,9 +28,11 @@ def get_folder_structure(root_path):
             structure.append(category)
     return structure
 
+
 def get_summary_data(summary_path):
     with open(summary_path, 'r') as file:
         return json.load(file)
+
 
 def get_evaluation_details(root_path):
     details = {}
@@ -45,6 +47,7 @@ def get_evaluation_details(root_path):
                         details[key] = [json.loads(line) for line in file]
     return details
 
+
 def create_data_source(root_path, summary_data, folder_structure, evaluation_details):
     return {
         "inputPath": root_path,
@@ -54,6 +57,7 @@ def create_data_source(root_path, summary_data, folder_structure, evaluation_det
             "evaluationDetailList": evaluation_details
         }
     }
+
 
 def inject_data_to_html(html_path, data_source):
     # 生成新的HTML文件名
@@ -86,12 +90,14 @@ def inject_data_to_html(html_path, data_source):
     print(f"Data source injected into {new_html_path}")
     return new_html_filename
 
+
 def start_http_server(directory, port=8000):
     os.chdir(directory)
     handler = SimpleHTTPRequestHandler
     server = HTTPServer(("", port), handler)
     print(f"Server started on port {port}")
     return server
+
 
 def process_and_inject(root_path):
     summary_path = os.path.join(root_path, "summary.json")
@@ -125,6 +131,7 @@ def process_and_inject(root_path):
 
     return True, new_html_filename
 
+
 def run_visual_app(input_path=None):
     app_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "app")
     os.chdir(app_dir)
@@ -151,11 +158,19 @@ def run_visual_app(input_path=None):
 
     return True
 
+
 def parse_args():
     parser = argparse.ArgumentParser("dingo visualization")
     parser.add_argument("--input", required=True, help="Path to the root folder containing summary.json and subfolders")
-    parser.add_argument("--mode", choices=["visualization", "app"], default="visualization", help="Choose the mode: visualization or app")
+    parser.add_argument(
+        "--mode",
+        choices=[
+            "visualization",
+            "app"],
+        default="visualization",
+        help="Choose the mode: visualization or app")
     return parser.parse_args()
+
 
 def open_browser(url):
     system = platform.system().lower()
@@ -169,6 +184,7 @@ def open_browser(url):
     except Exception as e:
         print(f"Failed to open browser automatically: {e}")
         print(f"Please open {url} manually in your browser.")
+
 
 def main():
     args = parse_args()
@@ -201,6 +217,7 @@ def main():
 
     if not success:
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

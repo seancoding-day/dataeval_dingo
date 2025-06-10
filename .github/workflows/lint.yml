@@ -24,5 +24,4 @@ jobs:
           pre-commit install
       - name: Linting
         run: |
-          pre-commit sample-config > .pre-commit-config.yaml
           pre-commit run --all-files
