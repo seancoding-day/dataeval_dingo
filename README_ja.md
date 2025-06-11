@@ -150,7 +150,8 @@ python -m dingo.run.vsl --input output_directory
 地元でDingoを試してみましょう：
 
 ```shell
-python app_gradio/app.py
+cd app_gradio
+python app.py
 ```
 
 ![Gradio demo](docs/assets/gradio_demo.png)

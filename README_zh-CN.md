@@ -148,7 +148,8 @@ python -m dingo.run.vsl --input 输出目录
 尝试我们的本地演示：
 
 ```shell
-python app_gradio/app.py
+cd app_gradio
+python app.py
 ```
 
 ![Gradio demo](docs/assets/gradio_demo.png)

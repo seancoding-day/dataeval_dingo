@@ -150,7 +150,8 @@ Try Dingo on our online demo: [(Hugging Face)🤗](https://huggingface.co/spaces
 Try Dingo in local:
 
 ```shell
-python app_gradio/app.py
+cd app_gradio
+python app.py
 ```
 
 ![Gradio demo](docs/assets/gradio_demo.png)
