@@ -4,26 +4,41 @@ from typing import List
 def get_xyz_head_word(lang) -> List[str]:
     return xyz_head_word[lang]
 
+
 xyz_head_word = {
-    "ar":[
-        "المصدر", # source
-        "دار نشر", # publish
-        "مراجع", # reference
+    "ar": [
+        "المصدر",  # source
+        "دار نشر",  # publish
+        "مراجع",  # reference
     ],
-    "ru":[
-        "Российское информационное агентство", "РИА Новости",  # Russian News Agency
-        "Информационное телеграфное агентство России", "ИТАР-ТАСС", "TASS",  # TASS
-        "Международное информационное агентство «Интерфакс»", "Интерфакс", "Interfax",  # Interfax
-        "Спутник новостной портал", "Спутник", "Sputnik International", "Sputnik",  # Sputnik
-        "Русия Аль-Яум", "Россия сегодня",
-        "Эксмо", "Eksmo", # publish
-        "Просвещение", "AST",  # publish
-        "Просвещение", "Prosvechtchénié",  # Enlightenment Publishing Housepublish
-        "Дрофа", "Drofa",  # Drofa publish
-        "Олма Медиа Групп", "Olma Media Group"  # Olma Media Group publish
+    "ru": [
+        "Российское информационное агентство",
+        "РИА Новости",  # Russian News Agency
+        "Информационное телеграфное агентство России",
+        "ИТАР-ТАСС",
+        "TASS",  # TASS
+        "Международное информационное агентство «Интерфакс»",
+        "Интерфакс",
+        "Interfax",  # Interfax
+        "Спутник новостной портал",
+        "Спутник",
+        "Sputnik International",
+        "Sputnik",  # Sputnik
+        "Русия Аль-Яум",
+        "Россия сегодня",
+        "Эксмо",
+        "Eksmo",  # publish
+        "Просвещение",
+        "AST",  # publish
+        "Просвещение",
+        "Prosvechtchénié",  # Enlightenment Publishing Housepublish
+        "Дрофа",
+        "Drofa",  # Drofa publish
+        "Олма Медиа Групп",
+        "Olma Media Group"  # Olma Media Group publish
         "Фото",  # photo
         "Источник",  # source
-        "Иллюстрированное"  # illustrations
+        "Иллюстрированное",  # illustrations
     ],
     "ko": [
         "그림출처",  # photo
@@ -45,11 +60,12 @@ xyz_head_word = {
         "รูปภาพ",  # picture
         "การถ่ายภาพ",  # photo
         "แหล่งที่มา",  # source
-        "หนังสือภาพประกอบ"  # illustrations
+        "หนังสือภาพประกอบ",  # illustrations
     ],
     "vi": [
         "Hình ảnh",  # photo
-        "Nguồn", "nguồn"  # source
+        "Nguồn",
+        "nguồn"  # source
         "Liên kết ngoài",  # link
         "Chú thích",  # reference
     ],
@@ -57,16 +73,15 @@ xyz_head_word = {
         "Obrázek",  # picture
         "Ftografování",  # photo
         "Zdroj",  # source
-        "Ilustrovaná kniha"  # illustrations
+        "Ilustrovaná kniha",  # illustrations
     ],
     "hu": [
-        "Foto:", "Fénykép:", "Kép:",  # picture
+        "Foto:",
+        "Fénykép:",
+        "Kép:",  # picture
         "Fényképezés",  # photo
-        "Források", "Forrás",  # source
+        "Források",
+        "Forrás",  # source
     ],
-    "sr": [
-        "илустрација", # photo
-        "извор", # source
-        "Референце" # reference
-    ],
+    "sr": ["илустрација", "извор", "Референце"],  # photo  # source  # reference
 }

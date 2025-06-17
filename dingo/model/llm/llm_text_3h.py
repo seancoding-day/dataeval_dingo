@@ -8,7 +8,7 @@ from dingo.utils import log
 from dingo.utils.exception import ConvertJsonError
 
 
-@Model.llm_register('LLMText3H')
+@Model.llm_register("LLMText3H")
 class LLMText3H(BaseOpenAI):
     @classmethod
     def build_messages(cls, input_data):
@@ -24,28 +24,28 @@ class LLMText3H(BaseOpenAI):
     def process_response(cls, response: str) -> ModelRes:
         log.info(response)
 
-        if response.startswith('```json'):
+        if response.startswith("```json"):
             response = response[7:]
-        if response.startswith('```'):
+        if response.startswith("```"):
             response = response[3:]
-        if response.endswith('```'):
+        if response.endswith("```"):
             response = response[:-3]
         try:
             response_json = json.loads(response)
         except json.JSONDecodeError:
-            raise ConvertJsonError(f'Convert to JSON format failed: {response}')
+            raise ConvertJsonError(f"Convert to JSON format failed: {response}")
 
         response_model = ResponseScoreReason(**response_json)
 
         result = ModelRes()
 
         # error_status
-        if response_model.score == '1':
+        if response_model.score == "1":
             result.reason = [response_model.reason]
             result.name = cls.prompt.__name__[8:].upper()
         else:
             result.error_status = True
-            result.type = 'QUALITY_BAD'
+            result.type = "QUALITY_BAD"
             result.reason = [response_model.reason]
             result.name = "NOT_" + cls.prompt.__name__[8:].upper()
 

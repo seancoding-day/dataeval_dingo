@@ -9,27 +9,29 @@ from dingo.io import InputArgs
 
 @DataSource.register()
 class S3DataSource(DataSource):
-
     def __init__(
-            self,
-            input_args: InputArgs = None,
-            config_name: Optional[str] = None,
-
+        self,
+        input_args: InputArgs = None,
+        config_name: Optional[str] = None,
     ):
         """Create a `LocalDataSource` instance.
         Args:
             input_args: A `InputArgs` instance to load the dataset from.
             config_name: The name of the Hugging Face dataset configuration.
         """
-        self.client = self._get_client(input_args.s3_ak, input_args.s3_sk,
-                                       input_args.s3_endpoint_url, input_args.s3_addressing_style)
+        self.client = self._get_client(
+            input_args.s3_ak,
+            input_args.s3_sk,
+            input_args.s3_endpoint_url,
+            input_args.s3_addressing_style,
+        )
         self.path = input_args.input_path
         self.config_name = config_name
         super().__init__(input_args=input_args)
 
     @staticmethod
     def _get_client(ak: str, sk: str, endpoint_url: str, addressing_style: str):
-        if ak == '' or sk == '' or endpoint_url == '':
+        if ak == "" or sk == "" or endpoint_url == "":
             raise RuntimeError("S3 param must be set when using S3 datasource.")
         s3_client = boto3.client(
             service_name="s3",
@@ -60,14 +62,21 @@ class S3DataSource(DataSource):
 
     def _load(self) -> Generator[str, None, None]:
         if not self.path.endswith("/"):
-            obj = self.client.get_object(Bucket=self.input_args.s3_bucket, Key=self.path)
+            obj = self.client.get_object(
+                Bucket=self.input_args.s3_bucket, Key=self.path
+            )
             obj_list = [obj]
         else:
-            contents = self.client.list_objects(Bucket=self.input_args.s3_bucket, Prefix=self.path)['Contents']
-            obj_list = [self.client.get_object(Bucket=self.input_args.s3_bucket, Key=obj['Key']) for obj in contents]
+            contents = self.client.list_objects(
+                Bucket=self.input_args.s3_bucket, Prefix=self.path
+            )["Contents"]
+            obj_list = [
+                self.client.get_object(Bucket=self.input_args.s3_bucket, Key=obj["Key"])
+                for obj in contents
+            ]
         for obj in obj_list:
-            for line in obj['Body'].iter_lines():
-                yield line.decode('utf-8')
+            for line in obj["Body"].iter_lines():
+                yield line.decode("utf-8")
 
     def to_dict(self) -> Dict[str, Any]:
         return {

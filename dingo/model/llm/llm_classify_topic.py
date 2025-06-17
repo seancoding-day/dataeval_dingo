@@ -9,7 +9,7 @@ from dingo.utils import log
 from dingo.utils.exception import ConvertJsonError
 
 
-@Model.llm_register('LLMClassifyTopic')
+@Model.llm_register("LLMClassifyTopic")
 class LLMClassifyTopic(BaseOpenAI):
     prompt = PromptClassifyTopic
 
@@ -17,16 +17,16 @@ class LLMClassifyTopic(BaseOpenAI):
     def process_response(cls, response: str) -> ModelRes:
         log.info(response)
 
-        if response.startswith('```json'):
+        if response.startswith("```json"):
             response = response[7:]
-        if response.startswith('```'):
+        if response.startswith("```"):
             response = response[3:]
-        if response.endswith('```'):
+        if response.endswith("```"):
             response = response[:-3]
         try:
             response_json = json.loads(response)
         except json.JSONDecodeError:
-            raise ConvertJsonError(f'Convert to JSON format failed: {response}')
+            raise ConvertJsonError(f"Convert to JSON format failed: {response}")
 
         response_model = ResponseNameReason(**response_json)
 

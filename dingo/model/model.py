@@ -1,7 +1,6 @@
 import importlib
 import inspect
 import os
-from functools import wraps
 from typing import Callable, Dict, List, Optional
 
 from dingo.config import GlobalConfig
@@ -26,9 +25,9 @@ class Model:
     prompt_groups = {}
 
     rule_metric_type_map = {}   # such as: {'QUALITY_INEFFECTIVENESS': [<class.RuleAlphaWords>]}
-    prompt_metric_type_map = {} # such as: {'QUALITY_INEFFECTIVENESS': [<class.QaRepeat>]}
+    prompt_metric_type_map = {}  # such as: {'QUALITY_INEFFECTIVENESS': [<class.QaRepeat>]}
 
-    rule_name_map = {} # such as: {'RuleAlphaWords': <class.RuleAlphaWords>}
+    rule_name_map = {}  # such as: {'RuleAlphaWords': <class.RuleAlphaWords>}
     prompt_name_map = {}
     llm_name_map = {}
 
@@ -107,7 +106,7 @@ class Model:
         Returns:
             Rule name list.
         """
-        return [r.metric_type+'-'+r.__name__ for r in Model.get_rule_group(group_name)]
+        return [r.metric_type + '-' + r.__name__ for r in Model.get_rule_group(group_name)]
 
     @classmethod
     def get_rule_by_name(cls, name: str) -> Callable:
@@ -205,7 +204,6 @@ class Model:
 
         return decorator
 
-
     @classmethod
     def prompt_register(cls, metric_type: str, group: List[str]) -> Callable:
         def decorator(root_class):
@@ -252,7 +250,7 @@ class Model:
                 log.debug(f"[Rule config]: config {llm_config} for {llm}")
                 cls_llm: BaseLLM = cls.llm_name_map[llm]
                 config_default = getattr(cls_llm, 'dynamic_config')
-                for k,v in llm_config:
+                for k, v in llm_config:
                     if v is not None:
                         setattr(config_default, k, v)
                 setattr(cls_llm, 'dynamic_config', config_default)
@@ -280,7 +278,7 @@ class Model:
             Model.prompt_groups[eval_group] = model
 
     @classmethod
-    def apply_config(cls, custom_config: Optional[str|dict], eval_group: str = ''):
+    def apply_config(cls, custom_config: Optional[str | dict], eval_group: str = ''):
         GlobalConfig.read_config_file(custom_config)
         cls.apply_config_rule()
         cls.apply_config_llm()
@@ -292,7 +290,7 @@ class Model:
         cls.apply_config_prompt_list(eval_group)
 
     @classmethod
-    def apply_config_for_spark_driver(cls, custom_config: Optional[str|dict], eval_group: str = ''):
+    def apply_config_for_spark_driver(cls, custom_config: Optional[str | dict], eval_group: str = ''):
         GlobalConfig.read_config_file(custom_config)
         cls.apply_config_rule()
         cls.apply_config_llm()

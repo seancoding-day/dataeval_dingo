@@ -10,15 +10,15 @@ class HuggingFaceSource(DataSource):
     """Represents the source of a Hugging Face dataset used in Dingo Tracking."""
 
     def __init__(
-            self,
-            input_args: InputArgs = None,
-            config_name: Optional[str] = None,
-            data_dir: Optional[str] = None,
-            data_files: Optional[
-                Union[str, Sequence[str], Mapping[str, Union[str, Sequence[str]]]]
-            ] = None,
-            revision: Optional[Union[str, datasets.Version]] = None,
-            trust_remote_code: Optional[bool] = None,
+        self,
+        input_args: InputArgs = None,
+        config_name: Optional[str] = None,
+        data_dir: Optional[str] = None,
+        data_files: Optional[
+            Union[str, Sequence[str], Mapping[str, Union[str, Sequence[str]]]]
+        ] = None,
+        revision: Optional[Union[str, datasets.Version]] = None,
+        trust_remote_code: Optional[bool] = None,
     ):
         """Create a `HuggingFaceSource` instance.
         Arguments in `__init__` match arguments of the same name in
@@ -39,10 +39,10 @@ class HuggingFaceSource(DataSource):
         self.data_files = data_files
         self.revision = revision
         self.trust_remote_code = trust_remote_code
-        if input_args.huggingface_split != '':
+        if input_args.huggingface_split != "":
             self.split = input_args.huggingface_split
         else:
-            self.split = 'train'
+            self.split = "train"
         super().__init__(input_args=input_args)
 
     @staticmethod
@@ -59,6 +59,7 @@ class HuggingFaceSource(DataSource):
         """
         import datasets
         from packaging.version import Version
+
         load_kwargs = {
             "path": self.path,
             "name": self.config_name,

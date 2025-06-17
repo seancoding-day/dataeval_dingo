@@ -1,10 +1,10 @@
-from dingo.data.dataset.base import Dataset
-from dingo.data.dataset.huggingface import HuggingFaceDataset
-from dingo.data.dataset.local import LocalDataset
+from dingo.data.dataset.base import Dataset  # noqa E402.
+from dingo.data.dataset.huggingface import HuggingFaceDataset  # noqa E402.
+from dingo.data.dataset.local import LocalDataset  # noqa E402.
 from dingo.utils import log
 
 try:
-    from dingo.data.dataset.spark import SparkDataset
+    from dingo.data.dataset.spark import SparkDataset  # noqa E402.
 except Exception as e:
     log.warning("Spark Dataset not imported. Open debug log for more details.")
     log.debug(str(e))

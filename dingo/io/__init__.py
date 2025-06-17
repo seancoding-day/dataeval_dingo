@@ -1,4 +1,4 @@
-from dingo.io.input.Data import Data
-from dingo.io.input.InputArgs import InputArgs
-from dingo.io.output.ResultInfo import ResultInfo
-from dingo.io.output.SummaryModel import SummaryModel
+from dingo.io.input.Data import Data  # noqa E402.
+from dingo.io.input.InputArgs import InputArgs  # noqa E402.
+from dingo.io.output.ResultInfo import ResultInfo  # noqa E402.
+from dingo.io.output.SummaryModel import SummaryModel  # noqa E402.

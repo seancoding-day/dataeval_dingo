@@ -10,15 +10,14 @@ input_data = {
     "column_content": "content",
     "custom_config":
         {
+            "rule_list": ["RuleColonEnd"],
             "prompt_list": ["PromptRepeat"],
-            "llm_config":
-                {
-                    "LLMTextQualityPromptBase":
-                        {
-                            "key": "enter your key, such as:EMPTY",
-                            "api_url": "enter your local llm api url, such as:http://127.0.0.1:8080/v1",
-                        }
+            "llm_config": {
+                "LLMTextQualityPromptBase": {
+                    "key": "enter your key, such as:EMPTY",
+                    "api_url": "enter your local llm api url, such as:http://127.0.0.1:8080/v1",
                 }
+            }
         },
     "log_level": "INFO"
 }

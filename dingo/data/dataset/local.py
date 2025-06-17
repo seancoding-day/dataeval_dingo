@@ -18,10 +18,10 @@ class LocalDataset(Dataset):
         return None
 
     def __init__(
-            self,
-            source: LocalDataSource,
-            name: Optional[str] = None,
-            digest: Optional[str] = None,
+        self,
+        source: LocalDataSource,
+        name: Optional[str] = None,
+        digest: Optional[str] = None,
     ):
         """
         Args:

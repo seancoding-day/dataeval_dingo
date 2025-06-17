@@ -1,1 +1,1 @@
-from dingo.config.config import GlobalConfig
+from dingo.config.config import GlobalConfig  # noqa E402.

@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+from pathlib import Path
 
 import gradio as gr
 from dingo.exec import Executor
@@ -10,37 +11,42 @@ from dingo.io import InputArgs
 def dingo_demo(dataset_source, input_path, uploaded_file, data_format, column_content, rule_list, prompt_list, model,
                key, api_url):
     if not data_format:
-        return 'ValueError: data_format can not be empty, please input.', None
+        raise gr.Error('ValueError: data_format can not be empty, please input.')
     if not column_content:
-        return 'ValueError: column_content can not be empty, please input.', None
+        raise gr.Error('ValueError: column_content can not be empty, please input.')
     if not rule_list and not prompt_list:
-        return 'ValueError: rule_list and prompt_list can not be empty at the same time.', None
+        raise gr.Error('ValueError: rule_list and prompt_list can not be empty at the same time.')
 
     # Handle input path based on dataset source
     if dataset_source == "hugging_face":
         if not input_path:
-            return 'ValueError: input_path can not be empty for hugging_face dataset, please input.', None
+            raise gr.Error('ValueError: input_path can not be empty for hugging_face dataset, please input.')
         final_input_path = input_path
     else:  # local
         if not uploaded_file:
-            return 'ValueError: Please upload a file for local dataset.', None
+            raise gr.Error('Please upload a file for local dataset.')
+
+        file_base_name = os.path.basename(uploaded_file.name)
+        if not str(file_base_name).endswith(('.jsonl', '.json', '.txt')):
+            raise gr.Error('File format must be \'.jsonl\', \'.json\' or \'.txt\'')
+
         final_input_path = uploaded_file.name
 
-    input_data = {
-        "dataset": dataset_source,
-        "input_path": final_input_path,
-        "output_path": "" if dataset_source == 'hugging_face' else os.path.dirname(final_input_path),
-        "save_data": True,
-        "save_raw": True,
-        "data_format": data_format,
-        "column_content": column_content,
-        "custom_config":
-            {
+    try:
+        input_data = {
+            "dataset": dataset_source,
+            "input_path": final_input_path,
+            "output_path": "" if dataset_source == 'hugging_face' else os.path.dirname(final_input_path),
+            "save_data": True,
+            "save_raw": True,
+            "data_format": data_format,
+            "column_content": column_content,
+            "custom_config":{
                 "rule_list": rule_list,
                 "prompt_list": prompt_list,
                 "llm_config":
                     {
-                        "detect_text_quality_detail":
+                        "LLMTextQualityPromptBase":
                             {
                                 "model": model,
                                 "key": key,
@@ -48,20 +54,21 @@ def dingo_demo(dataset_source, input_path, uploaded_file, data_format, column_co
                             }
                     }
             }
-    }
-    input_args = InputArgs(**input_data)
-    executor = Executor.exec_map["local"](input_args)
-    executor.execute()
-    summary = executor.get_summary().to_dict()
-    detail = executor.get_bad_info_list()
-    new_detail = []
-    for item in detail:
-        new_detail.append(item.to_raw_dict())
-    if summary['output_path']:
-        shutil.rmtree(summary['output_path'])
+        }
+        input_args = InputArgs(**input_data)
+        executor = Executor.exec_map["local"](input_args)
+        summary = executor.execute().to_dict()
+        detail = executor.get_bad_info_list()
+        new_detail = []
+        for item in detail:
+            new_detail.append(item)
+        if summary['output_path']:
+            shutil.rmtree(summary['output_path'])
 
-    # 返回两个值：概要信息和详细信息
-    return json.dumps(summary, indent=4), new_detail
+        # 返回两个值：概要信息和详细信息
+        return json.dumps(summary, indent=4), new_detail
+    except Exception as e:
+        raise gr.Error(str(e))
 
 
 def update_input_components(dataset_source):
@@ -84,7 +91,8 @@ if __name__ == '__main__':
     rule_options = ['RuleAbnormalChar', 'RuleAbnormalHtml', 'RuleContentNull', 'RuleContentShort', 'RuleEnterAndSpace', 'RuleOnlyUrl']
     prompt_options = ['PromptRepeat', 'PromptContentChaos']
 
-    with open("header.html", "r") as file:
+    current_dir = Path(__file__).parent
+    with open(os.path.join(current_dir, 'header.html'), "r") as file:
         header = file.read()
     with gr.Blocks() as demo:
         gr.HTML(header)
