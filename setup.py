@@ -11,12 +11,12 @@ with open("./requirements/web.txt", "r", encoding='utf-8') as f:
 
 setup(
     name="dingo-python",
-    version="1.7.1",
+    version="1.8",
     author="Dingo",
-    description="A Comprehensive Data Quality Evaluation Tool for Large Models",
+    description="A Comprehensive AI Data Quality Evaluation Tool for Large Models",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/DataEval/dingo",
+    url="https://github.com/MigoXLab/dingo",
     packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",

@@ -75,6 +75,22 @@ class LocalExecutor(ExecProto):
 
         return self.summary
 
+    def merge_result_info(self, existing_list: List[ResultInfo], new_item: ResultInfo) -> List[ResultInfo]:
+        existing_item = next((item for item in existing_list if item.data_id == new_item.data_id), None)
+
+        if existing_item:
+            existing_item.error_status = existing_item.error_status or new_item.error_status
+
+            existing_item.type_list = list(set(existing_item.type_list + new_item.type_list))
+            existing_item.name_list = list(set(existing_item.name_list + new_item.name_list))
+            existing_item.reason_list = list(set(existing_item.reason_list + new_item.reason_list))
+
+            existing_item.raw_data = new_item.raw_data
+        else:
+            existing_list.append(new_item)
+
+        return existing_list
+
     def evaluate(self):
         """
         get score (main progres).
@@ -95,38 +111,44 @@ class LocalExecutor(ExecProto):
             )
             pbar = tqdm(total=None, unit="items")
 
-            def process_batch(batch: List):
+            while True:
+                batch = list(itertools.islice(data_iter, self.input_args.batch_size))
+                if not batch:
+                    break
+
                 futures = []
-                for group_type, group in Model.get_group(
-                    self.input_args.eval_group
-                ).items():
-                    if group_type == "rule":
-                        if os.environ.get("LOCAL_DEPLOYMENT_MODE") == "true":
+                futures_results = []
+                for data in batch:
+                    for group_type, group in Model.get_group(
+                            self.input_args.eval_group
+                    ).items():
+                        if group_type == "rule":
+                            if os.environ.get("LOCAL_DEPLOYMENT_MODE") == "true":
+                                futures += [
+                                    thread_executor.submit(
+                                        self.evaluate_single_data, group_type, group, data
+                                    )
+                                ]
+                            else:
+                                futures += [
+                                    process_executor.submit(
+                                        self.evaluate_single_data, group_type, group, data
+                                    )
+                                ]
+                        elif group_type == "prompt":
                             futures += [
                                 thread_executor.submit(
                                     self.evaluate_single_data, group_type, group, data
                                 )
-                                for data in batch
                             ]
                         else:
-                            futures += [
-                                process_executor.submit(
-                                    self.evaluate_single_data, group_type, group, data
-                                )
-                                for data in batch
-                            ]
-                    elif group_type == "prompt":
-                        futures += [
-                            thread_executor.submit(
-                                self.evaluate_single_data, group_type, group, data
-                            )
-                            for data in batch
-                        ]
-                    else:
-                        raise RuntimeError(f"Unsupported group type: {group_type}")
+                            raise RuntimeError(f"Unsupported group type: {group_type}")
 
                 for future in concurrent.futures.as_completed(futures):
                     result_info = future.result()
+                    futures_results = self.merge_result_info(futures_results, result_info)
+
+                for result_info in futures_results:
                     for t in result_info.type_list:
                         self.summary.type_ratio[t] += 1
                     for n in result_info.name_list:
@@ -146,12 +168,6 @@ class LocalExecutor(ExecProto):
                     self.input_args,
                     self.summarize(self.summary),
                 )
-
-            while True:
-                batch = list(itertools.islice(data_iter, self.input_args.batch_size))
-                if not batch:
-                    break
-                process_batch(batch)
 
         log.debug("[Summary]: " + str(self.summary))
 
