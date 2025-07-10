@@ -82,40 +82,40 @@
 
 ## 三、执行流程（有序步骤）
 
-1. **初始化 LocalExecutor**  
+1. **初始化 LocalExecutor**
    创建 LocalExecutor 实例，传入 InputArgs 参数。
 
-2. **加载数据**  
+2. **加载数据**
    调用 `load_data` 方法，根据输入参数加载数据集，返回数据生成器。
 
-3. **应用模型配置**  
+3. **应用模型配置**
    调用 `Model.apply_config`，根据配置文件和分组名应用评测规则、Prompt、LLM 等配置。
 
-4. **创建输出目录**  
+4. **创建输出目录**
    根据当前时间和 UUID 生成唯一输出目录，并在需要时创建。
 
-5. **选择 LLM**  
+5. **选择 LLM**
    根据配置文件选择并初始化当前使用的大语言模型（LLM）。
 
-6. **初始化 SummaryModel**  
+6. **初始化 SummaryModel**
    创建 SummaryModel 实例，用于统计和汇总评测任务信息。
 
-7. **批量评测**  
+7. **批量评测**
    调用 `evaluate` 方法，按 batch_size 分批调度线程池/进程池，对每批数据进行评测。
 
-8. **对每条数据进行评测（rule/prompt）**  
+8. **对每条数据进行评测（rule/prompt）**
    针对每条数据，分别对 rule 分组和 prompt 分组进行评测，调用相应的评测方法。
 
-9. **聚合结果，写出单条数据**  
+9. **聚合结果，写出单条数据**
    聚合每条数据的评测结果，写出到对应的输出文件。
 
-10. **实时更新 summary**  
+10. **实时更新 summary**
     在评测过程中，实时更新 SummaryModel 的统计信息。
 
-11. **写出 summary.json**  
+11. **写出 summary.json**
     评测结束后，将 summary 信息写出为 summary.json 文件。
 
-12. **返回 SummaryModel**  
+12. **返回 SummaryModel**
     返回最终的 SummaryModel 结果，供后续分析或展示使用。
 
 ---
