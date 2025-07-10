@@ -118,7 +118,7 @@ python -m dingo.run.cli
    --dataset local 
    --data_format plaintext
    -e sft
-   --save_data
+   --save_data True
 ```
 
 **代码启动**  
@@ -197,12 +197,38 @@ dingo 的场景负责将数据打包发送给模型，并接收模型返回的�
 # 进阶教程
 
 ## 自定义配置
+上文的 **教程-基础配置** 篇章中介绍了项目配置的方式与参数列表，但是并没有涉及到自定义，现在让我们来详细了解 **自定义配置** 。  
+自定义配置离不开参数 [custom_config](docs/config.md#custom-config) , 这个参数包括能够自定义的所有内容，如下所示：
+- rule_list
+- prompt_list
+- rule_config
+- llm_config
+- multi_turn_mode
 
 ## 自定义规则
-
-## 自定义提示词
+dingo 内置的规则向用户开放了接口，允许用户根据不同的评估任务进行动态配置。  
+规则的自定义通过上文 custom_config 参数中的 [rule_config](docs/config.md#rule_config) 实现，可以设置的值包括:
++ threshold
++ pattern
++ key_list
++ refer_path
 
 ## 自定义场景
+dingo 在使用提示词进行评估任务的时候，必须同时使用场景，执行数据的打包发送与接收处理。  
+场景的自定义同样是通过上文 custom_config 参数实现，不同的是需要参数 [llm_config](docs/config.md#llm_config) ，可以设置的值包括:
++ model
++ key
++ api_url
++ parameters
+
+需要注意的是参数 [parameters](docs/config.md#parameters) ，这个参数会对模型的推理产生影响，可以设置的值包括:
++ temperature
++ top_p
++ max_tokens
++ presence_penalty
++ frequency_penalty
+
+更多参数细节可参考OpenAI API官方文档。
 
 ## 新增数据格式
 
