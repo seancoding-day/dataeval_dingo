@@ -176,7 +176,38 @@ python -m dingo.run.vsl --input outputs/20250609_101837_50b5c0be
 ```
 
 # 规则
+dingo 内置了不同类型的评估规则，详情见: [规则列表](docs/rules.md)。  
+每条评估规则都有自己的 metric_type 和所属的 group。  
+每条数据经过规则评估，会产生一个 [ModelRes](dingo/model/modelres.py) 类对象作为结果，一般来说规则的 metric_type 作为 type 而规则名作为 name。   
+用户可以通过配置 eval_group 参数来调用该 group 内的所有规则执行评估任务。 如果用户需要组合一批评估规则用来评估，那么请参考下文的 **自定义配置** 。
 
 # 提示词
+dingo 提示词与规则类似，都有 metric_type 和 group ，并且他们的作用也相同。  
+但是提示词需要与场景配合才能执行评估任务，详情见:
+
+- [提示词列表](dingo/model/prompt)
+
+# 场景
+dingo 的场景负责将数据打包发送给模型，并接收模型返回的结果，然后进行解析，处理成统一的 ModelRes 类对象。
+
+- [场景列表](dingo/model/llm)
+
+请注意，不同场景对于评估结果 ModelRes 类对象的构建思路也不同，其 type 和 name 的意义也因此不同。
 
 # 进阶教程
+
+## 自定义配置
+
+## 自定义规则
+
+## 自定义提示词
+
+## 自定义场景
+
+## 新增数据格式
+
+## 添加规则
+
+## 添加提示词
+
+## 添加场景
