@@ -230,7 +230,68 @@ dingo 在使用提示词进行评估任务的时候，必须同时使用场景�
 
 更多参数细节可参考OpenAI API官方文档。
 
-## 新增数据格式
+## 新增数据格式转化
+上文的 **教程-基础配置** 篇章中介绍了项目配置的参数列表，其中 data_format 表示数据的格式，同时也代表了一种数据转化的方式。  
+dingo 内置的数据转化方式有4种，即 data_format 的4个可取的值: json, jsonl, plaintext, listjson.  
+其对应的转化逻辑见: [数据格式转化列表](dingo/data/converter/base.py)
+
+模板如下:
+
+```python
+@BaseConverter.register("jsonl")
+class JsonLineConverter(BaseConverter):
+    """Json line file converter."""
+
+    data_id = 0
+
+    def __init__(self):
+        super().__init__()
+
+    @classmethod
+    def convertor(cls, input_args: InputArgs) -> Callable:
+        def _convert(raw: Union[str, Dict]):
+            j = raw
+            if isinstance(raw, str):
+                j = json.loads(raw)
+            cls.data_id += 1
+            return Data(
+                **{
+                    "data_id": (
+                        cls.find_levels_data(j, input_args.column_id)
+                        if input_args.column_id != ""
+                        else str(cls.data_id)
+                    ),
+                    "prompt": (
+                        cls.find_levels_data(j, input_args.column_prompt)
+                        if input_args.column_prompt != ""
+                        else ""
+                    ),
+                    "content": (
+                        cls.find_levels_data(j, input_args.column_content)
+                        if input_args.column_content != ""
+                        else ""
+                    ),
+                    "raw_data": j,
+                }
+            )
+
+        return _convert
+```
+
+可以见到，Converter类需要注册一个名称，也就是为 data_format 新增一个可取值，不妨设为 myjsonl 
+
+```python
+@BaseConverter.register("myjsonl")
+```
+
+然后就是实现 convertor 类函数，特别需要注意函数接收变量与返回值的类型。
+
+```python
+@classmethod
+def convertor(cls, input_args: InputArgs) -> Callable:
+```
+
+最后，需要填充 [Data](dingo/io/input/Data.py) 类，这是项目中数据的基本形态，也是待评估的数据形态。
 
 ## 添加规则
 
