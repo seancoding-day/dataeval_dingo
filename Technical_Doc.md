@@ -293,8 +293,62 @@ def convertor(cls, input_args: InputArgs) -> Callable:
 
 最后，需要填充 [Data](dingo/io/input/Data.py) 类，这是项目中数据的基本形态，也是待评估的数据形态。
 
-## 添加规则
+## 新增规则
+上文的 **规则** 篇章介绍了 [规则列表](docs/rules.md) ，其在项目中的位置为 [规则实现](dingo/model/rule) 。  
+当dingo内置的规则无法满足用户的评估任务，用户需要添加新的评估规则时，可以参考一下模板:
 
-## 添加提示词
+```python
+@Model.rule_register(
+    "QUALITY_BAD_EFFECTIVENESS",
+    ["default", "sft", "pretrain", "benchmark", "llm_base", "text_base_all"],
+)
+class RuleColonEnd(BaseRule):
+    """check whether the last char is ':'"""
 
-## 添加场景
+    dynamic_config = DynamicRuleConfig()
+
+    @classmethod
+    def eval(cls, input_data: Data) -> ModelRes:
+        res = ModelRes()
+        content = input_data.content
+        if len(content) <= cls.dynamic_config.threshold:
+            return res
+        if content[-1] == ":":
+            res.error_status = True
+            res.type = cls.metric_type
+            res.name = cls.__name__
+            res.reason = [content[-100:]]
+        return res
+```
+
+首先，所有的规则都是 [BaseRule](dingo/model/rule/base.py) 类的实现，都具有以下3个类属性:
+
++ metric_type: 函数 rule_register 执行时赋值
++ group: 函数 rule_register 执行时赋值
++ dynamic_config: 开放的自定义接口
+
+其次，所有的规则都需要执行注册操作，即 Model.rule_register 函数，并指明 metric_type 与 group。  
+
+```python
+@Model.rule_register(
+    "QUALITY_BAD_EFFECTIVENESS",
+    ["default", "sft", "pretrain", "benchmark", "llm_base", "text_base_all"],
+)
+```
+
+然后，定义类属性 dynamic_config ，否则用户无法对规则进行自定义操作
+
+```python
+dynamic_config = DynamicRuleConfig()
+```
+
+最后，实现 eval 类函数，需要注意接收变量与返回值的类型
+
+```python
+@classmethod
+def eval(cls, input_data: Data) -> ModelRes:
+```
+
+## 新增提示词
+
+## 新增场景
