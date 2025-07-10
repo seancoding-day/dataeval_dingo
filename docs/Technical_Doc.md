@@ -157,6 +157,7 @@ dingo 默认状态下没有开启并发，如果有大规模评估任务需要�
 + batch_size
 
 以上2个参数应当搭配使用，如果max_workers设置为10但是batch_size设置为1，那么评估的效率不会得到较大提升。
+
 建议batch_size大于等于max_workers。
 
 ## 结果保存
@@ -167,6 +168,7 @@ dingo 默认状态下没有开启并发，如果有大规模评估任务需要�
 + output_path
 
 上文中评估阶段的二级类型jsonl文件中的每条结果数据收到配置参数 save_raw 的影响。
+
 如果 save_raw 设置为True，那么将执行 [ResultInfo](../dingo/io/output/ResultInfo.py) 类的 to_dict_raw 函数，否则将执行 to_dict 函数。
 
 ## 启动前端页面
@@ -178,7 +180,9 @@ python -m dingo.run.vsl --input outputs/20250609_101837_50b5c0be
 # 规则
 dingo 内置了不同类型的评估规则，详情见: [规则列表](rules.md)。
 每条评估规则都有自己的 metric_type 和所属的 group。
+
 每条数据经过规则评估，会产生一个 [ModelRes](../dingo/model/modelres.py) 类对象作为结果，一般来说规则的 metric_type 作为 type 而规则名作为 name。
+
 用户可以通过配置 eval_group 参数来调用该 group 内的所有规则执行评估任务。 如果用户需要组合一批评估规则用来评估，那么请参考下文的 **自定义配置** 。
 
 # 提示词
@@ -198,6 +202,7 @@ dingo 的场景负责将数据打包发送给模型，并接收模型返回的�
 
 ## 自定义配置
 上文的 **教程-基础配置** 篇章中介绍了项目配置的方式与参数列表，但是并没有涉及到自定义，现在让我们来详细了解 **自定义配置** 。
+
 自定义配置离不开参数 [custom_config](config.md#custom-config) , 这个参数包括能够自定义的所有内容，如下所示：
 - rule_list
 - prompt_list
@@ -207,6 +212,7 @@ dingo 的场景负责将数据打包发送给模型，并接收模型返回的�
 
 ## 自定义规则
 dingo 内置的规则向用户开放了接口，允许用户根据不同的评估任务进行动态配置。
+
 规则的自定义通过上文 custom_config 参数中的 [rule_config](config.md#rule_config) 实现，可以设置的值包括:
 + threshold
 + pattern
@@ -215,6 +221,7 @@ dingo 内置的规则向用户开放了接口，允许用户根据不同的评�
 
 ## 自定义场景
 dingo 在使用提示词进行评估任务的时候，必须同时使用场景，执行数据的打包发送与接收处理。
+
 场景的自定义同样是通过上文 custom_config 参数实现，不同的是需要参数 [llm_config](config.md#llm_config) ，可以设置的值包括:
 + model
 + key
@@ -232,7 +239,9 @@ dingo 在使用提示词进行评估任务的时候，必须同时使用场景�
 
 ## 新增数据格式转化
 上文的 **教程-基础配置** 篇章中介绍了项目配置的参数列表，其中 data_format 表示数据的格式，同时也代表了一种数据转化的方式。
+
 dingo 内置的数据转化方式有4种，即 data_format 的4个可取的值: json, jsonl, plaintext, listjson.
+
 其对应的转化逻辑见: [数据格式转化列表](../dingo/data/converter/base.py)
 
 模板如下:
@@ -295,6 +304,7 @@ def convertor(cls, input_args: InputArgs) -> Callable:
 
 ## 新增规则
 上文的 **规则** 篇章介绍了 [规则列表](rules.md) ，其在项目中的位置为 [规则代码列表](../dingo/model/rule) 。
+
 当dingo内置的规则无法满足用户的评估任务，用户需要添加新的评估规则时，可以参考一下模板:
 
 ```python
@@ -351,7 +361,8 @@ def eval(cls, input_data: Data) -> ModelRes:
 
 ## 新增提示词
 
-上文的 **提示词** 篇章中已经介绍了 [提示词列表](../dingo/model/prompt) ，如果用户在评估过程中产生了新的评估任务，需要涉及自己的提示词，
+上文的 **提示词** 篇章中已经介绍了 [提示词列表](../dingo/model/prompt) ，如果用户在评估过程中产生了新的评估任务，需要涉及自己的提示词。
+
 那么将新的提示词添加到项目的方式可以参考一下方式:
 
 ```python
