@@ -41,7 +41,7 @@ pip install -r requirements/web.txt
 ```shell
 python -m dingo.run.cli
    --input_path data.txt
-   --dataset local 
+   --dataset local
    --data_format plaintext
    -e sft
    --save_data
@@ -87,8 +87,8 @@ outputs/
 │   ├── QUALITY_BAD_COMPLETENESS        # 评估阶段的一级类型
 │   │   ├── RuleSentenceNumber.jsonl    # 评估阶段的二级类型
 │   │   └── RuleWordNumber.jsonl
-│   ├── QUALITY_BAD_EFFECTIVENESS       
-│   │   ├── RuleColonEnd.jsonl          
+│   ├── QUALITY_BAD_EFFECTIVENESS
+│   │   ├── RuleColonEnd.jsonl
 │   │   └── RuleEnterAndSpace.jsonl
 │   └── summary.json                    # 单个任务的汇总结果
 ├── ...
@@ -109,19 +109,19 @@ dingo 启动方式具有2种，因此配置方式也分为以下2种情况:
 1. [命令行配置列表](config.md#cli-config)
 2. [代码配置列表](config.md#sdk-config)
 
-**命令行启动**  
+**命令行启动**
 在命令行环境中，所有配置均以 参数键值对 的形式指定，遵从标准 CLI 语法规则，通过 --参数名 参数值 的方式传递每个配置项。
 
 ```shell
 python -m dingo.run.cli
    --input_path data.txt
-   --dataset local 
+   --dataset local
    --data_format plaintext
    -e sft
    --save_data True
 ```
 
-**代码启动**  
+**代码启动**
 在代码环境中，配置都是 Python 格式的，遵从基本的 Python 语法，通过定义变量的形式指定每个配置项。
 
 ```python
@@ -148,7 +148,7 @@ input_args = InputArgs(**input_data)
 - column_prompt
 - column_content
 
-最终数据以 [Data](../dingo/io/input/Data.py) 类对象的形式在项目中流转。  
+最终数据以 [Data](../dingo/io/input/Data.py) 类对象的形式在项目中流转。
 如果用户在配置时将参数 save_raw 设置为True，那么 Data 类对象的 raw_data 有值否则为空字典。
 
 ## 设置并发
@@ -166,7 +166,7 @@ dingo 默认状态下没有开启并发，如果有大规模评估任务需要�
 + save_correct
 + output_path
 
-上文中评估阶段的二级类型jsonl文件中的每条结果数据收到配置参数 save_raw 的影响。  
+上文中评估阶段的二级类型jsonl文件中的每条结果数据收到配置参数 save_raw 的影响。
 如果 save_raw 设置为True，那么将执行 [ResultInfo](../dingo/io/output/ResultInfo.py) 类的 to_dict_raw 函数，否则将执行 to_dict 函数。
 
 ## 启动前端页面
@@ -176,13 +176,13 @@ python -m dingo.run.vsl --input outputs/20250609_101837_50b5c0be
 ```
 
 # 规则
-dingo 内置了不同类型的评估规则，详情见: [规则列表](rules.md)。  
-每条评估规则都有自己的 metric_type 和所属的 group。  
-每条数据经过规则评估，会产生一个 [ModelRes](../dingo/model/modelres.py) 类对象作为结果，一般来说规则的 metric_type 作为 type 而规则名作为 name。   
+dingo 内置了不同类型的评估规则，详情见: [规则列表](rules.md)。
+每条评估规则都有自己的 metric_type 和所属的 group。
+每条数据经过规则评估，会产生一个 [ModelRes](../dingo/model/modelres.py) 类对象作为结果，一般来说规则的 metric_type 作为 type 而规则名作为 name。
 用户可以通过配置 eval_group 参数来调用该 group 内的所有规则执行评估任务。 如果用户需要组合一批评估规则用来评估，那么请参考下文的 **自定义配置** 。
 
 # 提示词
-dingo 提示词与规则类似，都有 metric_type 和 group ，并且他们的作用也相同。  
+dingo 提示词与规则类似，都有 metric_type 和 group ，并且他们的作用也相同。
 但是提示词需要与场景配合才能执行评估任务，详情见:
 
 - [提示词列表](../dingo/model/prompt)
@@ -197,7 +197,7 @@ dingo 的场景负责将数据打包发送给模型，并接收模型返回的�
 # 进阶教程
 
 ## 自定义配置
-上文的 **教程-基础配置** 篇章中介绍了项目配置的方式与参数列表，但是并没有涉及到自定义，现在让我们来详细了解 **自定义配置** 。  
+上文的 **教程-基础配置** 篇章中介绍了项目配置的方式与参数列表，但是并没有涉及到自定义，现在让我们来详细了解 **自定义配置** 。
 自定义配置离不开参数 [custom_config](config.md#custom-config) , 这个参数包括能够自定义的所有内容，如下所示：
 - rule_list
 - prompt_list
@@ -206,7 +206,7 @@ dingo 的场景负责将数据打包发送给模型，并接收模型返回的�
 - multi_turn_mode
 
 ## 自定义规则
-dingo 内置的规则向用户开放了接口，允许用户根据不同的评估任务进行动态配置。  
+dingo 内置的规则向用户开放了接口，允许用户根据不同的评估任务进行动态配置。
 规则的自定义通过上文 custom_config 参数中的 [rule_config](config.md#rule_config) 实现，可以设置的值包括:
 + threshold
 + pattern
@@ -214,7 +214,7 @@ dingo 内置的规则向用户开放了接口，允许用户根据不同的评�
 + refer_path
 
 ## 自定义场景
-dingo 在使用提示词进行评估任务的时候，必须同时使用场景，执行数据的打包发送与接收处理。  
+dingo 在使用提示词进行评估任务的时候，必须同时使用场景，执行数据的打包发送与接收处理。
 场景的自定义同样是通过上文 custom_config 参数实现，不同的是需要参数 [llm_config](config.md#llm_config) ，可以设置的值包括:
 + model
 + key
@@ -231,8 +231,8 @@ dingo 在使用提示词进行评估任务的时候，必须同时使用场景�
 更多参数细节可参考OpenAI API官方文档。
 
 ## 新增数据格式转化
-上文的 **教程-基础配置** 篇章中介绍了项目配置的参数列表，其中 data_format 表示数据的格式，同时也代表了一种数据转化的方式。  
-dingo 内置的数据转化方式有4种，即 data_format 的4个可取的值: json, jsonl, plaintext, listjson.  
+上文的 **教程-基础配置** 篇章中介绍了项目配置的参数列表，其中 data_format 表示数据的格式，同时也代表了一种数据转化的方式。
+dingo 内置的数据转化方式有4种，即 data_format 的4个可取的值: json, jsonl, plaintext, listjson.
 其对应的转化逻辑见: [数据格式转化列表](../dingo/data/converter/base.py)
 
 模板如下:
@@ -278,7 +278,7 @@ class JsonLineConverter(BaseConverter):
         return _convert
 ```
 
-可以见到，Converter类需要注册一个名称，也就是为 data_format 新增一个可取值，不妨设为 myjsonl 
+可以见到，Converter类需要注册一个名称，也就是为 data_format 新增一个可取值，不妨设为 myjsonl
 
 ```python
 @BaseConverter.register("myjsonl")
@@ -294,7 +294,7 @@ def convertor(cls, input_args: InputArgs) -> Callable:
 最后，需要填充 [Data](../dingo/io/input/Data.py) 类，这是项目中数据的基本形态，也是待评估的数据形态。
 
 ## 新增规则
-上文的 **规则** 篇章介绍了 [规则列表](rules.md) ，其在项目中的位置为 [规则代码列表](../dingo/model/rule) 。  
+上文的 **规则** 篇章介绍了 [规则列表](rules.md) ，其在项目中的位置为 [规则代码列表](../dingo/model/rule) 。
 当dingo内置的规则无法满足用户的评估任务，用户需要添加新的评估规则时，可以参考一下模板:
 
 ```python
@@ -327,7 +327,7 @@ class RuleColonEnd(BaseRule):
 + group: 函数 rule_register 执行时赋值
 + dynamic_config: 开放的自定义接口
 
-其次，所有的规则都需要执行注册操作，即 Model.rule_register 函数，并指明 metric_type 与 group。  
+其次，所有的规则都需要执行注册操作，即 Model.rule_register 函数，并指明 metric_type 与 group。
 
 ```python
 @Model.rule_register(
@@ -351,7 +351,7 @@ def eval(cls, input_data: Data) -> ModelRes:
 
 ## 新增提示词
 
-上文的 **提示词** 篇章中已经介绍了 [提示词列表](../dingo/model/prompt) ，如果用户在评估过程中产生了新的评估任务，需要涉及自己的提示词，  
+上文的 **提示词** 篇章中已经介绍了 [提示词列表](../dingo/model/prompt) ，如果用户在评估过程中产生了新的评估任务，需要涉及自己的提示词，
 那么将新的提示词添加到项目的方式可以参考一下方式:
 
 ```python
