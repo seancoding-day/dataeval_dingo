@@ -294,7 +294,7 @@ def convertor(cls, input_args: InputArgs) -> Callable:
 最后，需要填充 [Data](dingo/io/input/Data.py) 类，这是项目中数据的基本形态，也是待评估的数据形态。
 
 ## 新增规则
-上文的 **规则** 篇章介绍了 [规则列表](docs/rules.md) ，其在项目中的位置为 [规则实现](dingo/model/rule) 。  
+上文的 **规则** 篇章介绍了 [规则列表](docs/rules.md) ，其在项目中的位置为 [规则代码列表](dingo/model/rule) 。  
 当dingo内置的规则无法满足用户的评估任务，用户需要添加新的评估规则时，可以参考一下模板:
 
 ```python
@@ -350,5 +350,46 @@ def eval(cls, input_data: Data) -> ModelRes:
 ```
 
 ## 新增提示词
+
+上文的 **提示词** 篇章中已经介绍了 [提示词列表](dingo/model/prompt) ，如果用户在评估过程中产生了新的评估任务，需要涉及自己的提示词，  
+那么将新的提示词添加到项目的方式可以参考一下方式:
+
+```python
+@Model.prompt_register("QUALITY_BAD_SIMILARITY", [])
+class PromptRepeat(BasePrompt):
+    content = """
+    请判断一下文本是否存在重复问题。
+    返回一个json，如{"score": 0, "reason": "xxx"}.
+    如果存在重复，score是0，否则是1。reason是判断的依据。
+    除了json不要有其他内容。
+    以下是需要判断的文本：
+    """
+```
+
+从上面的模板中可以看到，新增的提示词必须继承 [BasePrompt](dingo/model/prompt/base.py) 类。
+
+```python
+class PromptRepeat(BasePrompt):
+```
+
+然后，与新增规则相似，都执行注册操作，并指明 metric_type 与 group 。
+
+注意， group 可以是空列表，表名该提示词不属于任何的 group ，并且无法通过 group 来调用。
+
+```python
+@Model.prompt_register("QUALITY_BAD_SIMILARITY", [])
+```
+
+最后，填写新的提示词。
+
+```python
+content = """
+    请判断一下文本是否存在重复问题。
+    返回一个json，如{"score": 0, "reason": "xxx"}.
+    如果存在重复，score是0，否则是1。reason是判断的依据。
+    除了json不要有其他内容。
+    以下是需要判断的文本：
+    """
+```
 
 ## 新增场景
