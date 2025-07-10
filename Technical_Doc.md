@@ -393,3 +393,117 @@ content = """
 ```
 
 ## 新增场景
+上文的 **场景** 篇章介绍了场景的职责，即: 打包发送数据、接收解析数据
+
+那么，新增一个场景就需要实现以上2个功能，详情见下方模板:
+
+```python
+class BaseOpenAI(BaseLLM):
+    prompt = None
+    client = None
+    dynamic_config = DynamicLLMConfig()
+
+    @classmethod
+    def set_prompt(cls, prompt: BasePrompt):
+        pass
+
+    @classmethod
+    def create_client(cls):
+        pass
+
+    @classmethod
+    def build_messages(cls, input_data: Data) -> List:
+        pass
+
+    @classmethod
+    def send_messages(cls, messages: List):
+        pass
+
+    @classmethod
+    def process_response(cls, response: str) -> ModelRes:
+        pass
+
+    @classmethod
+    def eval(cls, input_data: Data) -> ModelRes:
+        if cls.client is None:
+            cls.create_client()
+
+        messages = cls.build_messages(input_data)
+
+        attempts = 0
+        except_msg = ""
+        except_name = Exception.__class__.__name__
+        while attempts < 3:
+            try:
+                response = cls.send_messages(messages)
+                return cls.process_response(response)
+            except (ValidationError, ExceedMaxTokens, ConvertJsonError) as e:
+                except_msg = str(e)
+                except_name = e.__class__.__name__
+                break
+            except Exception as e:
+                attempts += 1
+                time.sleep(1)
+                except_msg = str(e)
+                except_name = e.__class__.__name__
+
+        return ModelRes(
+            error_status=True, type="QUALITY_BAD", name=except_name, reason=[except_msg]
+        )
+```
+
+第一步，场景必须继承 [BaseLLM](dingo/model/llm/base.py) 或者其子类
+
+```python
+class BaseOpenAI(BaseLLM):
+```
+
+第二步，设置场景的模型类属性:
+
+```python
+    prompt = None
+    client = None
+    dynamic_config = DynamicLLMConfig()
+```
+
+第四步，实现 set_prompt 类函数，用于设置场景提示词:
+
+```python
+@classmethod
+def set_prompt(cls, prompt: BasePrompt):
+```
+
+第五步，实现 create_client 类函数，创建模型 client ，用于收发数据。
+
+```python
+@classmethod
+def create_client(cls):
+```
+
+第六步，实现 build_messages 类函数，打包数据，用于发送。
+
+```python
+@classmethod
+def build_messages(cls, input_data: Data) -> List:
+```
+
+第七步，实现 send_messages 类函数，发送打包完成的数据，并且接收模型返回的数据。
+
+```python
+@classmethod
+def send_messages(cls, messages: List):
+```
+
+第八步，实现 process_response 类函数，解析模型返回的数据
+
+```python
+@classmethod
+def process_response(cls, response: str) -> ModelRes:
+```
+
+第九步，实现 eval 类函数，统筹执行以上实现的类函数，并将解析后的数据转化为 [ModelRes](dingo/model/modelres.py) 类型。
+
+```python
+@classmethod
+def eval(cls, input_data: Data) -> ModelRes:
+```
