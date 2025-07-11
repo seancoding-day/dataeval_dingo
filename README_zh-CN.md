@@ -212,6 +212,12 @@ input_data = {
 
 您可以自定义这些prompt，以关注特定的质量维度或适应特定的领域需求。当与适当的LLM模型结合时，这些prompt能够在多个维度上对数据质量进行全面评估。
 
+### 幻觉检测和RAG系统评估
+
+有关使用Dingo幻觉检测功能的详细指导，包括HHEM-2.1-Open本地推理和基于LLM的评估：
+
+📖 **[查看幻觉检测指南 →](docs/hallucination_guide.md)**
+
 # 规则组
 
 Dingo为不同类型的数据集提供预配置的规则组：
@@ -219,14 +225,16 @@ Dingo为不同类型的数据集提供预配置的规则组：
 | 组名 | 用例 | 示例规则 |
 |-------|----------|---------------|
 | `default` | 通用文本质量 | `RuleColonEnd`, `RuleContentNull`, `RuleDocRepeat`等 |
-| `sft` | 微调数据集 | `default`中的规则加上`RuleLineStartWithBulletpoint` |
+| `sft` | 微调数据集 | `default`中的规则加上用于幻觉检测的`RuleHallucinationHHEM` |
+| `rag` | RAG系统评估 | 用于响应一致性检测的`RuleHallucinationHHEM`, `PromptHallucination` |
+| `hallucination` | 幻觉检测 | 基于LLM评估的`PromptHallucination` |
 | `pretrain` | 预训练数据集 | 包括`RuleAlphaWords`, `RuleCapitalWords`等20多条规则的全面集合 |
 
 使用特定规则组：
 
 ```python
 input_data = {
-    "eval_group": "sft",  # 使用"default"、"sft"或"pretrain"
+    "eval_group": "sft",  # 使用"default"、"sft"、"rag"、"hallucination"或"pretrain"
     # 其他参数...
 }
 ```
@@ -243,6 +251,8 @@ input_data = {
 
 - **内置规则**：20多种通用启发式评估规则
 - **LLM集成**：OpenAI、Kimi和本地模型（如Llama3）
+- **幻觉检测**：HHEM-2.1-Open本地模型和基于GPT的评估
+- **RAG系统评估**：响应一致性和上下文对齐评估
 - **自定义规则**：轻松扩展自己的规则和模型
 - **安全评估**：Perspective API集成
 
@@ -387,6 +397,7 @@ result = executor.execute()
 
 - [RedPajama-Data](https://github.com/togethercomputer/RedPajama-Data)
 - [mlflow](https://github.com/mlflow/mlflow)
+- [deepeval](https://github.com/confident-ai/deepeval)
 
 # 贡献
 

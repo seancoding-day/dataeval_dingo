@@ -220,11 +220,28 @@ def generate_metrics_documentation() -> str:
     # 按预定义顺序生成各个类别
     category_order = ["Text Quality Assessment Metrics", "SFT Data Assessment Metrics",
                       "Classification Metrics", "Multimodality Assessment Metrics",
-                      "Rule-Based TEXT Quality Metrics", "Rule-Based IMG Quality Metrics",
-                      "other"]
+                      "Rule-Based TEXT Quality Metrics", "Rule-Based IMG Quality Metrics"]
+
+    processed_categories = set()
+
+    # 首先处理预定义类别
     for category in category_order:
         if category in categories:
             doc += generate_table_section(category, categories[category])
+            processed_categories.add(category)
+
+    # 处理未预定义的类别 - 归入"other"或单独显示
+    unprocessed_categories = set(categories.keys()) - processed_categories - {"other"}
+
+    if unprocessed_categories:
+        # 如果有未预定义的类别，先显示它们
+        for category in sorted(unprocessed_categories):
+            doc += generate_table_section(category, categories[category])
+            processed_categories.add(category)
+
+    # 最后处理显式的"other"类别（如果存在）
+    if "other" in categories:
+        doc += generate_table_section("Other Metrics", categories["other"])
 
     return doc
 

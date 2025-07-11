@@ -41,6 +41,7 @@ class InputArgs(BaseModel):
     column_id: str = ""
     column_prompt: str = ""
     column_content: str = ""
+    column_context: str = ""
     column_image: str = ""
 
     custom_config: Optional[str | dict] = None
