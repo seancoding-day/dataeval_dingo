@@ -1,0 +1,19 @@
+{
+    "task_id": "c9b1200c-6150-11f0-b12f-8c322322aed9",
+    "task_name": "dingo",
+    "eval_group": "custom_group_155325_c9b105fe",
+    "input_path": "test/data/test_long_video_qa.jsonl",
+    "output_path": "outputs/20250715_155325_c9b119a4",
+    "create_time": "20250715_155325",
+    "finish_time": "20250715_155448",
+    "score": 100.0,
+    "num_good": 1,
+    "num_bad": 0,
+    "total": 1,
+    "type_ratio": {
+        "text": 1.0
+    },
+    "name_ratio": {
+        "text-qa_pairs": 1.0
+    }
+}

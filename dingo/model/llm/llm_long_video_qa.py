@@ -6,8 +6,6 @@ from dingo.model.modelres import ModelRes
 from dingo.model.prompt.prompt_long_video_qa import PromptLongVideoQa
 from dingo.utils import log
 
-
-
 @Model.llm_register("LLMLongVideoQaBase")
 class LLMLongVideoQaBase(BaseOpenAI):
     prompt = PromptLongVideoQa
@@ -15,7 +13,6 @@ class LLMLongVideoQaBase(BaseOpenAI):
     @classmethod
     def process_response(cls, response: str) -> ModelRes:
         log.info(response)
-                
         result = ModelRes()
         result.error_status = False
         result.type = "text"

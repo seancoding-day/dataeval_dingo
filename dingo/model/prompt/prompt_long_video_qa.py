@@ -96,5 +96,4 @@ class PromptLongVideoQa(BasePrompt):
         3. Format answers according to the specified <Output Format>, ensuring each step is supported by logical reasoning derived from the text.
 
         ### Provided Text
-        
         """
