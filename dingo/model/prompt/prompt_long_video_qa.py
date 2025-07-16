@@ -1,6 +1,7 @@
 from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
+
 @Model.prompt_register("PromptLongVideoQa", [])
 class PromptLongVideoQa(BasePrompt):
     content = """
