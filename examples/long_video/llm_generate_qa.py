@@ -12,7 +12,7 @@ input_data = {
     "custom_config": {
         "prompt_list": ["PromptLongVideoQa"],
         "llm_config": {
-            "LLMLongVideoQaBase": {
+            "LLMLongVideoQa": {
                 "key": "",
                 "api_url": "",
             }
