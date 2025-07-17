@@ -404,8 +404,9 @@ class EnterpriseRAGValidator:
 dingo/
 ├── model/
 │   ├── llm/
-│   │   ├── llm_hallucination_hhem.py       # HHEM-2.1-Open 集成
 │   │   └── llm_hallucination.py            # GPT-based 检测（DeepEval风格）
+│   ├── rule/
+│   │   └── rule_hallucination_hhem.py      # HHEM-2.1-Open 集成
 │   ├── prompt/prompt_hallucination.py       # GPT 提示词模板
 │   └── response/response_hallucination.py   # 响应数据结构
 ├── io/input/Data.py                         # 扩展Data类支持context
