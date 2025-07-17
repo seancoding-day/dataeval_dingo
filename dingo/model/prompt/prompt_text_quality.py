@@ -84,7 +84,7 @@ class PromptTextQualityV4(BasePrompt):
     # Metadata for documentation generation
     _metric_info = {
         "category": "Text Quality Assessment Metrics",
-        "metric_name": "Pretrain Text Quality Assessment V4",
+        "metric_name": "PromptTextQualityV4",
         "description": "Enhanced text quality evaluation covering completeness (formulas, tables, code), effectiveness (garbled text, spacing), similarity (duplicates), and security (politics, prohibited content)",
         "paper_title": "WanJuanSiLu: A High-Quality Open-Source Webtext Dataset for Low-Resource Languages",
         "paper_url": "https://arxiv.org/abs/2501.14506",

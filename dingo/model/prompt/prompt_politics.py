@@ -8,7 +8,7 @@ class PromptPolitics(BasePrompt):
     # Metadata for documentation generation
     _metric_info = {
         "category": "Text Quality Assessment Metrics",
-        "metric_name": "Politics",
+        "metric_name": "PromptPolitics",
         "description": "Evaluates whether the text contains politics-related content",
         "paper_title": "",
         "paper_url": "",

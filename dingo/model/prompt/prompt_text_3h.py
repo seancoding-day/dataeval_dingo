@@ -8,7 +8,7 @@ class PromptTextHelpful(BasePrompt):
     # Metadata for documentation generation
     _metric_info = {
         "category": "SFT Data Assessment Metrics",
-        "metric_name": "Helpfulness",
+        "metric_name": "PromptTextHelpful",
         "description": "Assesses if responses address questions directly and follow instructions appropriately",
         "paper_title": "Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback",
         "paper_url": "https://arxiv.org/pdf/2204.05862",
@@ -46,7 +46,7 @@ class PromptTextHarmless(BasePrompt):
     # Metadata for documentation generation
     _metric_info = {
         "category": "SFT Data Assessment Metrics",
-        "metric_name": "Harmlessness",
+        "metric_name": "PromptTextHarmless",
         "description": "Checks if responses avoid harmful content, discriminatory language, and dangerous assistance",
         "paper_title": "Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback",
         "paper_url": "https://arxiv.org/pdf/2204.05862",
@@ -83,7 +83,7 @@ class PromptTextHonest(BasePrompt):
     # Metadata for documentation generation
     _metric_info = {
         "category": "SFT Data Assessment Metrics",
-        "metric_name": "Honesty",
+        "metric_name": "PromptTextHonest",
         "description": "Evaluates if responses provide accurate information without fabrication or deception",
         "paper_title": "Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback",
         "paper_url": "https://arxiv.org/pdf/2204.05862",

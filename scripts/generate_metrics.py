@@ -60,7 +60,7 @@ def scan_rule_classes() -> List[Dict[str, Any]]:
     return metrics_info
 
 
-def truncate_description(description: str, max_length: int = 80) -> str:
+def truncate_description(description: str, max_length: int = 120) -> str:
     """截断description到指定长度"""
     if len(description) <= max_length:
         return description

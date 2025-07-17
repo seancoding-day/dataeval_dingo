@@ -38,7 +38,7 @@ class RuleHallucinationHHEM(BaseRule):
     _metric_info = {
         "category": "SFT Data Assessment Metrics",
         "quality_dimension": "HALLUCINATION",
-        "metric_name": "HHEM-2.1-Open Hallucination Detection",
+        "metric_name": "RuleHallucinationHHEM",
         "description": "Uses Vectara's HHEM-2.1-Open model for local hallucination detection by evaluating consistency between response and context",
         "paper_title": "HHEM-2.1-Open",
         "paper_url": "https://huggingface.co/vectara/hallucination_evaluation_model",
