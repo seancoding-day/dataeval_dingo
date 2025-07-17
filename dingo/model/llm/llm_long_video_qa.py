@@ -7,8 +7,8 @@ from dingo.model.prompt.prompt_long_video_qa import PromptLongVideoQa
 from dingo.utils import log
 
 
-@Model.llm_register("LLMLongVideoQaBase")
-class LLMLongVideoQaBase(BaseOpenAI):
+@Model.llm_register("LLMLongVideoQa")
+class LLMLongVideoQa(BaseOpenAI):
     prompt = PromptLongVideoQa
 
     @classmethod
