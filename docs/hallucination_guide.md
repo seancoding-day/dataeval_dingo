@@ -203,7 +203,7 @@ LLMHallucination.threshold = 0.3      # GPT 更严格的检测
         "RuleHallucinationHHEM": {
             "threshold": 0.7  # 更宽松的检测
         }
-    },
+        },
     "llm_config": {
         "LLMHallucination": {
             "model": "gpt-4o",
@@ -320,7 +320,7 @@ HHEM 幻觉分数: 0.650 (阈值: 0.500)
 ### 1. RAG 系统质量监控
 
 ```python
-# 实时监控RAG回答质量（使用本地HHEM）
+# 实时基于RAG监控回答质量（使用本地HHEM）
 def monitor_rag_response(question, generated_answer, retrieved_docs):
     data = Data(
         data_id=f"rag_{timestamp}",
@@ -372,28 +372,62 @@ def filter_hallucinated_responses(responses_with_context):
 ### 4. 企业级部署
 
 ```python
-# 企业级RAG系统的质量保障
-class EnterpriseRAGValidator:
-    def __init__(self):
+# 完整的企业级RAG系统（集成检索+生成+幻觉检测）
+class RAGWithHallucinationDetection:
+    def __init__(self, retriever, llm, hallucination_detector):
+        self.retriever = retriever
+        self.llm = llm
+        self.detector = hallucination_detector
         # 预加载HHEM模型以提高性能
-        RuleHallucinationHHEM.load_model()
+        self.detector.load_model()
 
-    def validate_response(self, query, response, contexts):
+    def generate_answer(self, question):
+        # 1. 检索相关文档
+        retrieved_docs = self.retriever.search(question, top_k=3)
+
+        # 2. 生成回答
+        context = "\n".join(retrieved_docs)
+        prompt = f"基于以下文档回答问题:\n{context}\n\n问题: {question}\n回答:"
+        generated_answer = self.llm.generate(prompt)
+
+        # 3. 幻觉检测
         data = Data(
             data_id=generate_id(),
-            prompt=query,
-            content=response,
-            context=contexts
+            prompt=question,
+            content=generated_answer,
+            context=retrieved_docs  # 检索到的原始文档
         )
 
-        result = RuleHallucinationHHEM.eval(data)
+        hallucination_result = self.detector.eval(data)
 
-        if result.error_status:
-            # 记录问题并触发备用策略
-            self.log_hallucination(result)
-            return self.fallback_response(query)
+        # 4. 根据检测结果决定是否返回答案
+        if hallucination_result.error_status:
+            self.log_hallucination(question, generated_answer, hallucination_result)
+            return {
+                "answer": None,
+                "warning": "检测到潜在幻觉，请人工审核",
+                "retrieved_docs": retrieved_docs,
+                "hallucination_score": getattr(hallucination_result, 'score', 'N/A')
+            }
+        else:
+            return {
+                "answer": generated_answer,
+                "retrieved_docs": retrieved_docs,
+                "confidence": "high"
+            }
 
-        return response
+    def log_hallucination(self, question, answer, result):
+        # 记录幻觉检测结果用于系统优化
+        logger.warning(f"幻觉检测警告: {result.reason[0]}")
+
+# 使用示例
+rag_system = RAGWithHallucinationDetection(
+    retriever=VectorRetriever("knowledge_base"),
+    llm=OpenAILLM("gpt-4"),
+    detector=RuleHallucinationHHEM
+)
+
+result = rag_system.generate_answer("什么是深度学习？")
 ```
 
 ## 🏗️ 架构设计
