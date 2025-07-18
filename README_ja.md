@@ -213,6 +213,12 @@ input_data = {
 
 これらのプロンプトは、特定の品質次元に焦点を当てたり、特定のドメイン要件に適応させるためにカスタマイズできます。適切なLLMモデルと組み合わせることで、これらのプロンプトは複数の次元にわたる包括的なデータ品質評価を可能にします。
 
+### 幻覚検出とRAGシステム評価
+
+HHEM-2.1-Openローカル推論とLLMベース評価を含む、Dingoの幻覚検出機能の使用に関する詳細なガイダンス：
+
+📖 **[幻覚検出ガイドを見る →](docs/hallucination_guide.md)**
+
 # ルールグループ
 
 Dingoは異なるタイプのデータセット用に事前設定されたルールグループを提供します：
@@ -220,14 +226,16 @@ Dingoは異なるタイプのデータセット用に事前設定されたルー
 | グループ | 使用例 | ルール例 |
 |----------|--------|----------|
 | `default` | 一般的なテキスト品質 | `RuleColonEnd`, `RuleContentNull`, `RuleDocRepeat`など |
-| `sft` | ファインチューニングデータセット | `default`のルールに加えて`RuleLineStartWithBulletpoint` |
+| `sft` | ファインチューニングデータセット | `default`のルールに加えて幻覚検出用の`RuleHallucinationHHEM` |
+| `rag` | RAGシステム評価 | 応答一貫性検出用の`RuleHallucinationHHEM`, `PromptHallucination` |
+| `hallucination` | 幻覚検出 | LLMベース評価の`PromptHallucination` |
 | `pretrain` | 事前学習データセット | `RuleAlphaWords`, `RuleCapitalWords`などを含む20以上のルールの包括的セット |
 
 特定のルールグループを使用するには：
 
 ```python
 input_data = {
-    "eval_group": "sft",  # "default", "sft", または "pretrain"を使用
+    "eval_group": "sft",  # "default", "sft", "rag", "hallucination", または "pretrain"を使用
     # その他のパラメータ...
 }
 ```
@@ -245,6 +253,8 @@ input_data = {
 評価システムには以下が含まれます：
 - **テキスト品質評価メトリクス**: DataMan手法と拡張された多次元評価を使用した事前学習データの品質評価
 - **SFTデータ評価メトリクス**: 教師ありファインチューニングデータの正直、有用、無害評価
+- **幻覚検出**: HHEM-2.1-OpenローカルモデルとGPTベースの評価
+- **RAGシステム評価**: 応答一貫性とコンテキスト整合性評価
 - **分類メトリクス**: トピック分類とコンテンツ分類
 - **マルチモーダル評価メトリクス**: 画像分類と関連性評価
 - **ルールベース品質メトリクス**: ヒューリスティックルールによる効果性と類似性検出を用いた自動品質チェック
@@ -390,6 +400,7 @@ result = executor.execute()
 
 - [RedPajama-Data](https://github.com/togethercomputer/RedPajama-Data)
 - [mlflow](https://github.com/mlflow/mlflow)
+- [deepeval](https://github.com/confident-ai/deepeval)
 
 # 貢献
 

@@ -261,6 +261,11 @@ class JsonLineConverter(BaseConverter):
                         if input_args.column_content != ""
                         else ""
                     ),
+                    "context": (
+                        cls.find_levels_data(j, input_args.column_context)
+                        if input_args.column_context != ""
+                        else j.get("context", None)  # Fallback to 'context' key if column_context not specified
+                    ),
                     "raw_data": j,
                 }
             )

@@ -215,6 +215,12 @@ input_data = {
 
 You can customize these prompts to focus on specific quality dimensions or to adapt to particular domain requirements. When combined with appropriate LLM models, these prompts enable comprehensive evaluation of data quality across multiple dimensions.
 
+### Hallucination Detection & RAG System Evaluation
+
+For detailed guidance on using Dingo's hallucination detection capabilities, including HHEM-2.1-Open local inference and LLM-based evaluation:
+
+📖 **[View Hallucination Detection Guide →](docs/hallucination_guide.md)**
+
 # Rule Groups
 
 Dingo provides pre-configured rule groups for different types of datasets:
@@ -222,14 +228,16 @@ Dingo provides pre-configured rule groups for different types of datasets:
 | Group | Use Case | Example Rules |
 |-------|----------|---------------|
 | `default` | General text quality | `RuleColonEnd`, `RuleContentNull`, `RuleDocRepeat`, etc. |
-| `sft` | Fine-tuning datasets | Rules from `default` plus `RuleLineStartWithBulletpoint` |
+| `sft` | Fine-tuning datasets | Rules from `default` plus `RuleHallucinationHHEM` for hallucination detection |
+| `rag` | RAG system evaluation | `RuleHallucinationHHEM`, `PromptHallucination` for response consistency |
+| `hallucination` | Hallucination detection | `PromptHallucination` with LLM-based evaluation |
 | `pretrain` | Pre-training datasets | Comprehensive set of 20+ rules including `RuleAlphaWords`, `RuleCapitalWords`, etc. |
 
 To use a specific rule group:
 
 ```python
 input_data = {
-    "eval_group": "sft",  # Use "default", "sft", or "pretrain"
+    "eval_group": "sft",  # Use "default", "sft", "rag", "hallucination", or "pretrain"
     # other parameters...
 }
 ```
@@ -246,6 +254,8 @@ input_data = {
 
 - **Built-in Rules**: 20+ general heuristic evaluation rules
 - **LLM Integration**: OpenAI, Kimi, and local models (e.g., Llama3)
+- **Hallucination Detection**: HHEM-2.1-Open local model and GPT-based evaluation
+- **RAG System Evaluation**: Response consistency and context alignment assessment
 - **Custom Rules**: Easily extend with your own rules and models
 - **Security Evaluation**: Perspective API integration
 
@@ -390,6 +400,7 @@ The current built-in detection rules and model methods focus on common data qual
 
 - [RedPajama-Data](https://github.com/togethercomputer/RedPajama-Data)
 - [mlflow](https://github.com/mlflow/mlflow)
+- [deepeval](https://github.com/confident-ai/deepeval)
 
 # Contribution
 
