@@ -4,7 +4,6 @@ from dingo.model.prompt.base import BasePrompt
 
 @Model.prompt_register("PromptLongVideoQa", [])
 class PromptLongVideoQa(BasePrompt):
-    
     # Metadata for documentation generation
     _metric_info = {
         "category": "Text Generation",
@@ -15,7 +14,6 @@ class PromptLongVideoQa(BasePrompt):
         "evaluation_results": "",
         "description": "Generate video-related question-answer pairs based on the summarized information of the input long video.",
     }
-    
     content = """
         ### Background
         You will be given a video summary text that chronologically records the content of the video. Your task is to infer the complete story of events in the video based on the summary content and generate 6 multi-step reasoning Q&A pairs that satisfy the <Output Format>.
