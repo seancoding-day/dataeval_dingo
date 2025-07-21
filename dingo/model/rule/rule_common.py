@@ -13,6 +13,18 @@ from dingo.model.rule.base import BaseRule
 class RuleAbnormalChar(BaseRule):
     # consist of [RuleSpecialCharacter, RuleInvisibleChar]
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleAbnormalChar",
+        "description": "Detects garbled text and anti-crawling characters by combining special character and invisible character detection",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -30,6 +42,17 @@ class RuleAbnormalChar(BaseRule):
 class RuleAbnormalHtml(BaseRule):
     # consist of [RuleHtmlEntity, RuleHtmlTag]
 
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleAbnormalHtml",
+        "description": "Detects abnormal HTML content by combining HTML entity and tag detection",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -46,6 +69,17 @@ class RuleAbnormalHtml(BaseRule):
 @Model.rule_register("QUALITY_BAD_FLUENCY", ["pdf_all"])
 class RuleAbnormalNumber(BaseRule):
     """check pdf content abnormal book page or index number."""
+
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "FLUENCY",
+        "metric_name": "RuleAbnormalNumber",
+        "description": "Checks PDF content for abnormal book page or index numbers that disrupt text flow",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig(pattern=r"\n{4}\d+\n{4}")
 
@@ -65,6 +99,18 @@ class RuleAbnormalNumber(BaseRule):
 @Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pretrain"])
 class RuleAlphaWords(BaseRule):
     """check whether the ratio of words that contain at least one alphabetic character > 0.6"""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleAlphaWords",
+        "description": "Checks whether the ratio of words containing at least one alphabetic character is above threshold",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig(threshold=0.6)
 
@@ -98,6 +144,18 @@ class RuleAlphaWords(BaseRule):
 class RuleCapitalWords(BaseRule):
     """check whether capital words ratio > 0.2"""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "UNDERSTANDABILITY",
+        "metric_name": "RuleCapitalWords",
+        "description": "Checks whether the ratio of capital words is above threshold, indicating poor readability",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig(threshold=0.2)
 
     @classmethod
@@ -124,6 +182,18 @@ class RuleCapitalWords(BaseRule):
 class RuleCharNumber(BaseRule):
     """check whether the number of char > 100"""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleCharNumber",
+        "description": "Checks whether the number of characters is above minimum threshold",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig(threshold=100)
 
     @classmethod
@@ -146,6 +216,18 @@ class RuleCharNumber(BaseRule):
 @Model.rule_register("QUALITY_BAD_FLUENCY", ["pdf_all"])
 class RuleCharSplit(BaseRule):
     """check pdf content char split."""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "FLUENCY",
+        "metric_name": "RuleCharSplit",
+        "description": "Checks PDF content for abnormal character splitting that disrupts readability",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig(
         pattern=r"(?:(?:[a-zA-Z]\s){5}[a-zA-Z])", threshold=3
@@ -171,6 +253,18 @@ class RuleCharSplit(BaseRule):
 )
 class RuleColonEnd(BaseRule):
     """check whether the last char is ':'"""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleColonEnd",
+        "description": "Checks if text abruptly ends with a colon, indicating incomplete content",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig()
 
@@ -212,6 +306,18 @@ class RuleColonEnd(BaseRule):
 class RuleContentNull(BaseRule):
     """check whether content is null"""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleContentNull",
+        "description": "Checks whether content is empty or null",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
@@ -230,6 +336,20 @@ class RuleContentNull(BaseRule):
     "QUALITY_BAD_EFFECTIVENESS", ["text_base_all", "qa_standard_v1", "pdf"]
 )
 class RuleContentShort(BaseRule):
+    """check whether content is too short"""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleContentShort",
+        "description": "Checks whether content is too short to be meaningful",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig(threshold=20)
 
     @classmethod
@@ -260,6 +380,18 @@ class RuleContentShort(BaseRule):
 class RuleContentShortMultiLan(BaseRule):
     """check whether content is too short."""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleContentShortMultiLan",
+        "description": "Checks whether multi-language content is too short to be meaningful",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig(threshold=20)
 
     @classmethod
@@ -281,6 +413,18 @@ class RuleContentShortMultiLan(BaseRule):
 @Model.rule_register("QUALITY_BAD_UNDERSTANDABILITY", [])
 class RuleCurlyBracket(BaseRule):
     """check whether the ratio of the number of {,} and the number of characters < 0.025"""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "UNDERSTANDABILITY",
+        "metric_name": "RuleCurlyBracket",
+        "description": "Checks whether the ratio of curly brackets to total characters is below threshold",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig(threshold=0.025)
 
@@ -326,12 +470,23 @@ class RuleCurlyBracket(BaseRule):
 class RuleDocRepeat(BaseRule):
     """check whether content repeats"""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "SIMILARITY",
+        "metric_name": "RuleDocRepeat",
+        "description": "Evaluates text for consecutive repeated content and multiple occurrences of special characters",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig(threshold=80)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
-        from dingo.model.rule.utils.util import \
-          base_rps_frac_chars_in_dupe_ngrams
+        from dingo.model.rule.utils.util import base_rps_frac_chars_in_dupe_ngrams
 
         res = ModelRes()
         repeat_score = base_rps_frac_chars_in_dupe_ngrams(6, input_data.content)
@@ -348,6 +503,18 @@ class RuleDocRepeat(BaseRule):
 @Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["qa_standard_v1"])
 class RuleEnterAndSpace(BaseRule):
     # consist of [RuleEnterMore, RuleEnterRatioMore, RuleSpaceMore]
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleEnterAndSpace",
+        "description": "Composite rule checking for excessive carriage returns and spaces",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -380,6 +547,18 @@ class RuleEnterAndSpace(BaseRule):
 )
 class RuleEnterMore(BaseRule):
     """check whether content has 8 consecutive carriage returns."""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleEnterMore",
+        "description": "Checks whether content has 8 consecutive carriage returns",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig(key_list=[r"\n{8,}", r"\r\n{8,}"])
 
@@ -418,6 +597,18 @@ class RuleEnterMore(BaseRule):
 class RuleEnterRatioMore(BaseRule):
     """check whether the number of enter / the number of content > 25%"""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleEnterRatioMore",
+        "description": "Checks whether the ratio of enter characters to total content is above 25%",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
@@ -439,6 +630,18 @@ class RuleEnterRatioMore(BaseRule):
 @Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_ar"])
 class RuleHeadWordAr(BaseRule):
     """check whether ar content contains irrelevance tail source info."""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "RELEVANCE_MULTI_LAN",
+        "metric_name": "RuleHeadWordAr",
+        "description": "Checks whether Arabic content contains irrelevant tail source information",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig()
 
@@ -462,6 +665,18 @@ class RuleHeadWordAr(BaseRule):
 class RuleHeadWordCs(BaseRule):
     """check whether cs content contains irrelevance tail source info."""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "RELEVANCE_MULTI_LAN",
+        "metric_name": "RuleHeadWordCs",
+        "description": "Checks whether Czech content contains irrelevant tail source information",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
@@ -483,6 +698,18 @@ class RuleHeadWordCs(BaseRule):
 @Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_hu"])
 class RuleHeadWordHu(BaseRule):
     """check whether hu content contains irrelevance tail source info."""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "RELEVANCE_MULTI_LAN",
+        "metric_name": "RuleHeadWordHu",
+        "description": "Checks whether Hungarian content contains irrelevant tail source information",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig()
 
@@ -506,6 +733,18 @@ class RuleHeadWordHu(BaseRule):
 class RuleHeadWordKo(BaseRule):
     """check whether ko content contains irrelevance tail source info."""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "RELEVANCE_MULTI_LAN",
+        "metric_name": "RuleHeadWordKo",
+        "description": "Checks whether Korean content contains irrelevant tail source information",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
@@ -527,6 +766,18 @@ class RuleHeadWordKo(BaseRule):
 @Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_ru"])
 class RuleHeadWordRu(BaseRule):
     """check whether ru content contains irrelevance tail source info."""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "RELEVANCE_MULTI_LAN",
+        "metric_name": "RuleHeadWordRu",
+        "description": "Checks whether Russian content contains irrelevant tail source information",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig()
 
@@ -550,6 +801,18 @@ class RuleHeadWordRu(BaseRule):
 class RuleHeadWordSr(BaseRule):
     """check whether sr content contains irrelevance tail source info."""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "RELEVANCE_MULTI_LAN",
+        "metric_name": "RuleHeadWordSr",
+        "description": "Checks whether Serbian content contains irrelevant tail source information",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
@@ -572,6 +835,18 @@ class RuleHeadWordSr(BaseRule):
 class RuleHeadWordTh(BaseRule):
     """check whether th content contains irrelevance tail source info."""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "RELEVANCE_MULTI_LAN",
+        "metric_name": "RuleHeadWordAr",
+        "description": "Checks whether Arabic content contains irrelevant tail source information",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig()
 
     @classmethod
@@ -593,6 +868,18 @@ class RuleHeadWordTh(BaseRule):
 @Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_vi"])
 class RuleHeadWordVi(BaseRule):
     """check whether vi content contains irrelevance tail source info."""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "RELEVANCE_MULTI_LAN",
+        "metric_name": "RuleHeadWordVi",
+        "description": "Checks whether Vietnamese content contains irrelevant tail source information",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig()
 
@@ -633,6 +920,18 @@ class RuleHeadWordVi(BaseRule):
 )
 class RuleHtmlEntity(BaseRule):
     """check whether content has html entity"""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleHtmlEntity",
+        "description": "Checks whether content contains HTML entities indicating web scraping artifacts",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig(
         key_list=[
@@ -707,6 +1006,18 @@ class RuleHtmlEntity(BaseRule):
 class RuleHtmlTag(BaseRule):
     """check whether content has image links or html tags."""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleHtmlTag",
+        "description": "Checks whether content contains HTML tags or image links indicating web scraping artifacts",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig(
         key_list=["<img", "<p>", "</p>", "<o:p", "</o:p>"]
     )
@@ -731,6 +1042,18 @@ class RuleHtmlTag(BaseRule):
 @Model.rule_register("QUALITY_BAD_SECURITY", ["default", "pretrain", "benchmark"])
 class RuleIDCard(BaseRule):
     """check if the content contains ID card."""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "SECURITY",
+        "metric_name": "RuleIDCard",
+        "description": "Checks whether content contains ID card information",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig(
         pattern=r"(身\s{0,10}份|id\s{0,10}number\s{0,10}|identification|identity|\s{0,10}ID\s{0,10}No\s{0,10}|id\s{0,10}card\s{0,10}|NRIC\s{0,10}number\s{0,10}|IC\s{0,10}number\s{0,10}|resident\s{0,10}registration\s{0,10}|I.D.\s{0,10}Number\s{0,10})"
@@ -769,6 +1092,18 @@ class RuleIDCard(BaseRule):
 class RuleInvisibleChar(BaseRule):
     """check whether content has invisible chars."""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleInvisibleChar",
+        "description": "Checks whether content contains invisible characters that may cause display issues",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig(
         pattern=r"[\u2000-\u200F\u202F\u205F\u3000\uFEFF\u00A0\u2060-\u206F\uFEFF\xa0]"
     )
@@ -794,6 +1129,18 @@ class RuleInvisibleChar(BaseRule):
 class RuleLatexSpecialChar(BaseRule):
     """check pdf content latex abnormal char."""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleLatexSpecialChar",
+        "description": "Checks whether pdf content contains latex special characters",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig(pattern=r"\$\$(.*?\!\!.*?)\$\$")
 
     @classmethod
@@ -812,6 +1159,18 @@ class RuleLatexSpecialChar(BaseRule):
 @Model.rule_register("QUALITY_BAD_COMPLETENESS", ["pretrain", "benchmark"])
 class RuleLineEndWithEllipsis(BaseRule):
     """check whether the ratio of line ends with ellipsis < 0.3"""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "COMPLETENESS",
+        "metric_name": "RuleLineEndWithEllipsis",
+        "description": "Checks whether the ratio of lines ending with ellipsis is below threshold",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig(threshold=0.3, key_list=["...", "…"])
 
@@ -846,6 +1205,18 @@ class RuleLineEndWithEllipsis(BaseRule):
 @Model.rule_register("QUALITY_BAD_COMPLETENESS", ["pretrain"])
 class RuleLineEndWithTerminal(BaseRule):
     """check whether the ratio of line ends with terminal punctuation mark > 0.6"""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "COMPLETENESS",
+        "metric_name": "RuleLineEndWithTerminal",
+        "description": "Checks whether the ratio of lines ending with terminal punctuation is above threshold",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig(
         threshold=0.6, key_list=[".", "!", "?", '"', '"']
@@ -887,6 +1258,18 @@ class RuleLineEndWithTerminal(BaseRule):
 @Model.rule_register("QUALITY_BAD_UNDERSTANDABILITY", ["sft", "pretrain", "benchmark"])
 class RuleLineStartWithBulletpoint(BaseRule):
     """check whether the ratio of line starts with bullet points < 0.9"""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "UNDERSTANDABILITY",
+        "metric_name": "RuleLineStartWithBulletpoint",
+        "description": "Checks whether the ratio of lines starting with bullet points is below threshold",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig(
         threshold=0.9,
@@ -936,12 +1319,23 @@ class RuleLineStartWithBulletpoint(BaseRule):
 class RuleLineJavascriptCount(BaseRule):
     """check whether line with the word Javascript."""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleJavascriptCount",
+        "description": "Checks whether content contains excessive Javascript-related text",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig(threshold=3)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
-        from dingo.model.rule.utils.util import (TextSlice, normalize,
-                                                 split_paragraphs)
+        from dingo.model.rule.utils.util import TextSlice, normalize, split_paragraphs
 
         res = ModelRes()
         raw_content = input_data.content
@@ -967,6 +1361,18 @@ class RuleLineJavascriptCount(BaseRule):
 @Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pretrain", "benchmark"])
 class RuleLoremIpsum(BaseRule):
     """check whether the ratio of lorem ipsum < 3e-08"""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleLoremIpsum",
+        "description": "Checks whether content contains lorem ipsum placeholder text",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig(threshold=3e-08)
 
@@ -994,6 +1400,18 @@ class RuleLoremIpsum(BaseRule):
 @Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pretrain"])
 class RuleMeanWordLength(BaseRule):
     """check whether the mean length of word in [3, 10]"""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleMeanWordLength",
+        "description": "Checks whether the mean length of words is within acceptable range",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig(key_list=["3", "10"])
 
@@ -1045,6 +1463,18 @@ class RuleMeanWordLength(BaseRule):
 class RuleNoPunc(BaseRule):
     """check whether paragraph has no punctuation."""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "FLUENCY",
+        "metric_name": "RuleNoPunc",
+        "description": "Checks whether paragraphs lack punctuation marks, indicating poor text quality",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig(threshold=112)
 
     @classmethod
@@ -1077,6 +1507,18 @@ class RuleNoPunc(BaseRule):
 class RulePatternSearch(BaseRule):
     """let user input pattern to search"""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "RELEVANCE",
+        "metric_name": "RulePatternSearch",
+        "description": "Checks whether content contains specific pattern",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig(pattern="your pattern")
 
     @classmethod
@@ -1094,6 +1536,18 @@ class RulePatternSearch(BaseRule):
 @Model.rule_register("QUALITY_BAD_COMPLETENESS", ["pretrain"])
 class RuleSentenceNumber(BaseRule):
     """check whether the number of sentence in [3, 7500]"""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "COMPLETENESS",
+        "metric_name": "RuleSentenceNumber",
+        "description": "Checks whether the number of sentences is within acceptable range",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig(key_list=["3", "7500"])
 
@@ -1132,6 +1586,18 @@ class RuleSentenceNumber(BaseRule):
 )
 class RuleSpaceMore(BaseRule):
     """check whether content has 500 spaces."""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleSpaceMore",
+        "description": "Checks whether content contains excessive consecutive spaces",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig(pattern=" {500,}")
 
@@ -1172,6 +1638,18 @@ class RuleSpaceMore(BaseRule):
 class RuleSpecialCharacter(BaseRule):
     """check whether content has special characters."""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleSpecialCharacter",
+        "description": "Checks if data is meaningful and properly formatted by detecting excessive special characters",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig(
         key_list=[
             r"u200e",
@@ -1208,12 +1686,25 @@ class RuleSpecialCharacter(BaseRule):
 class RuleStopWord(BaseRule):
     """check whether the ratio of stop word > 0.06"""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleStopWord",
+        "description": "Checks whether the ratio of stop words is above threshold",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig(threshold=0.06)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
-        from dingo.model.rule.utils.util import get_stop_words
         from nltk.tokenize import WordPunctTokenizer
+
+        from dingo.model.rule.utils.util import get_stop_words
 
         res = ModelRes()
         raw_content = input_data.content
@@ -1237,6 +1728,18 @@ class RuleStopWord(BaseRule):
 @Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pretrain", "benchmark"])
 class RuleSymbolWordRatio(BaseRule):
     """check whether the ratio of symbol and word is > 0.4"""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "UNDERSTANDABILITY",
+        "metric_name": "RuleSymbolWordRatio",
+        "description": "Checks whether the ratio of symbols to words is above threshold",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig(threshold=0.4, key_list=["#", "...", "…"])
 
@@ -1269,6 +1772,18 @@ class RuleSymbolWordRatio(BaseRule):
 class RuleUniqueWords(BaseRule):
     """check whether the ratio of unique words > 0.1"""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "UNDERSTANDABILITY",
+        "metric_name": "RuleUniqueWordsRatio",
+        "description": "Checks whether the ratio of unique words is above threshold",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig(threshold=0.1)
 
     @classmethod
@@ -1299,11 +1814,24 @@ class RuleUniqueWords(BaseRule):
 class RuleUnsafeWords(BaseRule):
     """check whether content contains unsafe words."""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "SECURITY",
+        "metric_name": "RuleUnsafeWords",
+        "description": "Checks whether content contains unsafe words",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig(refer_path=[])
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         import ahocorasick
+
         from dingo.model.rule.utils.util import get_unsafe_words
 
         res = ModelRes()
@@ -1348,6 +1876,18 @@ class RuleUnsafeWords(BaseRule):
 class RuleOnlyUrl(BaseRule):
     """check whether content is only an url link."""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleOnlyUrl",
+        "description": "Checks whether content consists only of URLs without meaningful text",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig(
         pattern=r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
     )
@@ -1372,6 +1912,18 @@ class RuleOnlyUrl(BaseRule):
 class RuleWatermark(BaseRule):
     """check whether content has watermarks."""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "RELEVANCE",
+        "metric_name": "RuleWatermark",
+        "description": "Checks whether content has watermarks",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig(key_list=[])
 
     @classmethod
@@ -1389,6 +1941,18 @@ class RuleWatermark(BaseRule):
 @Model.rule_register("QUALITY_BAD_COMPLETENESS", ["pretrain"])
 class RuleWordNumber(BaseRule):
     """check whether the number of word in [20, 100000]"""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "COMPLETENESS",
+        "metric_name": "RuleWordNumber",
+        "description": "Checks whether the number of words is within acceptable range",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig(key_list=["20", "100000"])
 
@@ -1415,6 +1979,18 @@ class RuleWordNumber(BaseRule):
 @Model.rule_register("QUALITY_BAD_FLUENCY", ["pdf_all"])
 class RuleWordSplit(BaseRule):
     """check pdf word abnormal split such as "ca- se"."""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "FLUENCY",
+        "metric_name": "RuleWordSplit",
+        "description": "Checks for abnormal word splits in PDF content that disrupt readability",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
 
     dynamic_config = DynamicRuleConfig(pattern=r"[A-Za-z]+-\s*$")
 
@@ -1449,6 +2025,18 @@ class RuleWordSplit(BaseRule):
 class RuleWordStuck(BaseRule):
     """check whether words are stuck."""
 
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "FLUENCY",
+        "metric_name": "RuleWordStuck",
+        "description": "Checks whether words are stuck together without proper spacing",
+        "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
+        "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
+        "paper_authors": "Together Computer, 2023",
+        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+    }
+
     dynamic_config = DynamicRuleConfig(
         key_list=[
             r"https?://[^\s]+|www.(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+",
@@ -1462,6 +2050,7 @@ class RuleWordStuck(BaseRule):
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         import wordninja
+
         from dingo.model.rule.utils.detect_lang import decide_language_by_str
         from dingo.model.rule.utils.util import is_sha256
 

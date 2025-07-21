@@ -1,0 +1,18 @@
+# HHEM-2.1-Open Integration Dependencies
+# Required for Vectara HHEM-2.1-Open hallucination detection model
+
+# Core transformers library for HHEM model
+transformers>=4.30.0
+
+# PyTorch (CPU version should be sufficient for HHEM)
+torch>=1.12.0
+
+# Additional dependencies for model operations
+sentencepiece>=0.1.99
+tokenizers>=0.13.0
+
+# Optional: GPU support (uncomment if you have CUDA)
+# torch>=1.12.0+cu117 -f https://download.pytorch.org/whl/torch_stable.html
+
+# Optional: For advanced performance monitoring
+# psutil>=5.8.0
