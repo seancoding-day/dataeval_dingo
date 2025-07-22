@@ -6,8 +6,8 @@ from dingo.model.prompt.base import BasePrompt
 class PromptLongVideoQa(BasePrompt):
     # Metadata for documentation generation
     _metric_info = {
-        "category": "PromptLongVideoQa",
-        "metric_name": "Question and Answer",
+        "category": "Text Generation",
+        "metric_name": "PromptLongVideoQa",
         "paper_title": "VRBench: A Benchmark for Multi-Step Reasoning in Long Narrative Videos",
         "paper_url": "https://arxiv.org/abs/2506.108572",
         "paper_authors": "Jiashuo Yu et al., 2025",
