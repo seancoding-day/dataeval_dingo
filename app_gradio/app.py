@@ -17,7 +17,7 @@ def dingo_demo(
         column_id, column_prompt, column_content, column_image,
         rule_list, prompt_list, scene_list,
         model, key, api_url
-    ):
+):
     if not data_format:
         raise gr.Error('ValueError: data_format can not be empty, please input.')
     if not column_content:
@@ -58,7 +58,7 @@ def dingo_demo(
             "batch_size": batch_size,
 
             "column_content": column_content,
-            "custom_config":{
+            "custom_config": {
                 "rule_list": rule_list,
                 "prompt_list": prompt_list,
                 "llm_config": {
@@ -186,19 +186,38 @@ def update_column_fields(rule_list, prompt_list):
 
 def get_rule_type_mapping():
     return {
-        'QUALITY_BAD_COMPLETENESS': ['RuleLineEndWithEllipsis', 'RuleLineEndWithTerminal', 'RuleSentenceNumber',
-                                     'RuleWordNumber'],
-        'QUALITY_BAD_EFFECTIVENESS': ['RuleAbnormalChar', 'RuleAbnormalHtml', 'RuleAlphaWords', 'RuleCharNumber',
-                                      'RuleColonEnd', 'RuleContentNull', 'RuleContentShort', 'RuleContentShortMultiLan',
-                                      'RuleEnterAndSpace', 'RuleEnterMore', 'RuleEnterRatioMore', 'RuleHtmlEntity',
-                                      'RuleHtmlTag', 'RuleInvisibleChar', 'RuleLineJavascriptCount', 'RuleLoremIpsum',
-                                      'RuleMeanWordLength', 'RuleSpaceMore', 'RuleSpecialCharacter', 'RuleStopWord',
-                                      'RuleSymbolWordRatio', 'RuleOnlyUrl'],
-        'QUALITY_BAD_FLUENCY': ['RuleAbnormalNumber', 'RuleCharSplit', 'RuleNoPunc', 'RuleWordSplit', 'RuleWordStuck'],
-        'QUALITY_BAD_RELEVANCE': ['RuleHeadWordAr'],
-        'QUALITY_BAD_SIMILARITY': ['RuleDocRepeat'],
-        'QUALITY_BAD_UNDERSTANDABILITY': ['RuleCapitalWords', 'RuleCurlyBracket', 'RuleLineStartWithBulletpoint',
-                                          'RuleUniqueWords'],
+        # 'QUALITY_BAD_COMPLETENESS': ['RuleLineEndWithEllipsis', 'RuleLineEndWithTerminal', 'RuleSentenceNumber',
+        #                              'RuleWordNumber'],
+        # 'QUALITY_BAD_EFFECTIVENESS': ['RuleAbnormalChar', 'RuleAbnormalHtml', 'RuleAlphaWords', 'RuleCharNumber',
+        #                               'RuleColonEnd', 'RuleContentNull', 'RuleContentShort', 'RuleContentShortMultiLan',
+        #                               'RuleEnterAndSpace', 'RuleEnterMore', 'RuleEnterRatioMore', 'RuleHtmlEntity',
+        #                               'RuleHtmlTag', 'RuleInvisibleChar', 'RuleLineJavascriptCount', 'RuleLoremIpsum',
+        #                               'RuleMeanWordLength', 'RuleSpaceMore', 'RuleSpecialCharacter', 'RuleStopWord',
+        #                               'RuleSymbolWordRatio', 'RuleOnlyUrl'],
+        # 'QUALITY_BAD_FLUENCY': ['RuleAbnormalNumber', 'RuleCharSplit', 'RuleNoPunc', 'RuleWordSplit', 'RuleWordStuck'],
+        # 'QUALITY_BAD_RELEVANCE': ['RuleHeadWordAr'],
+        # 'QUALITY_BAD_SIMILARITY': ['RuleDocRepeat'],
+        # 'QUALITY_BAD_UNDERSTANDABILITY': ['RuleCapitalWords', 'RuleCurlyBracket', 'RuleLineStartWithBulletpoint',
+        #                                   'RuleUniqueWords'],
+
+        'Rule-Based TEXT Quality Metrics': ['RuleLineEndWithEllipsis', 'RuleLineEndWithTerminal', 'RuleSentenceNumber',
+                                            'RuleWordNumber',
+                                            'RuleAbnormalChar', 'RuleAbnormalHtml', 'RuleAlphaWords', 'RuleCharNumber',
+                                            'RuleColonEnd', 'RuleContentNull', 'RuleContentShort',
+                                            'RuleContentShortMultiLan',
+                                            'RuleEnterAndSpace', 'RuleEnterMore', 'RuleEnterRatioMore',
+                                            'RuleHtmlEntity',
+                                            'RuleHtmlTag', 'RuleInvisibleChar', 'RuleLineJavascriptCount',
+                                            'RuleLoremIpsum',
+                                            'RuleMeanWordLength', 'RuleSpaceMore', 'RuleSpecialCharacter',
+                                            'RuleStopWord',
+                                            'RuleSymbolWordRatio', 'RuleOnlyUrl',
+                                            'RuleAbnormalNumber', 'RuleCharSplit', 'RuleNoPunc', 'RuleWordSplit',
+                                            'RuleWordStuck', 'RuleHeadWordAr', 'RuleDocRepeat',
+                                            'RuleCapitalWords', 'RuleCurlyBracket', 'RuleLineStartWithBulletpoint',
+                                            'RuleUniqueWords'
+                                            ],
+
         'QUALITY_BAD_IMG_EFFECTIVENESS': ['RuleImageValid', 'RuleImageSizeValid', 'RuleImageQuality'],
         'QUALITY_BAD_IMG_RELEVANCE': ['RuleImageTextSimilarity'],
         'QUALITY_BAD_IMG_SIMILARITY': ['RuleImageRepeat']
@@ -223,7 +242,7 @@ def get_scene_prompt_mapping():
 
 def get_key_by_mapping(map_dict: dict, value_list: list):
     key_list = []
-    for k,v in map_dict.items():
+    for k, v in map_dict.items():
         if bool(set(v) & set(value_list)):
             key_list.append(k)
 
@@ -249,7 +268,7 @@ def get_data_column_mapping():
         'QUALITY_BAD_SIMILARITY': ['content'],
         'QUALITY_BAD_UNDERSTANDABILITY': ['content'],
         'QUALITY_BAD_IMG_EFFECTIVENESS': ['image'],
-        'QUALITY_BAD_IMG_RELEVANCE': ['content','image'],
+        'QUALITY_BAD_IMG_RELEVANCE': ['content', 'image'],
         'QUALITY_BAD_IMG_SIMILARITY': ['content'],
     }
 
@@ -318,7 +337,7 @@ if __name__ == '__main__':
                     scene_list = gr.Dropdown(
                         choices=scene_options,
                         value=scene_options[0],
-                        label="scene_list",
+                        label="scenario_list",
                         interactive=True
                     )
                     prompt_list = gr.CheckboxGroup(
@@ -347,7 +366,8 @@ if __name__ == '__main__':
                     with gr.Row():
                         # 字段映射说明文本，带示例链接
                         with gr.Column():
-                            gr.Markdown("Please input the column name of dataset in the input boxes below ( [examples](https://github.com/MigoXLab/dingo/tree/main/examples) )")
+                            gr.Markdown(
+                                "Please input the column name of dataset in the input boxes below ( [examples](https://github.com/MigoXLab/dingo/tree/main/examples) )")
 
                         column_id = gr.Textbox(
                             value="",
