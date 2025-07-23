@@ -2,7 +2,7 @@ from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
 
-@Model.prompt_register("CLASSIFY_QR", [])
+@Model.prompt_register("CLASSIFY_QR", [], ['LLMClassifyQR'])
 class PromptClassifyQR(BasePrompt):
 
     # Metadata for documentation generation

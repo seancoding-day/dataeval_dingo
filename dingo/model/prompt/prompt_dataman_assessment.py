@@ -82,7 +82,7 @@ Please output only the JSON format data shown above, without any additional cont
 """
 
 
-@Model.prompt_register("DATAMAN_ASSESSMENT", [])
+@Model.prompt_register("DATAMAN_ASSESSMENT", [], ['dataman_assessment'])
 class PromptDataManAssessment(BasePrompt):
 
     # Metadata for documentation generation

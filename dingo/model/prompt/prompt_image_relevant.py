@@ -2,7 +2,7 @@ from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
 
-@Model.prompt_register("IMAGE_RELEVANT", [])
+@Model.prompt_register("IMAGE_RELEVANT", [], ['VLMImageRelevant'])
 class PromptImageRelevant(BasePrompt):
 
     # Metadata for documentation generation

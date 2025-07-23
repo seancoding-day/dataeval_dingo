@@ -72,41 +72,41 @@ Please return the results in the format: {"language": level, "percent": tagert l
 """
 
 
-@Model.prompt_register("TEXT_LANGUAGE_AR", [])
+@Model.prompt_register("TEXT_LANGUAGE_AR", [], ['LLMTextQualityPromptBase'])
 class PromptTextLanguageAr(BasePrompt):
     content = AR_LAN_ROLE + TEXT_LANGUAGE
 
 
-@Model.prompt_register("TEXT_LANGUAGE_CS", [])
+@Model.prompt_register("TEXT_LANGUAGE_CS", [], ['LLMTextQualityPromptBase'])
 class PromptTextLanguageCs(BasePrompt):
     content = CS_LAN_ROLE + TEXT_LANGUAGE
 
 
-@Model.prompt_register("TEXT_LANGUAGE_HU", [])
+@Model.prompt_register("TEXT_LANGUAGE_HU", [], ['LLMTextQualityPromptBase'])
 class PromptTextLanguageHu(BasePrompt):
     content = HU_LAN_ROLE + TEXT_LANGUAGE
 
 
-@Model.prompt_register("TEXT_LANGUAGE_KO", [])
+@Model.prompt_register("TEXT_LANGUAGE_KO", [], ['LLMTextQualityPromptBase'])
 class PromptTextLanguageKo(BasePrompt):
     content = KO_LAN_ROLE + TEXT_LANGUAGE
 
 
-@Model.prompt_register("TEXT_LANGUAGE_RU", [])
+@Model.prompt_register("TEXT_LANGUAGE_RU", [], ['LLMTextQualityPromptBase'])
 class PromptTextLanguageRu(BasePrompt):
     content = RU_LAN_ROLE + TEXT_LANGUAGE
 
 
-@Model.prompt_register("TEXT_LANGUAGE_SR", [])
+@Model.prompt_register("TEXT_LANGUAGE_SR", [], ['LLMTextQualityPromptBase'])
 class PromptTextLanguageSr(BasePrompt):
     content = SR_LAN_ROLE + TEXT_LANGUAGE
 
 
-@Model.prompt_register("TEXT_LANGUAGE_TH", [])
+@Model.prompt_register("TEXT_LANGUAGE_TH", [], ['LLMTextQualityPromptBase'])
 class PromptTextLanguageTh(BasePrompt):
     content = TH_LAN_ROLE + TEXT_LANGUAGE
 
 
-@Model.prompt_register("TEXT_LANGUAGE_VI", [])
+@Model.prompt_register("TEXT_LANGUAGE_VI", [], ['LLMTextQualityPromptBase'])
 class PromptTextLanguageVi(BasePrompt):
     content = VI_LAN_ROLE + TEXT_LANGUAGE

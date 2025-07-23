@@ -28,12 +28,22 @@ class Model:
     rule_metric_type_map = {}   # such as: {'QUALITY_INEFFECTIVENESS': [<class.RuleAlphaWords>]}
     prompt_metric_type_map = {}  # such as: {'QUALITY_INEFFECTIVENESS': [<class.QaRepeat>]}
 
+    scenario_prompt_map = {}
+
     rule_name_map = {}  # such as: {'RuleAlphaWords': <class.RuleAlphaWords>}
     prompt_name_map = {}
     llm_name_map = {}
 
     def __init__(self):
         return
+
+    @classmethod
+    def get_scenario_prompt_map(cls):
+        return cls.scenario_prompt_map
+
+    @classmethod
+    def get_prompt_by_scenario(cls, sn: str) -> List:
+        return cls.scenario_prompt_map[sn]
 
     @classmethod
     def get_group(cls, group_name) -> Dict[str, List]:
@@ -206,13 +216,17 @@ class Model:
         return decorator
 
     @classmethod
-    def prompt_register(cls, metric_type: str, group: List[str]) -> Callable:
+    def prompt_register(cls, metric_type: str, group: List[str], scenario: List[str]=[]) -> Callable:
         def decorator(root_class):
             # group
             for group_name in group:
                 if group_name not in cls.prompt_groups:
                     cls.prompt_groups[group_name] = []
                 cls.prompt_groups[group_name].append(root_class)
+            for sn in scenario:
+                if sn not in cls.scenario_prompt_map:
+                    cls.scenario_prompt_map[sn] = []
+                cls.scenario_prompt_map[sn].append(root_class)
             cls.prompt_name_map[root_class.__name__] = root_class
             root_class.group = group
 

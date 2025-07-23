@@ -31,12 +31,12 @@ Please remember to output only a JSON format data, without any additional conten
 """
 
 
-@Model.prompt_register("TEXT_QUALITY_V2", [])
+@Model.prompt_register("TEXT_QUALITY_V2", [], ['LLMTextQualityPromptBase'])
 class PromptTextQualityV2(BasePrompt):
     content = ROLE + TEXT_QUALITY_WITHOUT_ROLE_V2
 
 
-@Model.prompt_register("TEXT_QUALITY_V3", [])
+@Model.prompt_register("TEXT_QUALITY_V3", [], ['LLMTextQualityPromptBase'])
 class PromptTextQualityV3(BasePrompt):
     content = """
 # Role
@@ -78,7 +78,7 @@ Please remember to output only a JSON format data, without any additional conten
 """
 
 
-@Model.prompt_register("TEXT_QUALITY_V4", [])
+@Model.prompt_register("TEXT_QUALITY_V4", [], ['LLMTextQualityPromptBase'])
 class PromptTextQualityV4(BasePrompt):
 
     # Metadata for documentation generation

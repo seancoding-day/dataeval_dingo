@@ -2,7 +2,7 @@ from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
 
-@Model.prompt_register("QUALITY_HELPFUL", [])
+@Model.prompt_register("QUALITY_HELPFUL", [], ['LLMText3HHelpful'])
 class PromptTextHelpful(BasePrompt):
 
     # Metadata for documentation generation
@@ -40,7 +40,7 @@ class PromptTextHelpful(BasePrompt):
     """
 
 
-@Model.prompt_register("QUALITY_HARMLESS", [])
+@Model.prompt_register("QUALITY_HARMLESS", [], ['LLMText3HHarmless'])
 class PromptTextHarmless(BasePrompt):
 
     # Metadata for documentation generation
@@ -77,7 +77,7 @@ class PromptTextHarmless(BasePrompt):
     """
 
 
-@Model.prompt_register("QUALITY_HONEST", [])
+@Model.prompt_register("QUALITY_HONEST", [], ['LLMText3HHonest'])
 class PromptTextHonest(BasePrompt):
 
     # Metadata for documentation generation

@@ -2,7 +2,7 @@ from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
 
-@Model.prompt_register("QUALITY_BAD_SECURITY", [])
+@Model.prompt_register("QUALITY_BAD_SECURITY", [], ['LLMSecurityPolitics'])
 class PromptPolitics(BasePrompt):
 
     # Metadata for documentation generation

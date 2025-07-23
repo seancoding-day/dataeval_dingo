@@ -2,7 +2,7 @@ from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
 
-@Model.prompt_register("TEXT_QUALITY_KAOTI", [])
+@Model.prompt_register("TEXT_QUALITY_KAOTI", [], ['LLMTextQualityPromptBase'])
 class PromptTextQualityV3Kaoti(BasePrompt):
     content = """
 # Role
