@@ -9,6 +9,7 @@ import gradio as gr
 
 from dingo.exec import Executor
 from dingo.io import InputArgs
+from dingo.model import Model
 
 
 def dingo_demo(
@@ -185,59 +186,33 @@ def update_column_fields(rule_list, prompt_list):
 
 
 def get_rule_type_mapping():
-    return {
-        # 'QUALITY_BAD_COMPLETENESS': ['RuleLineEndWithEllipsis', 'RuleLineEndWithTerminal', 'RuleSentenceNumber',
-        #                              'RuleWordNumber'],
-        # 'QUALITY_BAD_EFFECTIVENESS': ['RuleAbnormalChar', 'RuleAbnormalHtml', 'RuleAlphaWords', 'RuleCharNumber',
-        #                               'RuleColonEnd', 'RuleContentNull', 'RuleContentShort', 'RuleContentShortMultiLan',
-        #                               'RuleEnterAndSpace', 'RuleEnterMore', 'RuleEnterRatioMore', 'RuleHtmlEntity',
-        #                               'RuleHtmlTag', 'RuleInvisibleChar', 'RuleLineJavascriptCount', 'RuleLoremIpsum',
-        #                               'RuleMeanWordLength', 'RuleSpaceMore', 'RuleSpecialCharacter', 'RuleStopWord',
-        #                               'RuleSymbolWordRatio', 'RuleOnlyUrl'],
-        # 'QUALITY_BAD_FLUENCY': ['RuleAbnormalNumber', 'RuleCharSplit', 'RuleNoPunc', 'RuleWordSplit', 'RuleWordStuck'],
-        # 'QUALITY_BAD_RELEVANCE': ['RuleHeadWordAr'],
-        # 'QUALITY_BAD_SIMILARITY': ['RuleDocRepeat'],
-        # 'QUALITY_BAD_UNDERSTANDABILITY': ['RuleCapitalWords', 'RuleCurlyBracket', 'RuleLineStartWithBulletpoint',
-        #                                   'RuleUniqueWords'],
+    origin_map = Model.get_rule_metric_type_map()
+    process_map = {'Rule-Based TEXT Quality Metrics': []}  # can adjust the order
+    for k, v in origin_map.items():
+        if k in ['QUALITY_BAD_COMPLETENESS', 'QUALITY_BAD_EFFECTIVENESS', 'QUALITY_BAD_FLUENCY',
+                 'QUALITY_BAD_RELEVANCE',
+                 'QUALITY_BAD_SIMILARITY', 'QUALITY_BAD_UNDERSTANDABILITY']:
+            k = 'Rule-Based TEXT Quality Metrics'
+        for r in v:
+            if k not in process_map:
+                process_map[k] = []
+            process_map[k].append(r.__name__)
+    # print(process_map)
 
-        'Rule-Based TEXT Quality Metrics': ['RuleLineEndWithEllipsis', 'RuleLineEndWithTerminal', 'RuleSentenceNumber',
-                                            'RuleWordNumber',
-                                            'RuleAbnormalChar', 'RuleAbnormalHtml', 'RuleAlphaWords', 'RuleCharNumber',
-                                            'RuleColonEnd', 'RuleContentNull', 'RuleContentShort',
-                                            'RuleContentShortMultiLan',
-                                            'RuleEnterAndSpace', 'RuleEnterMore', 'RuleEnterRatioMore',
-                                            'RuleHtmlEntity',
-                                            'RuleHtmlTag', 'RuleInvisibleChar', 'RuleLineJavascriptCount',
-                                            'RuleLoremIpsum',
-                                            'RuleMeanWordLength', 'RuleSpaceMore', 'RuleSpecialCharacter',
-                                            'RuleStopWord',
-                                            'RuleSymbolWordRatio', 'RuleOnlyUrl',
-                                            'RuleAbnormalNumber', 'RuleCharSplit', 'RuleNoPunc', 'RuleWordSplit',
-                                            'RuleWordStuck', 'RuleHeadWordAr', 'RuleDocRepeat',
-                                            'RuleCapitalWords', 'RuleCurlyBracket', 'RuleLineStartWithBulletpoint',
-                                            'RuleUniqueWords'
-                                            ],
-
-        'QUALITY_BAD_IMG_EFFECTIVENESS': ['RuleImageValid', 'RuleImageSizeValid', 'RuleImageQuality'],
-        'QUALITY_BAD_IMG_RELEVANCE': ['RuleImageTextSimilarity'],
-        'QUALITY_BAD_IMG_SIMILARITY': ['RuleImageRepeat']
-    }
+    return process_map
 
 
 def get_scene_prompt_mapping():
-    return {
-        # 示例映射关系，你可以根据实际需求修改
-        "LLMTextQualityPromptBase": ['PromptRepeat', 'PromptContentChaos'],
-        'LLMTextQualityModelBase': ['PromptTextQualityV3', 'PromptTextQualityV4'],
-        'LLMSecurityPolitics': ['PromptPolitics'],
-        'LLMSecurityProhibition': ['PromptProhibition'],
-        'LLMText3HHarmless': ['PromptTextHelpful'],
-        'LLMText3HHelpful': ['PromptTextHelpful'],
-        'LLMText3HHonest': ['PromptTextHonest'],
-        'LLMClassifyTopic': ['PromptClassifyTopic'],
-        'LLMClassifyQR': ['PromptClassifyQR'],
-        "VLMImageRelevant": ["PromptImageRelevant"],
-    }
+    origin_map = Model.get_scenario_prompt_map()
+    process_map = {'LLMTextQualityModelBase': [], 'LLMTextQualityPromptBase': []}  # can adjust the order
+    for k, v in origin_map.items():
+        for p in v:
+            if k not in process_map:
+                process_map[k] = []
+            process_map[k].append(p.__name__)
+    # print(process_map)
+
+    return process_map
 
 
 def get_key_by_mapping(map_dict: dict, value_list: list):
@@ -251,6 +226,7 @@ def get_key_by_mapping(map_dict: dict, value_list: list):
 
 def get_data_column_mapping():
     return {
+        # llm
         'LLMTextQualityPromptBase': ['content'],
         'LLMTextQualityModelBase': ['content'],
         'LLMSecurityPolitics': ['content'],
@@ -261,12 +237,16 @@ def get_data_column_mapping():
         'LLMClassifyTopic': ['content'],
         'LLMClassifyQR': ['content'],
         'VLMImageRelevant': ['prompt', 'content'],
-        'QUALITY_BAD_COMPLETENESS': ['content'],
-        'QUALITY_BAD_EFFECTIVENESS': ['content'],
-        'QUALITY_BAD_FLUENCY': ['content'],
-        'QUALITY_BAD_RELEVANCE': ['content'],
-        'QUALITY_BAD_SIMILARITY': ['content'],
-        'QUALITY_BAD_UNDERSTANDABILITY': ['content'],
+
+        # rule
+        # 'QUALITY_BAD_COMPLETENESS': ['content'],
+        # 'QUALITY_BAD_EFFECTIVENESS': ['content'],
+        # 'QUALITY_BAD_FLUENCY': ['content'],
+        # 'QUALITY_BAD_RELEVANCE': ['content'],
+        # 'QUALITY_BAD_SIMILARITY': ['content'],
+        # 'QUALITY_BAD_UNDERSTANDABILITY': ['content'],
+        'Rule-Based TEXT Quality Metrics': ['content'],
+        'QUALITY_BAD_SECURITY': ['content'],
         'QUALITY_BAD_IMG_EFFECTIVENESS': ['image'],
         'QUALITY_BAD_IMG_RELEVANCE': ['content', 'image'],
         'QUALITY_BAD_IMG_SIMILARITY': ['content'],
