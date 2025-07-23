@@ -2,7 +2,7 @@ from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
 
-@Model.prompt_register("PromptLongVideoQa", [])
+@Model.prompt_register("PromptLongVideoQa", [], ['LLMLongVideoQa'])
 class PromptLongVideoQa(BasePrompt):
     # Metadata for documentation generation
     _metric_info = {

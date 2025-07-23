@@ -2,7 +2,7 @@ from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
 
-@Model.prompt_register("CLASSIFY_TOPIC", [])
+@Model.prompt_register("CLASSIFY_TOPIC", [], ['LLMClassifyTopic'])
 class PromptClassifyTopic(BasePrompt):
 
     # Metadata for documentation generation
