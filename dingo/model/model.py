@@ -216,7 +216,7 @@ class Model:
         return decorator
 
     @classmethod
-    def prompt_register(cls, metric_type: str, group: List[str], scenario: List[str]=[]) -> Callable:
+    def prompt_register(cls, metric_type: str, group: List[str], scenario: List[str] = []) -> Callable:
         def decorator(root_class):
             # group
             for group_name in group:
