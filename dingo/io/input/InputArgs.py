@@ -86,11 +86,40 @@ class InputArgs(BaseModel):
     ######################### dropped args #########################
 
     def __init__(self, **kwargs):
-        try:
-            super().__init__(**kwargs)
-            self.check_args()
-        except ValidationError as e:
-            raise ValueError(f"Invalid input parameters: {e}")
+        # Initialize custom_config if it doesn't exist
+        if 'custom_config' not in kwargs:
+            kwargs['custom_config'] = {}
+
+        if 'database' in kwargs:
+            db = kwargs['database']  # Get database config
+            kwargs['dataset'] = db['source']
+            kwargs['data_format'] = db['format']
+            kwargs['column_id'] = db['field']['id']
+            kwargs['column_prompt'] = db['field']['prompt']
+            kwargs['column_content'] = db['field']['content']
+            kwargs['column_context'] = db['field']['context']
+            kwargs['column_image'] = db['field']['image']
+
+        if 'executor' in kwargs:
+            ex = kwargs['executor']  # Get executor config
+            kwargs['eval_group'] = ex['eval_group']
+            kwargs['start_index'] = ex['start_index']
+            kwargs['end_index'] = ex['end_index']
+            kwargs['max_workers'] = ex['max_workers']
+            kwargs['batch_size'] = ex['batch_size']
+            kwargs['save_data'] = ex['result_save']['bad']
+            kwargs['save_correct'] = ex['result_save']['all']
+            kwargs['save_raw'] = ex['result_save']['raw']
+
+            kwargs['custom_config']['rule_list'] = ex['rule_list']
+            kwargs['custom_config']['prompt_list'] = ex['prompt_list']
+
+        if 'evaluator' in kwargs:
+            ev = kwargs['evaluator']  # Get evaluator config
+            kwargs['custom_config']['rule_config'] = ev['rule_config']
+            kwargs['custom_config']['llm_config'] = ev['llm_config']
+
+        super().__init__(**kwargs)
 
     def check_args(self):
         # check eval group
