@@ -236,6 +236,7 @@ def get_data_column_mapping():
         'LLMText3HHonest': ['content'],
         'LLMClassifyTopic': ['content'],
         'LLMClassifyQR': ['content'],
+        'LLMDatamanAssessment': ['content'],
         'VLMImageRelevant': ['prompt', 'content'],
 
         # rule

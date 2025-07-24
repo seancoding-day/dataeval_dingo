@@ -12,9 +12,9 @@ input_data = {
         {
             "prompt_list": ["PromptDataManAssessment"],
             "llm_config": {
-                "dataman_assessment": {
-                    "key": "enter your key, such as:EMPTY",
-                    "api_url": "enter your local llm api url, such as:http://127.0.0.1:8080/v1",
+                "LLMDatamanAssessment": {
+                    "key": "EMPTY",
+                    "api_url": "http://10.140.54.48:29990/v1",
                 }
             }
         },
