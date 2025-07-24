@@ -2,9 +2,10 @@ import json
 import os
 import time
 import uuid
-from typing import Optional, List, Dict
+from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ValidationError
+
 from dingo.config.config import DynamicLLMConfig, DynamicRuleConfig
 
 
@@ -15,15 +16,18 @@ class DatabaseFieldArgs(BaseModel):
     context: str = ''
     image: str = ''
 
+
 class DatabaseArgs(BaseModel):
     source: str = 'hugging_face'
     format: str = 'json'
     field: DatabaseFieldArgs = DatabaseFieldArgs()
 
+
 class ExecutorResultSaveArgs(BaseModel):
     bad: bool = False
     all: bool = False
     raw: bool = False
+
 
 class ExecutorArgs(BaseModel):
     eval_group: str = ""
@@ -35,15 +39,16 @@ class ExecutorArgs(BaseModel):
     batch_size: int = 1
     result_save: ExecutorResultSaveArgs = ExecutorResultSaveArgs()
 
+
 class EvaluatorArgs(BaseModel):
     rule_config: Optional[Dict[str, DynamicRuleConfig]] = {}
     llm_config: Optional[Dict[str, DynamicLLMConfig]] = {}
+
 
 class InputArgs(BaseModel):
     """
     Input arguments, input of project.
     """
-
     task_name: str = "dingo"
     input_path: str = "test/data/test_local_json.json"
     output_path: str = "outputs/"
@@ -54,7 +59,6 @@ class InputArgs(BaseModel):
     database: DatabaseArgs = DatabaseArgs()
     executor: ExecutorArgs = ExecutorArgs()
     evaluator: EvaluatorArgs = EvaluatorArgs()
-
 
     ########################### old args ###########################
     eval_group: str = ""
@@ -77,7 +81,6 @@ class InputArgs(BaseModel):
     column_image: str = ""
     custom_config: Optional[str | dict] = None
     ########################### old args ###########################
-
 
     ######################### dropped args #########################
     # Huggingface specific setting
