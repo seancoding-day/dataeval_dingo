@@ -2,10 +2,42 @@ import json
 import os
 import time
 import uuid
-from typing import Optional
+from typing import Optional, List, Dict
 
 from pydantic import BaseModel, ValidationError
+from dingo.config.config import DynamicLLMConfig, DynamicRuleConfig
 
+
+class DatabaseFieldArgs(BaseModel):
+    id: str = ''
+    prompt: str = ''
+    content: str = ''
+    context: str = ''
+    image: str = ''
+
+class DatabaseArgs(BaseModel):
+    source: str = 'hugging_face'
+    format: str = 'json'
+    field: DatabaseFieldArgs = DatabaseFieldArgs()
+
+class ExecutorResultSaveArgs(BaseModel):
+    bad: bool = False
+    all: bool = False
+    raw: bool = False
+
+class ExecutorArgs(BaseModel):
+    eval_group: str = ""
+    rule_list: Optional[List[str]] = []
+    prompt_list: Optional[List[str]] = []
+    start_index: int = 0
+    end_index: int = -1
+    max_workers: int = 1
+    batch_size: int = 1
+    result_save: ExecutorResultSaveArgs = ExecutorResultSaveArgs()
+
+class EvaluatorArgs(BaseModel):
+    rule_config: Optional[Dict[str, DynamicRuleConfig]] = {}
+    llm_config: Optional[Dict[str, DynamicLLMConfig]] = {}
 
 class InputArgs(BaseModel):
     """
@@ -13,44 +45,45 @@ class InputArgs(BaseModel):
     """
 
     task_name: str = "dingo"
-    eval_group: str = ""
-
     input_path: str = "test/data/test_local_json.json"
     output_path: str = "outputs/"
 
+    log_level: str = "WARNING"
+    use_browser: bool = False
+
+    database: DatabaseArgs = DatabaseArgs()
+    executor: ExecutorArgs = ExecutorArgs()
+    evaluator: EvaluatorArgs = EvaluatorArgs()
+
+
+    ########################### old args ###########################
+    eval_group: str = ""
     save_data: bool = False
     save_correct: bool = False
     save_raw: bool = False
-
     # Resume settings
     start_index: int = 0
     end_index: int = -1
-
     # Concurrent settings
     max_workers: int = 1
     batch_size: int = 1
-
     # Dataset setting
     dataset: str = "hugging_face"  # ['local', 'hugging_face']
     data_format: str = "json"
-
-    # Huggingface specific setting
-    huggingface_split: str = ""
-    huggingface_config_name: Optional[str] = None
-
     column_id: str = ""
     column_prompt: str = ""
     column_content: str = ""
     column_context: str = ""
     column_image: str = ""
-
     custom_config: Optional[str | dict] = None
+    ########################### old args ###########################
 
-    log_level: str = "WARNING"
-    use_browser: bool = False
 
-    class Config:
-        extra = "forbid"  # Forbid extra parameters
+    ######################### dropped args #########################
+    # Huggingface specific setting
+    huggingface_split: str = ""
+    huggingface_config_name: Optional[str] = None
+    ######################### dropped args #########################
 
     def __init__(self, **kwargs):
         try:
