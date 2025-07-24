@@ -94,33 +94,56 @@ class InputArgs(BaseModel):
             kwargs['custom_config'] = {}
 
         if 'database' in kwargs:
-            db = kwargs['database']  # Get database config
-            kwargs['dataset'] = db['source']
-            kwargs['data_format'] = db['format']
-            kwargs['column_id'] = db['field']['id']
-            kwargs['column_prompt'] = db['field']['prompt']
-            kwargs['column_content'] = db['field']['content']
-            kwargs['column_context'] = db['field']['context']
-            kwargs['column_image'] = db['field']['image']
+            db = kwargs['database']
+            if 'source' in db:
+                kwargs['dataset'] = db['source']
+            if 'format' in db:
+                kwargs['data_format'] = db['format']
+            if 'field' in db:
+                field = db['field']
+                if 'id' in field:
+                    kwargs['column_id'] = field['id']
+                if 'prompt' in field:
+                    kwargs['column_prompt'] = field['prompt']
+                if 'content' in field:
+                    kwargs['column_content'] = field['content']
+                if 'context' in field:
+                    kwargs['column_context'] = field['context']
+                if 'image' in field:
+                    kwargs['column_image'] = field['image']
 
         if 'executor' in kwargs:
-            ex = kwargs['executor']  # Get executor config
-            kwargs['eval_group'] = ex['eval_group']
-            kwargs['start_index'] = ex['start_index']
-            kwargs['end_index'] = ex['end_index']
-            kwargs['max_workers'] = ex['max_workers']
-            kwargs['batch_size'] = ex['batch_size']
-            kwargs['save_data'] = ex['result_save']['bad']
-            kwargs['save_correct'] = ex['result_save']['all']
-            kwargs['save_raw'] = ex['result_save']['raw']
+            ex = kwargs['executor']
+            if 'eval_group' in ex:
+                kwargs['eval_group'] = ex['eval_group']
+            if 'start_index' in ex:
+                kwargs['start_index'] = ex['start_index']
+            if 'end_index' in ex:
+                kwargs['end_index'] = ex['end_index']
+            if 'max_workers' in ex:
+                kwargs['max_workers'] = ex['max_workers']
+            if 'batch_size' in ex:
+                kwargs['batch_size'] = ex['batch_size']
+            if 'result_save' in ex:
+                result_save = ex['result_save']
+                if 'bad' in result_save:
+                    kwargs['save_data'] = result_save['bad']
+                if 'all' in result_save:
+                    kwargs['save_correct'] = result_save['all']
+                if 'raw' in result_save:
+                    kwargs['save_raw'] = result_save['raw']
 
-            kwargs['custom_config']['rule_list'] = ex['rule_list']
-            kwargs['custom_config']['prompt_list'] = ex['prompt_list']
+            if 'rule_list' in ex:
+                kwargs['custom_config']['rule_list'] = ex['rule_list']
+            if 'prompt_list' in ex:
+                kwargs['custom_config']['prompt_list'] = ex['prompt_list']
 
         if 'evaluator' in kwargs:
-            ev = kwargs['evaluator']  # Get evaluator config
-            kwargs['custom_config']['rule_config'] = ev['rule_config']
-            kwargs['custom_config']['llm_config'] = ev['llm_config']
+            ev = kwargs['evaluator']
+            if 'rule_config' in ev:
+                kwargs['custom_config']['rule_config'] = ev['rule_config']
+            if 'llm_config' in ev:
+                kwargs['custom_config']['llm_config'] = ev['llm_config']
 
         super().__init__(**kwargs)
 
