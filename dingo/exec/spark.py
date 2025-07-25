@@ -83,7 +83,7 @@ class SparkExecutor(ExecProto):
         create_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
 
         # Initialize models and configuration
-        Model.apply_config()
+        Model.apply_config(self.input_args)
         self.group = Model.get_group(self.input_args.executor.eval_group)
 
         if self.input_args.evaluator.llm_config:
@@ -101,7 +101,7 @@ class SparkExecutor(ExecProto):
             total = data_rdd.count()
 
             # Apply configuration for Spark driver
-            Model.apply_config_for_spark_driver()
+            Model.apply_config_for_spark_driver(self.input_args)
 
             # Broadcast necessary objects to workers
             broadcast_group = sc.broadcast(self.group)
@@ -125,7 +125,7 @@ class SparkExecutor(ExecProto):
             self.summary = SummaryModel(
                 task_id=str(uuid.uuid1()),
                 task_name=self.input_args.task_name,
-                eval_group=self.input_args.eval_group,
+                eval_group=self.input_args.executor.eval_group,
                 input_path=self.input_args.input_path if not self.spark_rdd else "",
                 output_path="",
                 create_time=create_time,
@@ -141,7 +141,7 @@ class SparkExecutor(ExecProto):
         except Exception as e:
             raise e
         finally:
-            if not self.input_args.save_data:
+            if not self.input_args.executor.result_save.bad:
                 self.cleanup(spark)
             else:
                 self.spark_session = spark
@@ -158,7 +158,7 @@ class SparkExecutor(ExecProto):
             data_id=data.data_id, prompt=data.prompt, content=data.content
         )
 
-        if self.input_args.save_raw:
+        if self.input_args.executor.result_save.raw:
             result_info.raw_data = data.raw_data
 
         group = broadcast_group.value
@@ -304,7 +304,7 @@ class SparkExecutor(ExecProto):
         if not self.bad_info_list and not self.good_info_list:
             return new_summary
         if not self.bad_info_list and self.good_info_list:
-            if not self.input_args.save_correct:
+            if not self.input_args.executor.result_save.good:
                 return new_summary
 
         new_summary.type_ratio = collect_ratio(
@@ -314,7 +314,7 @@ class SparkExecutor(ExecProto):
             self.bad_info_list, "name_list", new_summary.total
         )
 
-        if self.input_args.save_correct:
+        if self.input_args.executor.result_save.good:
             type_ratio_correct = collect_ratio(
                 self.good_info_list, "type_list", new_summary.total
             )
@@ -334,7 +334,7 @@ class SparkExecutor(ExecProto):
         return self.summary
 
     def get_bad_info_list(self):
-        if self.input_args.save_raw:
+        if self.input_args.executor.result_save.raw:
             return self.bad_info_list.map(
                 lambda x: {
                     **x["raw_data"],
@@ -349,7 +349,7 @@ class SparkExecutor(ExecProto):
         return self.bad_info_list
 
     def get_good_info_list(self):
-        if self.input_args.save_raw:
+        if self.input_args.executor.result_save.raw:
             return self.good_info_list.map(
                 lambda x: {
                     **x["raw_data"],
