@@ -7,9 +7,9 @@ from pyspark import SparkConf
 from pyspark.rdd import RDD
 from pyspark.sql import SparkSession
 
-from dingo.config import GlobalConfig
+from dingo.config import InputArgs
 from dingo.exec.base import ExecProto, Executor
-from dingo.io import Data, InputArgs, ResultInfo, SummaryModel
+from dingo.io import Data, ResultInfo, SummaryModel
 from dingo.model import Model
 from dingo.model.llm.base import BaseLLM
 from dingo.model.modelres import ModelRes
@@ -83,11 +83,11 @@ class SparkExecutor(ExecProto):
         create_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
 
         # Initialize models and configuration
-        Model.apply_config(self.input_args.custom_config, self.input_args.eval_group)
-        self.group = Model.get_group(self.input_args.eval_group)
+        Model.apply_config()
+        self.group = Model.get_group(self.input_args.executor.eval_group)
 
-        if GlobalConfig.config and GlobalConfig.config.llm_config:
-            for llm_name in GlobalConfig.config.llm_config:
+        if self.input_args.evaluator.llm_config:
+            for llm_name in self.input_args.evaluator.llm_config:
                 self.llm = Model.get_llm(llm_name)
 
         print("============= Init PySpark =============")
@@ -101,9 +101,7 @@ class SparkExecutor(ExecProto):
             total = data_rdd.count()
 
             # Apply configuration for Spark driver
-            Model.apply_config_for_spark_driver(
-                self.input_args.custom_config, self.input_args.eval_group
-            )
+            Model.apply_config_for_spark_driver()
 
             # Broadcast necessary objects to workers
             broadcast_group = sc.broadcast(self.group)
@@ -118,7 +116,7 @@ class SparkExecutor(ExecProto):
             self.bad_info_list = data_info_list.filter(lambda x: x["error_status"])
             num_bad = self.bad_info_list.count()
 
-            if self.input_args.save_correct:
+            if self.input_args.executor.result_save.good:
                 self.good_info_list = data_info_list.filter(
                     lambda x: not x["error_status"]
                 )

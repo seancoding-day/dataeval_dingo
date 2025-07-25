@@ -1,11 +1,11 @@
 from dingo.exec import Executor
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 
 input_data = {
     "input_path": "../../test/data/test_local_jsonl.jsonl",
     "log_level": "INFO",
 
-    "database": {
+    "dataset": {
         "source": "local",
         "format": "jsonl",
         "field": {
@@ -17,14 +17,14 @@ input_data = {
         "prompt_list": ["PromptRepeat"],
         "result_save": {
             "bad": True,
-            "all": True
+            "good": True
         }
     },
     "evaluator": {
         "llm_config": {
             "LLMTextQualityPromptBase": {
-                "key": "enter your key, such as:EMPTY",
-                "api_url": "enter your local llm api url, such as:http://127.0.0.1:8080/v1",
+                "key": "EMPTY",
+                "api_url": "http://10.140.54.48:29990/v1",
             }
         }
     }

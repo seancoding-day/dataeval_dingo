@@ -4,7 +4,7 @@ import os.path
 import pytest
 
 from dingo.exec import Executor
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 
 
 class TestContinue:

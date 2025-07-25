@@ -14,7 +14,7 @@ Key advantages of HHEM-2.1-Open:
 import json
 from typing import List, Union
 
-from dingo.config.config import DynamicRuleConfig
+from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
 from dingo.model import Model
 from dingo.model.modelres import ModelRes
@@ -45,7 +45,7 @@ class RuleHallucinationHHEM(BaseRule):
         "paper_authors": "Forrest Bao, Miaoran Li, Rogger Luo, Ofer Mendelevitch"
     }
 
-    dynamic_config = DynamicRuleConfig(threshold=0.5)
+    dynamic_config = EvaluatorRuleArgs(threshold=0.5)
     model = None
 
     @classmethod

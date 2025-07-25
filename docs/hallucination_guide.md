@@ -95,12 +95,12 @@ print(f"详细分析: {result.reason[0]}")
 ### 方法二：GPT-based 云端检测
 
 ```python
-from dingo.config.config import DynamicLLMConfig
+from dingo.config.config import EvaluatorLLMArgs
 from dingo.io.input.Data import Data
 from dingo.model.llm.llm_hallucination import LLMHallucination
 
 # 配置 LLM
-LLMHallucination.dynamic_config = DynamicLLMConfig(
+LLMHallucination.dynamic_config = EvaluatorLLMArgs(
     key='YOUR_OPENAI_API_KEY',
     api_url='https://api.openai.com/v1/chat/completions',
     model='gpt-4o',
@@ -131,7 +131,7 @@ print(f"详细原因: {result.reason[0]}")
 ### 使用 HHEM-2.1-Open（本地，免费）
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 
 input_data = {
@@ -159,7 +159,7 @@ print(f"HHEM 幻觉检测完成: 发现 {result.bad_count}/{result.total_count} 
 ### 使用 GPT（在线，需要 API）
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 
 input_data = {

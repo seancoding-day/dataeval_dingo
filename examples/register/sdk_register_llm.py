@@ -46,7 +46,7 @@ class LlmTextQualityRegister(BaseOpenAI):
 
 if __name__ == '__main__':
     from dingo.exec import Executor
-    from dingo.io import InputArgs
+    from dingo.config import InputArgs
 
     input_data = {
         "eval_group": "test",

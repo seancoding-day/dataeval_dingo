@@ -56,7 +56,7 @@ pip install dingo-python
 ### 2.1 评估LLM对话数据
 
 ```python
-from dingo.config.config import DynamicLLMConfig
+from dingo.config.config import EvaluatorLLMArgs
 from dingo.io.input.Data import Data
 from dingo.model.llm.llm_text_quality_model_base import LLMTextQualityModelBase
 from dingo.model.rule.rule_common import RuleEnterAndSpace
@@ -68,7 +68,7 @@ data = Data(
 )
 
 def llm():
-    LLMTextQualityModelBase.dynamic_config = DynamicLLMConfig(
+    LLMTextQualityModelBase.dynamic_config = EvaluatorLLMArgs(
         key='YOUR_API_KEY',
         api_url='https://api.openai.com/v1/chat/completions',
         model='gpt-4o',
@@ -85,7 +85,7 @@ def rule():
 ### 2.2 评估数据集
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 
 # 评估来自Hugging Face的数据集
@@ -278,7 +278,7 @@ input_data = {
 ```python
 from dingo.model import Model
 from dingo.model.rule.base import BaseRule
-from dingo.config.config import DynamicRuleConfig
+from dingo.config.config import EvaluatorRuleArgs
 from dingo.io import Data
 from dingo.model.modelres import ModelRes
 
@@ -286,7 +286,7 @@ from dingo.model.modelres import ModelRes
 class MyCustomRule(BaseRule):
     """检查文本中的自定义模式"""
 
-    dynamic_config = DynamicRuleConfig(pattern=r'your_pattern_here')
+    dynamic_config = EvaluatorRuleArgs(pattern=r'your_pattern_here')
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -317,7 +317,7 @@ class MyCustomModel(BaseOpenAI):
 ### 2.1 本地执行
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 
 input_args = InputArgs(**input_data)
@@ -333,7 +333,7 @@ good_data = executor.get_good_info_list() # 高质量数据列表
 ### 2.2 Spark执行
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 from pyspark.sql import SparkSession
 

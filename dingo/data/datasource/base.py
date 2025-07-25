@@ -20,7 +20,7 @@ from abc import abstractmethod
 from functools import wraps
 from typing import Any, Dict, Iterable
 
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 
 
 class DataSource:

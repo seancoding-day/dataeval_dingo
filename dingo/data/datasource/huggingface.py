@@ -3,7 +3,7 @@ from typing import Any, Dict, Mapping, Optional, Sequence, Union
 import datasets
 
 from dingo.data.datasource.base import DataSource
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 
 
 @DataSource.register()

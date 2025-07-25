@@ -1,5 +1,5 @@
 from dingo.exec import Executor
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 
 
 def exec_first():

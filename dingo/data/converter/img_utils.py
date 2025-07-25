@@ -9,7 +9,7 @@ from botocore.response import StreamingBody
 from PIL import Image
 
 from dingo.data.datasource import S3DataSource
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 
 
 def try_close(obj):

@@ -9,7 +9,7 @@ for batch evaluation of datasets, particularly useful for:
 """
 
 from dingo.exec import Executor
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 # Force import hallucination detection modules
 from dingo.model.llm.llm_hallucination import LLMHallucination
 from dingo.model.prompt.prompt_hallucination import PromptHallucination

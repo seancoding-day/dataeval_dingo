@@ -1,5 +1,5 @@
 from dingo.exec import Executor
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 
 input_data = {
     "input_path": "../../test/data/test_long_video_qa.jsonl",

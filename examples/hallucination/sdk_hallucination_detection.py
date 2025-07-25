@@ -8,12 +8,12 @@ The hallucination detector evaluates whether LLM responses contain factual contr
 against provided reference contexts.
 """
 
-from dingo.config.config import DynamicLLMConfig
+from dingo.config.config import EvaluatorLLMArgs
 from dingo.io.input.Data import Data
 from dingo.model.llm.llm_hallucination import LLMHallucination
 
 # Configure LLM
-LLMHallucination.dynamic_config = DynamicLLMConfig(
+LLMHallucination.dynamic_config = EvaluatorLLMArgs(
     key='sk-xxx',
     api_url='https://api.deepseek.com',
     model='deepseek-chat',
@@ -184,7 +184,7 @@ if __name__ == "__main__":
     print()
 
     # Note: Make sure to set your API key before running
-    print("⚠️  Please set your OpenAI API key in the DynamicLLMConfig before running these examples!")
+    print("⚠️  Please set your OpenAI API key in the EvaluatorLLMArgs before running these examples!")
     print()
 
     # example_1_basic_hallucination_detection()

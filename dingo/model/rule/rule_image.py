@@ -3,7 +3,7 @@ import os
 import numpy as np
 from PIL import Image
 
-from dingo.config.config import DynamicRuleConfig
+from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
 from dingo.model.model import Model
 from dingo.model.modelres import ModelRes
@@ -26,7 +26,7 @@ class RuleImageValid(BaseRule):
         "evaluation_results": ""
     }
 
-    dynamic_config = DynamicRuleConfig()
+    dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -61,7 +61,7 @@ class RuleImageSizeValid(BaseRule):
         "evaluation_results": ""
     }
 
-    dynamic_config = DynamicRuleConfig()
+    dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -99,7 +99,7 @@ class RuleImageQuality(BaseRule):
         "evaluation_results": ""
     }
 
-    dynamic_config = DynamicRuleConfig(threshold=5.5)
+    dynamic_config = EvaluatorRuleArgs(threshold=5.5)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -141,7 +141,7 @@ class RuleImageRepeat(BaseRule):
         "evaluation_results": ""
     }
 
-    dynamic_config = DynamicRuleConfig()
+    dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -197,7 +197,7 @@ class RuleImageTextSimilarity(BaseRule):
         "evaluation_results": ""
     }
 
-    dynamic_config = DynamicRuleConfig(threshold=0.17)
+    dynamic_config = EvaluatorRuleArgs(threshold=0.17)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:

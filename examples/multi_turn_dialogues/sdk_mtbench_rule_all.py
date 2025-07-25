@@ -1,5 +1,5 @@
 from dingo.exec import Executor
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 
 input_data = {
     "input_path": "lmsys/mt_bench_human_judgments",  # huggingface dataset

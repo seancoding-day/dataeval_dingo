@@ -2,7 +2,7 @@ import re
 import string
 from typing import Tuple
 
-from dingo.config.config import DynamicRuleConfig
+from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
 from dingo.model.model import Model
 from dingo.model.modelres import ModelRes
@@ -81,7 +81,7 @@ class RuleAbnormalNumber(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(pattern=r"\n{4}\d+\n{4}")
+    dynamic_config = EvaluatorRuleArgs(pattern=r"\n{4}\d+\n{4}")
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -112,7 +112,7 @@ class RuleAlphaWords(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(threshold=0.6)
+    dynamic_config = EvaluatorRuleArgs(threshold=0.6)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -156,7 +156,7 @@ class RuleCapitalWords(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(threshold=0.2)
+    dynamic_config = EvaluatorRuleArgs(threshold=0.2)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -194,7 +194,7 @@ class RuleCharNumber(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(threshold=100)
+    dynamic_config = EvaluatorRuleArgs(threshold=100)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -229,7 +229,7 @@ class RuleCharSplit(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(
+    dynamic_config = EvaluatorRuleArgs(
         pattern=r"(?:(?:[a-zA-Z]\s){5}[a-zA-Z])", threshold=3
     )
 
@@ -266,7 +266,7 @@ class RuleColonEnd(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig()
+    dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -318,7 +318,7 @@ class RuleContentNull(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig()
+    dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -350,7 +350,7 @@ class RuleContentShort(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(threshold=20)
+    dynamic_config = EvaluatorRuleArgs(threshold=20)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -392,7 +392,7 @@ class RuleContentShortMultiLan(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(threshold=20)
+    dynamic_config = EvaluatorRuleArgs(threshold=20)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -426,7 +426,7 @@ class RuleCurlyBracket(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(threshold=0.025)
+    dynamic_config = EvaluatorRuleArgs(threshold=0.025)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -482,7 +482,7 @@ class RuleDocRepeat(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(threshold=80)
+    dynamic_config = EvaluatorRuleArgs(threshold=80)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -560,7 +560,7 @@ class RuleEnterMore(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(key_list=[r"\n{8,}", r"\r\n{8,}"])
+    dynamic_config = EvaluatorRuleArgs(key_list=[r"\n{8,}", r"\r\n{8,}"])
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -609,7 +609,7 @@ class RuleEnterRatioMore(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig()
+    dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -643,7 +643,7 @@ class RuleHeadWordAr(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig()
+    dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -677,7 +677,7 @@ class RuleHeadWordCs(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig()
+    dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -711,7 +711,7 @@ class RuleHeadWordHu(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig()
+    dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -745,7 +745,7 @@ class RuleHeadWordKo(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig()
+    dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -779,7 +779,7 @@ class RuleHeadWordRu(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig()
+    dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -813,7 +813,7 @@ class RuleHeadWordSr(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig()
+    dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -847,7 +847,7 @@ class RuleHeadWordTh(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig()
+    dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -881,7 +881,7 @@ class RuleHeadWordVi(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig()
+    dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -933,7 +933,7 @@ class RuleHtmlEntity(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(
+    dynamic_config = EvaluatorRuleArgs(
         key_list=[
             "nbsp",
             "lt",
@@ -1018,7 +1018,7 @@ class RuleHtmlTag(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(
+    dynamic_config = EvaluatorRuleArgs(
         key_list=["<img", "<p>", "</p>", "<o:p", "</o:p>"]
     )
 
@@ -1055,7 +1055,7 @@ class RuleIDCard(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(
+    dynamic_config = EvaluatorRuleArgs(
         pattern=r"(身\s{0,10}份|id\s{0,10}number\s{0,10}|identification|identity|\s{0,10}ID\s{0,10}No\s{0,10}|id\s{0,10}card\s{0,10}|NRIC\s{0,10}number\s{0,10}|IC\s{0,10}number\s{0,10}|resident\s{0,10}registration\s{0,10}|I.D.\s{0,10}Number\s{0,10})"
     )
 
@@ -1104,7 +1104,7 @@ class RuleInvisibleChar(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(
+    dynamic_config = EvaluatorRuleArgs(
         pattern=r"[\u2000-\u200F\u202F\u205F\u3000\uFEFF\u00A0\u2060-\u206F\uFEFF\xa0]"
     )
 
@@ -1141,7 +1141,7 @@ class RuleLatexSpecialChar(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(pattern=r"\$\$(.*?\!\!.*?)\$\$")
+    dynamic_config = EvaluatorRuleArgs(pattern=r"\$\$(.*?\!\!.*?)\$\$")
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -1172,7 +1172,7 @@ class RuleLineEndWithEllipsis(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(threshold=0.3, key_list=["...", "…"])
+    dynamic_config = EvaluatorRuleArgs(threshold=0.3, key_list=["...", "…"])
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -1218,7 +1218,7 @@ class RuleLineEndWithTerminal(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(
+    dynamic_config = EvaluatorRuleArgs(
         threshold=0.6, key_list=[".", "!", "?", '"', '"']
     )
 
@@ -1271,7 +1271,7 @@ class RuleLineStartWithBulletpoint(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(
+    dynamic_config = EvaluatorRuleArgs(
         threshold=0.9,
         key_list=[
             "\u2022",  # bullet point
@@ -1331,7 +1331,7 @@ class RuleLineJavascriptCount(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(threshold=3)
+    dynamic_config = EvaluatorRuleArgs(threshold=3)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -1374,7 +1374,7 @@ class RuleLoremIpsum(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(threshold=3e-08)
+    dynamic_config = EvaluatorRuleArgs(threshold=3e-08)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -1413,7 +1413,7 @@ class RuleMeanWordLength(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(key_list=["3", "10"])
+    dynamic_config = EvaluatorRuleArgs(key_list=["3", "10"])
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -1475,7 +1475,7 @@ class RuleNoPunc(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(threshold=112)
+    dynamic_config = EvaluatorRuleArgs(threshold=112)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -1519,7 +1519,7 @@ class RulePatternSearch(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(pattern="your pattern")
+    dynamic_config = EvaluatorRuleArgs(pattern="your pattern")
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -1549,7 +1549,7 @@ class RuleSentenceNumber(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(key_list=["3", "7500"])
+    dynamic_config = EvaluatorRuleArgs(key_list=["3", "7500"])
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -1599,7 +1599,7 @@ class RuleSpaceMore(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(pattern=" {500,}")
+    dynamic_config = EvaluatorRuleArgs(pattern=" {500,}")
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -1650,7 +1650,7 @@ class RuleSpecialCharacter(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(
+    dynamic_config = EvaluatorRuleArgs(
         key_list=[
             r"u200e",
             # r"(\\\\;){3,}|(\{\}){3,}|(&nbsp;){3,}",
@@ -1698,7 +1698,7 @@ class RuleStopWord(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(threshold=0.06)
+    dynamic_config = EvaluatorRuleArgs(threshold=0.06)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -1741,7 +1741,7 @@ class RuleSymbolWordRatio(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(threshold=0.4, key_list=["#", "...", "…"])
+    dynamic_config = EvaluatorRuleArgs(threshold=0.4, key_list=["#", "...", "…"])
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -1784,7 +1784,7 @@ class RuleUniqueWords(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(threshold=0.1)
+    dynamic_config = EvaluatorRuleArgs(threshold=0.1)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -1826,7 +1826,7 @@ class RuleUnsafeWords(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(refer_path=[])
+    dynamic_config = EvaluatorRuleArgs(refer_path=[])
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -1888,7 +1888,7 @@ class RuleOnlyUrl(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(
+    dynamic_config = EvaluatorRuleArgs(
         pattern=r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
     )
 
@@ -1924,7 +1924,7 @@ class RuleWatermark(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(key_list=[])
+    dynamic_config = EvaluatorRuleArgs(key_list=[])
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -1954,7 +1954,7 @@ class RuleWordNumber(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(key_list=["20", "100000"])
+    dynamic_config = EvaluatorRuleArgs(key_list=["20", "100000"])
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -1992,7 +1992,7 @@ class RuleWordSplit(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(pattern=r"[A-Za-z]+-\s*$")
+    dynamic_config = EvaluatorRuleArgs(pattern=r"[A-Za-z]+-\s*$")
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -2037,7 +2037,7 @@ class RuleWordStuck(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
-    dynamic_config = DynamicRuleConfig(
+    dynamic_config = EvaluatorRuleArgs(
         key_list=[
             r"https?://[^\s]+|www.(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+",
             r"\.pdf$",

@@ -1,4 +1,4 @@
-from dingo.config.config import DynamicLLMConfig
+from dingo.config.config import EvaluatorLLMArgs
 from dingo.io.input.Data import Data
 from dingo.model.llm.llm_text_quality_model_base import LLMTextQualityModelBase
 from dingo.model.rule.rule_common import RuleEnterAndSpace
@@ -11,7 +11,7 @@ def llm():
         content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
     )
 
-    LLMTextQualityModelBase.dynamic_config = DynamicLLMConfig(
+    LLMTextQualityModelBase.dynamic_config = EvaluatorLLMArgs(
         key='',
         api_url='',
         # model='',

@@ -9,10 +9,10 @@ from typing import Generator, List, Optional
 
 from tqdm import tqdm
 
-from dingo.config import GlobalConfig
+from dingo.config import InputArgs
 from dingo.data import Dataset, DataSource, dataset_map, datasource_map
 from dingo.exec.base import ExecProto, Executor
-from dingo.io import Data, InputArgs, ResultInfo, SummaryModel
+from dingo.io import Data, ResultInfo, SummaryModel
 from dingo.model import Model
 from dingo.model.llm.base import BaseLLM
 from dingo.model.modelres import ModelRes
@@ -37,8 +37,8 @@ class LocalExecutor(ExecProto):
         Returns:
             Generator[Data]
         """
-        datasource_cls = datasource_map[self.input_args.dataset]
-        dataset_cls = dataset_map[self.input_args.dataset]
+        datasource_cls = datasource_map[self.input_args.dataset.source]
+        dataset_cls = dataset_map[self.input_args.dataset.source]
 
         datasource: DataSource = datasource_cls(input_args=self.input_args)
         dataset: Dataset = dataset_cls(source=datasource)
@@ -47,19 +47,19 @@ class LocalExecutor(ExecProto):
     def execute(self) -> SummaryModel:
         log.setLevel(self.input_args.log_level)
         create_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-        Model.apply_config(self.input_args.custom_config, self.input_args.eval_group)
+        Model.apply_config(self.input_args)
         input_path = self.input_args.input_path
         output_path = os.path.join(
             self.input_args.output_path, create_time + "_" + str(uuid.uuid1())[:8]
         )
 
-        log.debug(str(self.input_args.eval_group))
-        for group_name in [self.input_args.eval_group]:
-            if self.input_args.save_data:
+        log.debug(str(self.input_args.executor.eval_group))
+        for group_name in [self.input_args.executor.eval_group]:
+            if self.input_args.executor.result_save.bad:
                 if not os.path.exists(output_path):
                     os.makedirs(output_path)
-            if GlobalConfig.config and GlobalConfig.config.llm_config:
-                for llm_name in GlobalConfig.config.llm_config:
+            if self.input_args.evaluator.llm_config:
+                for llm_name in self.input_args.evaluator.llm_config:
                     self.llm = Model.get_llm(llm_name)
 
             self.summary = SummaryModel(
@@ -67,7 +67,7 @@ class LocalExecutor(ExecProto):
                 task_name=self.input_args.task_name,
                 eval_group=group_name,
                 input_path=input_path,
-                output_path=output_path if self.input_args.save_data else "",
+                output_path=output_path if self.input_args.executor.result_save.bad else "",
                 create_time=create_time,
             )
             self.evaluate()
@@ -100,20 +100,20 @@ class LocalExecutor(ExecProto):
             group_type (str): _description_
         """
         with concurrent.futures.ThreadPoolExecutor(
-            max_workers=self.input_args.max_workers
+            max_workers=self.input_args.executor.max_workers
         ) as thread_executor, concurrent.futures.ProcessPoolExecutor(
-            max_workers=self.input_args.max_workers
+            max_workers=self.input_args.executor.max_workers
         ) as process_executor:
             data_iter = self.load_data()
             data_iter = itertools.islice(
                 data_iter,
-                self.input_args.start_index,
-                self.input_args.end_index if self.input_args.end_index >= 0 else None,
+                self.input_args.executor.start_index,
+                self.input_args.executor.end_index if self.input_args.executor.end_index >= 0 else None,
             )
             pbar = tqdm(total=None, unit="items")
 
             while True:
-                batch = list(itertools.islice(data_iter, self.input_args.batch_size))
+                batch = list(itertools.islice(data_iter, self.input_args.executor.batch_size))
                 if not batch:
                     break
 
@@ -121,7 +121,7 @@ class LocalExecutor(ExecProto):
                 futures_results = []
                 for data in batch:
                     for group_type, group in Model.get_group(
-                            self.input_args.eval_group
+                            self.input_args.executor.eval_group
                     ).items():
                         if group_type == "rule":
                             if os.environ.get("LOCAL_DEPLOYMENT_MODE") == "true":
@@ -176,7 +176,7 @@ class LocalExecutor(ExecProto):
         result_info = ResultInfo(
             data_id=data.data_id, prompt=data.prompt, content=data.content
         )
-        if self.input_args.save_raw:
+        if self.input_args.executor.result_save.raw:
             result_info.raw_data = data.raw_data
         bad_type_list = []
         good_type_list = []
@@ -305,10 +305,10 @@ class LocalExecutor(ExecProto):
     def write_single_data(
         self, path: str, input_args: InputArgs, result_info: ResultInfo
     ):
-        if not input_args.save_data:
+        if not input_args.executor.result_save.bad:
             return
 
-        if not input_args.save_correct and not result_info.error_status:
+        if not input_args.executor.result_save.good and not result_info.error_status:
             return
 
         for new_name in result_info.name_list:
@@ -319,14 +319,14 @@ class LocalExecutor(ExecProto):
                 os.makedirs(p_t)
             f_n = os.path.join(path, t, n) + ".jsonl"
             with open(f_n, "a", encoding="utf-8") as f:
-                if input_args.save_raw:
+                if input_args.executor.result_save.raw:
                     str_json = json.dumps(result_info.to_raw_dict(), ensure_ascii=False)
                 else:
                     str_json = json.dumps(result_info.to_dict(), ensure_ascii=False)
                 f.write(str_json + "\n")
 
     def write_summary(self, path: str, input_args: InputArgs, summary: SummaryModel):
-        if not input_args.save_data:
+        if not input_args.executor.result_save.bad:
             return
         with open(path + "/summary.json", "w", encoding="utf-8") as f:
             json.dump(summary.to_dict(), f, indent=4, ensure_ascii=False)
@@ -337,7 +337,7 @@ class LocalExecutor(ExecProto):
     def get_info_list(self, high_quality: bool) -> list:
         info_list = []
 
-        save_raw = self.input_args.save_raw
+        save_raw = self.input_args.executor.result_save.raw
         output_path = self.summary.output_path
         if not os.path.isdir(output_path):
             raise ValueError(f"output_path not exists: {output_path}")

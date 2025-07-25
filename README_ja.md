@@ -58,7 +58,7 @@ pip install dingo-python
 ### 1. LLMチャットデータの評価
 
 ```python
-from dingo.config.config import DynamicLLMConfig
+from dingo.config.config import EvaluatorLLMArgs
 from dingo.io.input.MetaData import MetaData
 from dingo.model.llm.llm_text_quality_model_base import LLMTextQualityModelBase
 from dingo.model.rule.rule_common import RuleEnterAndSpace
@@ -70,7 +70,7 @@ data = MetaData(
 )
 
 def llm():
-    LLMTextQualityModelBase.dynamic_config = DynamicLLMConfig(
+    LLMTextQualityModelBase.dynamic_config = EvaluatorLLMArgs(
         key='YOUR_API_KEY',
         api_url='https://api.openai.com/v1/chat/completions',
         model='gpt-4o',
@@ -87,7 +87,7 @@ def rule():
 ### 2. データセットの評価
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 
 # Hugging Faceからデータセットを評価
@@ -281,7 +281,7 @@ input_data = {
 ```python
 from dingo.model import Model
 from dingo.model.rule.base import BaseRule
-from dingo.config.config import DynamicRuleConfig
+from dingo.config.config import EvaluatorRuleArgs
 from dingo.io import MetaData
 from dingo.model.modelres import ModelRes
 
@@ -289,7 +289,7 @@ from dingo.model.modelres import ModelRes
 class MyCustomRule(BaseRule):
     """テキスト内のカスタムパターンをチェック"""
 
-    dynamic_config = DynamicRuleConfig(pattern=r'your_pattern_here')
+    dynamic_config = EvaluatorRuleArgs(pattern=r'your_pattern_here')
 
     @classmethod
     def eval(cls, input_data: MetaData) -> ModelRes:
@@ -320,7 +320,7 @@ class MyCustomModel(BaseOpenAI):
 ### ローカル実行
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 
 input_args = InputArgs(**input_data)
@@ -336,7 +336,7 @@ good_data = executor.get_good_info_list() # 高品質データのリスト
 ### Spark実行
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 from pyspark.sql import SparkSession
 

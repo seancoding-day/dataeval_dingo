@@ -1,6 +1,6 @@
 import re
 
-from dingo.config.config import DynamicRuleConfig
+from dingo.config.config import EvaluatorRuleArgs
 from dingo.io import Data
 from dingo.model.model import Model
 from dingo.model.modelres import ModelRes
@@ -10,7 +10,7 @@ from dingo.model.rule.base import BaseRule
 @Model.rule_register('QUALITY_BAD_RELEVANCE', ['test'])
 class CommonPatternDemo(BaseRule):
     """let user input pattern to search"""
-    dynamic_config = DynamicRuleConfig(pattern = "blue")
+    dynamic_config = EvaluatorRuleArgs(pattern = "blue")
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -26,7 +26,7 @@ class CommonPatternDemo(BaseRule):
 
 if __name__ == '__main__':
     from dingo.exec import Executor
-    from dingo.io import InputArgs
+    from dingo.config import InputArgs
 
     input_data = {
         "eval_group": "test",
