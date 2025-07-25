@@ -20,7 +20,7 @@ class BaseEvalModel(BaseModel):
 class Model:
     input_args: InputArgs
     module_loaded = False
-    
+
     # group
     rule_groups = {}  # such as: {'default': [<class.RuleAlphaWords>]}
     prompt_groups = {}

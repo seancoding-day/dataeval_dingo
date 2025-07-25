@@ -2,8 +2,8 @@ import json
 from functools import reduce, wraps
 from typing import Callable, Dict, List, Protocol, Union
 
-from dingo.data.converter.img_utils import find_s3_image
 from dingo.config import InputArgs
+from dingo.data.converter.img_utils import find_s3_image
 from dingo.io import Data
 
 

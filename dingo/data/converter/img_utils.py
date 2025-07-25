@@ -8,8 +8,8 @@ from botocore.exceptions import ClientError
 from botocore.response import StreamingBody
 from PIL import Image
 
-from dingo.data.datasource import S3DataSource
 from dingo.config import InputArgs
+from dingo.data.datasource import S3DataSource
 
 
 def try_close(obj):

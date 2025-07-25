@@ -3,8 +3,8 @@ import os
 
 import prettytable as pt
 
-from dingo.exec import Executor
 from dingo.config import InputArgs
+from dingo.exec import Executor
 from dingo.model import Model
 from dingo.utils import log
 

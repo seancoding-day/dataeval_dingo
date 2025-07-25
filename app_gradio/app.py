@@ -7,8 +7,8 @@ from pathlib import Path
 
 import gradio as gr
 
-from dingo.exec import Executor
 from dingo.config import InputArgs
+from dingo.exec import Executor
 from dingo.model import Model
 
 

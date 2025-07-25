@@ -1,8 +1,8 @@
 import os
 from typing import Any, Dict, Generator, List, Optional
 
-from dingo.data.datasource.base import DataSource
 from dingo.config import InputArgs
+from dingo.data.datasource.base import DataSource
 
 
 def find_all_files(path: str, file_list: List[str]):

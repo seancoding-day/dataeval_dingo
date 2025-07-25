@@ -8,8 +8,8 @@ for batch evaluation of datasets, particularly useful for:
 - SFT data quality assessment
 """
 
-from dingo.exec import Executor
 from dingo.config import InputArgs
+from dingo.exec import Executor
 # Force import hallucination detection modules
 from dingo.model.llm.llm_hallucination import LLMHallucination
 from dingo.model.prompt.prompt_hallucination import PromptHallucination

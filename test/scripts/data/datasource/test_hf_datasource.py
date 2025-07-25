@@ -1,7 +1,7 @@
 import pytest
 
-from dingo.data.datasource.huggingface import HuggingFaceSource
 from dingo.config import InputArgs
+from dingo.data.datasource.huggingface import HuggingFaceSource
 
 
 class TestHfDataset:

@@ -3,8 +3,8 @@ import shutil
 
 import pytest
 
-from dingo.exec import Executor
 from dingo.config import InputArgs
+from dingo.exec import Executor
 
 
 class TestWrite:

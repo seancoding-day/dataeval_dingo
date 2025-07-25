@@ -1,5 +1,5 @@
-from dingo.exec import Executor
 from dingo.config import InputArgs
+from dingo.exec import Executor
 
 
 def image_relevant():

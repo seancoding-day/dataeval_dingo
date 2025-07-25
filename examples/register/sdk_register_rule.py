@@ -25,8 +25,8 @@ class CommonPatternDemo(BaseRule):
 
 
 if __name__ == '__main__':
-    from dingo.exec import Executor
     from dingo.config import InputArgs
+    from dingo.exec import Executor
 
     input_data = {
         "eval_group": "test",
