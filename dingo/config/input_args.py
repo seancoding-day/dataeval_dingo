@@ -35,6 +35,7 @@ class ExecutorArgs(BaseModel):
     end_index: int = -1
     max_workers: int = 1
     batch_size: int = 1
+    multi_turn_mode: Optional[str] = None
     result_save: ExecutorResultSaveArgs = ExecutorResultSaveArgs()
 
 

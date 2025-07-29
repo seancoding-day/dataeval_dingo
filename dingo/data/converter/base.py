@@ -139,7 +139,7 @@ class MultiTurnDialogConverter(BaseConverter):
             # process each turn of dialogue based on mode
             if (
                 input_args.custom_config
-                and input_args.custom_config.get("multi_turn_mode") == "all"
+                and input_args.executor.multi_turn_mode == "all"
             ):
                 content = ""
                 for i, turn in enumerate(history):
