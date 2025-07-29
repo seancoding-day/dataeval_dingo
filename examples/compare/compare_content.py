@@ -24,9 +24,9 @@ input_data = {
     "evaluator": {
         "llm_config": {
             "LLMHtmlAbstract": {
-                    "key": "",
-                    "api_url": ""
-                }
+                "key": "",
+                "api_url": ""
+            }
         }
     }
 }
