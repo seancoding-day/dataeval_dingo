@@ -8,8 +8,8 @@ The hallucination detector evaluates whether LLM responses contain factual contr
 against provided reference contexts.
 """
 
-from dingo.config.config import EvaluatorLLMArgs
-from dingo.io.input.Data import Data
+from dingo.config.input_args import EvaluatorLLMArgs
+from dingo.io.input import Data
 from dingo.model.llm.llm_hallucination import LLMHallucination
 
 # Configure LLM

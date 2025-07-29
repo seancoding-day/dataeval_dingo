@@ -1,6 +1,6 @@
 import time
 
-from dingo.config.config import EvaluatorLLMArgs
+from dingo.config.input_args import EvaluatorLLMArgs
 from dingo.io import Data
 from dingo.model import Model
 from dingo.model.llm.base import BaseLLM

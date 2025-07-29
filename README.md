@@ -58,8 +58,8 @@ pip install dingo-python
 ### 1. Evaluate LLM chat data
 
 ```python
-from dingo.config.config import EvaluatorLLMArgs
-from dingo.io.input.Data import Data
+from dingo.config.input_args import EvaluatorLLMArgs
+from dingo.io.input import Data
 from dingo.model.llm.llm_text_quality_model_base import LLMTextQualityModelBase
 from dingo.model.rule.rule_common import RuleEnterAndSpace
 
@@ -68,6 +68,7 @@ data = Data(
     prompt="hello, introduce the world",
     content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
 )
+
 
 def llm():
     LLMTextQualityModelBase.dynamic_config = EvaluatorLLMArgs(
@@ -281,7 +282,7 @@ If the built-in rules don't meet your requirements, you can create custom ones:
 ```python
 from dingo.model import Model
 from dingo.model.rule.base import BaseRule
-from dingo.config.config import EvaluatorRuleArgs
+from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
 from dingo.model.modelres import ModelRes
 

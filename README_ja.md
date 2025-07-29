@@ -58,12 +58,12 @@ pip install dingo-python
 ### 1. LLMチャットデータの評価
 
 ```python
-from dingo.config.config import EvaluatorLLMArgs
-from dingo.io.input.MetaData import MetaData
+from dingo.config.input_args import EvaluatorLLMArgs
+from dingo.io.input import Data
 from dingo.model.llm.llm_text_quality_model_base import LLMTextQualityModelBase
 from dingo.model.rule.rule_common import RuleEnterAndSpace
 
-data = MetaData(
+data = Data(
     data_id='123',
     prompt="hello, introduce the world",
     content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
@@ -281,8 +281,8 @@ input_data = {
 ```python
 from dingo.model import Model
 from dingo.model.rule.base import BaseRule
-from dingo.config.config import EvaluatorRuleArgs
-from dingo.io import MetaData
+from dingo.config.input_args import EvaluatorRuleArgs
+from dingo.io import Data
 from dingo.model.modelres import ModelRes
 
 @Model.rule_register('QUALITY_BAD_RELEVANCE', ['default'])
@@ -292,7 +292,7 @@ class MyCustomRule(BaseRule):
     dynamic_config = EvaluatorRuleArgs(pattern=r'your_pattern_here')
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         # ここにルール実装
         return res
