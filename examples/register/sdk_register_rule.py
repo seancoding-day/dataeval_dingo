@@ -1,6 +1,6 @@
 import re
 
-from dingo.config.config import EvaluatorRuleArgs
+from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
 from dingo.model.model import Model
 from dingo.model.modelres import ModelRes
@@ -29,11 +29,14 @@ if __name__ == '__main__':
     from dingo.exec import Executor
 
     input_data = {
-        "eval_group": "test",
-        "input_path": "../../test/data/test_local_json.json",  # local filesystem dataset
-        "dataset": "local",
-        "data_format": "json",
-        "column_content": "prediction"
+        "input_path": "../../test/data/test_local_json.json",
+        "dataset": {
+            "source": "local",
+            "format": "json",
+            "field": {
+                "content": "prediction"
+            }
+        }
     }
     input_args = InputArgs(**input_data)
     executor = Executor.exec_map["local"](input_args)

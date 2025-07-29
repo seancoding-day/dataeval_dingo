@@ -1,0 +1,13 @@
+{
+    "input_path": "chupei/format-jsonl",
+    "dataset": {
+        "source": "hugging_face",
+        "format": "jsonl",
+        "field": {
+            "content": "content"
+        }
+    },
+    "executor": {
+        "eval_group": "default"
+    }
+}

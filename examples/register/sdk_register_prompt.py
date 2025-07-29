@@ -18,15 +18,22 @@ if __name__ == '__main__':
     from dingo.exec import Executor
 
     input_data = {
-        "eval_group": "test",
-        "input_path": "../../test/data/test_local_jsonl.jsonl",  # local filesystem dataset
-        "save_data": True,
-        "save_correct": True,
-        "dataset": "local",
-        "data_format": "jsonl",
-        "column_content": "content",
-        "custom_config": {
+        "input_path": "../../test/data/test_local_jsonl.jsonl",
+        "dataset": {
+            "source": "local",
+            "format": "jsonl",
+            "field": {
+                "content": "content"
+            }
+        },
+        "executor": {
             "prompt_list": ["PromptRepeatDemo"],
+            "result_save": {
+                "bad": True,
+                "good": True
+            }
+        },
+        "evaluator": {
             "llm_config": {
                 "LLMTextQualityPromptBase": {
                     "key": "",

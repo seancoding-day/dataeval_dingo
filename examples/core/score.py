@@ -1,4 +1,4 @@
-from dingo.config.config import EvaluatorLLMArgs
+from dingo.config.input_args import EvaluatorLLMArgs
 from dingo.io.input.Data import Data
 from dingo.model.llm.llm_text_quality_model_base import LLMTextQualityModelBase
 from dingo.model.rule.rule_common import RuleEnterAndSpace

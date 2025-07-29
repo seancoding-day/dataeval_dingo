@@ -1,0 +1,10 @@
+{
+    "input_path": "test/data/test_local_plaintext.txt",
+    "dataset": {
+        "source": "local",
+        "format": "plaintext"
+    },
+    "executor": {
+        "eval_group": "default"
+    }
+}

@@ -26,23 +26,23 @@ def evaluate_hallucination_jsonl_dataset():
 
     input_data = {
         "input_path": "test/data/hallucination_test.jsonl",  # Your JSONL file path
-        "data_format": "jsonl",
-        "dataset": "local",
-        "column_prompt": "prompt",
-        "column_content": "content",
-        "column_context": "context",
-
-        "custom_config": {
-            # # Option 1: Use Rule-based HHEM (Recommended for local inference)
-            # "rule_list": ["RuleHallucinationHHEM"],
-            # "rule_config": {
-            #     "RuleHallucinationHHEM": {
-            #         "threshold": 0.5
-            #     }
-            # },
-
-            # Option 2: Use LLM-based detection (uncomment for API-based models)
+        "output_path": "output/hallucination_evaluation/",
+        "dataset": {
+            "source": "local",
+            "format": "jsonl",
+            "field": {
+                "prompt": "prompt",
+                "content": "content",
+                "context": "context",
+            }
+        },
+        "executor": {
             "prompt_list": ["PromptHallucination"],
+            "result_save": {
+                "bad": True
+            }
+        },
+        "evaluator": {
             "llm_config": {
                 "LLMHallucination": {
                     "model": "deepseek-chat",
@@ -50,9 +50,7 @@ def evaluate_hallucination_jsonl_dataset():
                     "api_url": "https://api.deepseek.com"
                 }
             }
-        },
-        "save_data": True,
-        "output_path": "output/hallucination_evaluation/"
+        }
     }
 
     input_args = InputArgs(**input_data)

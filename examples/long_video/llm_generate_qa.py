@@ -3,14 +3,22 @@ from dingo.exec import Executor
 
 input_data = {
     "input_path": "../../test/data/test_long_video_qa.jsonl",
-    "save_data": True,
-    "save_correct": True,
-    "dataset": "local",
-    "data_format": "jsonl",
-    "column_id": "video_id",
-    "column_content": "summary",
-    "custom_config": {
+    "dataset": {
+        "source": "local",
+        "format": "jsonl",
+        "field": {
+            "id": "video_id",
+            "content": "summary"
+        }
+    },
+    "executor": {
         "prompt_list": ["PromptLongVideoQa"],
+        "result_save": {
+            "bad": True,
+            "good": True
+        }
+    },
+    "evaluator": {
         "llm_config": {
             "LLMLongVideoQa": {
                 "key": "",

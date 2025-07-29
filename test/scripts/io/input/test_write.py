@@ -10,14 +10,22 @@ from dingo.exec import Executor
 class TestWrite:
     def test_write_local_jsonl(self):
         input_args = InputArgs(**{
-            "eval_group": "qa_standard_v1",
             "input_path": "test/data/test_local_jsonl.jsonl",
-            "save_data": True,
-            "save_correct": True,
-            "dataset": "local",
-            "data_format": "jsonl",
-            "column_id": "id",
-            "column_content": "content",
+            "dataset": {
+                "source": "local",
+                "format": "jsonl",
+                "field": {
+                    "id": "id",
+                    "content": "content"
+                }
+            },
+            "executor": {
+                "eval_group": "qa_standard_v1",
+                "result_save": {
+                    "bad": True,
+                    "good": True
+                }
+            }
         })
         executor = Executor.exec_map["local"](input_args)
         result = executor.execute().to_dict()
