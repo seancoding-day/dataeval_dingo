@@ -7,6 +7,11 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel, ValidationError
 
 
+class DatasetHFConfigArgs(BaseModel):
+    huggingface_split: str = ""
+    huggingface_config_name: Optional[str] = None
+
+
 class DatasetFieldArgs(BaseModel):
     id: str = ''
     prompt: str = ''
@@ -19,6 +24,7 @@ class DatasetArgs(BaseModel):
     source: str = 'hugging_face'
     format: str = 'json'
     field: DatasetFieldArgs = DatasetFieldArgs()
+    hf_config: DatasetHFConfigArgs = DatasetHFConfigArgs()
 
 
 class ExecutorResultSaveArgs(BaseModel):
@@ -70,9 +76,7 @@ class InputArgs(BaseModel):
     executor: ExecutorArgs = ExecutorArgs()
     evaluator: EvaluatorArgs = EvaluatorArgs()
 
-    # dropped args
-    huggingface_split: str = ""
-    huggingface_config_name: Optional[str] = None
+
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
