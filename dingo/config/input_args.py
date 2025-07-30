@@ -76,7 +76,5 @@ class InputArgs(BaseModel):
     executor: ExecutorArgs = ExecutorArgs()
     evaluator: EvaluatorArgs = EvaluatorArgs()
 
-
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
