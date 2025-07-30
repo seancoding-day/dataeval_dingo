@@ -92,10 +92,17 @@ from dingo.exec import Executor
 
 # Hugging Faceからデータセットを評価
 input_data = {
-    "eval_group": "sft",           # SFTデータ用のルールセット
-    "input_path": "tatsu-lab/alpaca", # Hugging Faceからのデータセット
-    "data_format": "plaintext",    # フォーマット: plaintext
-    "save_data": True              # 評価結果を保存
+    "input_path": "tatsu-lab/alpaca",  # Hugging Faceからのデータセット
+    "dataset": {
+        "source": "hugging_face",
+        "format": "plaintext"  # フォーマット: plaintext
+    },
+    "executor": {
+        "eval_group": "sft",  # SFTデータ用のルールセット
+        "result_save": {
+            "bad": True  # 評価結果を保存
+        }
+    }
 }
 
 input_args = InputArgs(**input_data)
@@ -109,31 +116,18 @@ print(result)
 ### ルールセットでの評価
 
 ```shell
-python -m dingo.run.cli --input_path data.txt --dataset local -e sft --data_format plaintext --save_data True
+python -m dingo.run.cli --input test/env/local_plaintext.json
 ```
 
 ### LLM（例：GPT-4o）での評価
 
 ```shell
-python -m dingo.run.cli --input_path data.json --dataset local -e openai --data_format json --column_content text --custom_config config_gpt.json --save_data True
-```
-
-`config_gpt.json`の例:
-```json
-{
-  "llm_config": {
-    "openai": {
-      "model": "gpt-4o",
-      "key": "YOUR_API_KEY",
-      "api_url": "https://api.openai.com/v1/chat/completions"
-    }
-  }
-}
+python -m dingo.run.cli --input test/env/local_json.json
 ```
 
 ## GUI可視化
 
-評価後（`save_data=True`で）、フロントエンドページが自動的に生成されます。手動でフロントエンドを開始するには：
+評価後（`result_save.bad=True`で）、フロントエンドページが自動的に生成されます。手動でフロントエンドを開始するには：
 
 ```shell
 python -m dingo.run.vsl --input output_directory
@@ -197,11 +191,13 @@ Dingoはルールベースおよびプロンプトベースの評価メトリク
 
 ```python
 input_data = {
-    # その他のパラメータ...
-    "custom_config": {
-        "prompt_list": ["QUALITY_BAD_SIMILARITY"],  # 使用する特定のプロンプト
+    # Other parameters...
+    "executor": {
+        "prompt_list": ["QUALITY_BAD_SIMILARITY"],  # Specific prompt to use
+    },
+    "evaluator": {
         "llm_config": {
-            "detect_text_quality": {  # 使用するLLMモデル
+            "LLMTextQualityPromptBase": {  # LLM model to use
                 "model": "gpt-4o",
                 "key": "YOUR_API_KEY",
                 "api_url": "https://api.openai.com/v1/chat/completions"
@@ -235,8 +231,10 @@ Dingoは異なるタイプのデータセット用に事前設定されたルー
 
 ```python
 input_data = {
-    "eval_group": "sft",  # "default", "sft", "rag", "hallucination", または "pretrain"を使用
-    # その他のパラメータ...
+    "executor": {
+        "eval_group": "sft",  # Use "default", "sft", "rag", "hallucination", or "pretrain"
+    }
+    # other parameters...
 }
 ```
 
@@ -344,7 +342,13 @@ from pyspark.sql import SparkSession
 spark = SparkSession.builder.appName("Dingo").getOrCreate()
 spark_rdd = spark.sparkContext.parallelize([...])  # MetaDataオブジェクトとしてのデータ
 
-input_args = InputArgs(eval_group="default", save_data=True)
+input_data = {
+    "executor": {
+        "eval_group": "default",
+        "result_save": {"bad": True}
+    }
+}
+input_args = InputArgs(**input_data)
 executor = Executor.exec_map["spark"](input_args, spark_session=spark, spark_rdd=spark_rdd)
 result = executor.execute()
 ```

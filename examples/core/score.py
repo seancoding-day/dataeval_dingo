@@ -1,8 +1,13 @@
+import os
+
 from dingo.config.input_args import EvaluatorLLMArgs
 from dingo.io.input import Data
 from dingo.model.llm.llm_text_quality_model_base import LLMTextQualityModelBase
 from dingo.model.rule.rule_common import RuleEnterAndSpace
 
+OPENAI_MODEL = 'deepseek-chat'
+OPENAI_URL = 'https://api.deepseek.com/v1'
+OPENAI_KEY = os.getenv("OPENAI_KEY")
 
 def llm():
     data = Data(
@@ -12,9 +17,9 @@ def llm():
     )
 
     LLMTextQualityModelBase.dynamic_config = EvaluatorLLMArgs(
-        key='',
-        api_url='',
-        # model='',
+        model=OPENAI_MODEL,
+        key=OPENAI_KEY,
+        api_url=OPENAI_URL,
     )
     res = LLMTextQualityModelBase.eval(data)
     print(res)

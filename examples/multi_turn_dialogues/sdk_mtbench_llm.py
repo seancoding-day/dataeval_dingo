@@ -25,7 +25,7 @@ input_data = {
     },
     "evaluator": {
         "llm_config": {
-            "detect_text_quality_detail": {
+            "LLMTextQualityModelBase": {
                 "key": "",
                 "api_url": "",
             }

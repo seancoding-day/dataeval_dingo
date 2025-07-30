@@ -93,10 +93,17 @@ from dingo.exec import Executor
 
 # Evaluate a dataset from Hugging Face
 input_data = {
-    "eval_group": "sft",           # Rule set for SFT data
-    "input_path": "tatsu-lab/alpaca", # Dataset from Hugging Face
-    "data_format": "plaintext",    # Format: plaintext
-    "save_data": True              # Save evaluation results
+    "input_path": "tatsu-lab/alpaca",  # Dataset from Hugging Face
+    "dataset": {
+        "source": "hugging_face",
+        "format": "plaintext"  # Format: plaintext
+    },
+    "executor": {
+        "eval_group": "sft",  # Rule set for SFT data
+        "result_save": {
+            "bad": True  # Save evaluation results
+        }
+    }
 }
 
 input_args = InputArgs(**input_data)
@@ -110,31 +117,18 @@ print(result)
 ### Evaluate with Rule Sets
 
 ```shell
-python -m dingo.run.cli --input_path data.txt --dataset local -e sft --data_format plaintext --save_data True
+python -m dingo.run.cli --input test/env/local_plaintext.json
 ```
 
 ### Evaluate with LLM (e.g., GPT-4o)
 
 ```shell
-python -m dingo.run.cli --input_path data.json --dataset local -e openai --data_format json --column_content text --custom_config config_gpt.json --save_data True
-```
-
-Example `config_gpt.json`:
-```json
-{
-  "llm_config": {
-    "openai": {
-      "model": "gpt-4o",
-      "key": "YOUR_API_KEY",
-      "api_url": "https://api.openai.com/v1/chat/completions"
-    }
-  }
-}
+python -m dingo.run.cli --input test/env/local_json.json
 ```
 
 ## GUI Visualization
 
-After evaluation (with `save_data=True`), a frontend page will be automatically generated. To manually start the frontend:
+After evaluation (with `result_save.bad=True`), a frontend page will be automatically generated. To manually start the frontend:
 
 ```shell
 python -m dingo.run.vsl --input output_directory
@@ -201,10 +195,12 @@ To use these assessment prompts in your evaluations, specify them in your config
 ```python
 input_data = {
     # Other parameters...
-    "custom_config": {
+    "executor": {
         "prompt_list": ["QUALITY_BAD_SIMILARITY"],  # Specific prompt to use
+    },
+    "evaluator": {
         "llm_config": {
-            "detect_text_quality": {  # LLM model to use
+            "LLMTextQualityPromptBase": {  # LLM model to use
                 "model": "gpt-4o",
                 "key": "YOUR_API_KEY",
                 "api_url": "https://api.openai.com/v1/chat/completions"
@@ -238,7 +234,9 @@ To use a specific rule group:
 
 ```python
 input_data = {
-    "eval_group": "sft",  # Use "default", "sft", "rag", "hallucination", or "pretrain"
+    "executor": {
+        "eval_group": "sft",  # Use "default", "sft", "rag", "hallucination", or "pretrain"
+    }
     # other parameters...
 }
 ```
@@ -345,7 +343,13 @@ from pyspark.sql import SparkSession
 spark = SparkSession.builder.appName("Dingo").getOrCreate()
 spark_rdd = spark.sparkContext.parallelize([...])  # Your data as Data objects
 
-input_args = InputArgs(eval_group="default", save_data=True)
+input_data = {
+    "executor": {
+        "eval_group": "default",
+        "result_save": {"bad": True}
+    }
+}
+input_args = InputArgs(**input_data)
 executor = Executor.exec_map["spark"](input_args, spark_session=spark, spark_rdd=spark_rdd)
 result = executor.execute()
 ```

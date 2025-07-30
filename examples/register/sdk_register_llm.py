@@ -1,4 +1,5 @@
 import json
+import os
 
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
@@ -8,6 +9,9 @@ from dingo.model.response.response_class import ResponseScoreTypeNameReason
 from dingo.utils import log
 from dingo.utils.exception import ConvertJsonError
 
+OPENAI_MODEL = 'deepseek-chat'
+OPENAI_URL = 'https://api.deepseek.com/v1'
+OPENAI_KEY = os.getenv("OPENAI_KEY")
 
 @Model.llm_register('LlmTextQualityRegister')
 class LlmTextQualityRegister(BaseOpenAI):
@@ -67,8 +71,9 @@ if __name__ == '__main__':
         "evaluator": {
             "llm_config": {
                 "LlmTextQualityRegister": {
-                    "key": "",
-                    "api_url": "",
+                    "model": OPENAI_MODEL,
+                    "key": OPENAI_KEY,
+                    "api_url": OPENAI_URL,
                 }
             }
         }

@@ -1,5 +1,11 @@
+import os
+
 from dingo.config import InputArgs
 from dingo.exec import Executor
+
+OPENAI_MODEL = 'deepseek-chat'
+OPENAI_URL = 'https://api.deepseek.com/v1'
+OPENAI_KEY = os.getenv("OPENAI_KEY")
 
 input_data = {
     "input_path": "../../test/data/test_mtbench101_jsonl.jsonl",
@@ -21,9 +27,10 @@ input_data = {
     },
     "evaluator": {
         "llm_config": {
-            "detect_text_quality_detail": {
-                "key": "",
-                "api_url": "",
+            "LLMTextQualityModelBase": {
+                "model": OPENAI_MODEL,
+                "key": OPENAI_KEY,
+                "api_url": OPENAI_URL,
             }
         }
     }

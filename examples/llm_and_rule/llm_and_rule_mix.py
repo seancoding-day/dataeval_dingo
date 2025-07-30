@@ -1,5 +1,11 @@
+import os
+
 from dingo.config import InputArgs
 from dingo.exec import Executor
+
+OPENAI_MODEL = 'deepseek-chat'
+OPENAI_URL = 'https://api.deepseek.com/v1'
+OPENAI_KEY = os.getenv("OPENAI_KEY")
 
 input_data = {
     "input_path": "../../test/data/test_local_jsonl.jsonl",
@@ -21,8 +27,9 @@ input_data = {
     "evaluator": {
         "llm_config": {
             "LLMTextQualityPromptBase": {
-                "key": "enter your key, such as:EMPTY",
-                "api_url": "enter your local llm api url, such as:http://127.0.0.1:8080/v1",
+                "model": OPENAI_MODEL,
+                "key": OPENAI_KEY,
+                "api_url": OPENAI_URL,
             }
         }
     }

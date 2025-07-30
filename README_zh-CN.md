@@ -91,10 +91,17 @@ from dingo.exec import Executor
 
 # 评估来自Hugging Face的数据集
 input_data = {
-    "eval_group": "sft",           # SFT数据的规则集
-    "input_path": "tatsu-lab/alpaca", # Hugging Face的数据集
-    "data_format": "plaintext",    # 格式: plaintext
-    "save_data": True              # 保存评估结果
+    "input_path": "tatsu-lab/alpaca",  # Hugging Face的数据集
+    "dataset": {
+        "source": "hugging_face",
+        "format": "plaintext"  # 格式: plaintext
+    },
+    "executor": {
+        "eval_group": "sft",  # SFT数据的规则集
+        "result_save": {
+            "bad": True  # 保存评估结果
+        }
+    }
 }
 
 input_args = InputArgs(**input_data)
@@ -108,31 +115,18 @@ print(result)
 ### 3.1 使用规则集评估
 
 ```shell
-python -m dingo.run.cli --input_path data.txt --dataset local -e sft --data_format plaintext --save_data True
+python -m dingo.run.cli --input test/env/local_plaintext.json
 ```
 
 ### 3.2 使用LLM评估（例如GPT-4o）
 
 ```shell
-python -m dingo.run.cli --input_path data.json --dataset local -e openai --data_format json --column_content text --custom_config config_gpt.json --save_data True
-```
-
-`config_gpt.json`示例:
-```json
-{
-  "llm_config": {
-    "openai": {
-      "model": "gpt-4o",
-      "key": "您的API密钥",
-      "api_url": "https://api.openai.com/v1/chat/completions"
-    }
-  }
-}
+python -m dingo.run.cli --input test/env/local_json.json
 ```
 
 ## 4. 图形界面可视化
 
-进行评估后（设置`save_data=True`），系统会自动生成前端页面。若要手动启动前端页面，请运行：
+进行评估后（设置`result_save.bad=True`），系统会自动生成前端页面。若要手动启动前端页面，请运行：
 
 ```shell
 python -m dingo.run.vsl --input 输出目录
@@ -197,13 +191,15 @@ Dingo通过基于规则和基于提示的评估指标提供全面的数据质量
 
 ```python
 input_data = {
-    # 其他参数...
-    "custom_config": {
-        "prompt_list": ["QUALITY_BAD_SIMILARITY"],  # 要使用的特定prompt
+    # Other parameters...
+    "executor": {
+        "prompt_list": ["QUALITY_BAD_SIMILARITY"],  # Specific prompt to use
+    },
+    "evaluator": {
         "llm_config": {
-            "detect_text_quality": {  # 要使用的LLM模型
+            "LLMTextQualityPromptBase": {  # LLM model to use
                 "model": "gpt-4o",
-                "key": "您的API密钥",
+                "key": "YOUR_API_KEY",
                 "api_url": "https://api.openai.com/v1/chat/completions"
             }
         }
@@ -235,8 +231,10 @@ Dingo为不同类型的数据集提供预配置的规则组：
 
 ```python
 input_data = {
-    "eval_group": "sft",  # 使用"default"、"sft"、"rag"、"hallucination"或"pretrain"
-    # 其他参数...
+    "executor": {
+        "eval_group": "sft",  # Use "default", "sft", "rag", "hallucination", or "pretrain"
+    }
+    # other parameters...
 }
 ```
 
@@ -342,7 +340,13 @@ from pyspark.sql import SparkSession
 spark = SparkSession.builder.appName("Dingo").getOrCreate()
 spark_rdd = spark.sparkContext.parallelize([...])  # 以Data对象形式的数据
 
-input_args = InputArgs(eval_group="default", save_data=True)
+input_data = {
+    "executor": {
+        "eval_group": "default",
+        "result_save": {"bad": True}
+    }
+}
+input_args = InputArgs(**input_data)
 executor = Executor.exec_map["spark"](input_args, spark_session=spark, spark_rdd=spark_rdd)
 result = executor.execute()
 ```

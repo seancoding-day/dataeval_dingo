@@ -36,6 +36,9 @@ if __name__ == '__main__':
             "field": {
                 "content": "prediction"
             }
+        },
+        "executor": {
+            "rule_list": ['CommonPatternDemo']
         }
     }
     input_args = InputArgs(**input_data)
