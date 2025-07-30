@@ -1,6 +1,6 @@
 import time
 
-from dingo.config.config import DynamicLLMConfig
+from dingo.config.input_args import EvaluatorLLMArgs
 from dingo.io import Data
 from dingo.model import Model
 from dingo.model.llm.base import BaseLLM
@@ -10,9 +10,7 @@ from dingo.utils import log
 
 @Model.llm_register("LLMPerspective")
 class LLMPerspective(BaseLLM):
-    client = None
-
-    dynamic_config = DynamicLLMConfig(
+    dynamic_config = EvaluatorLLMArgs(
         api_url="https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1"
     )
 

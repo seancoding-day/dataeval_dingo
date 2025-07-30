@@ -1,6 +1,6 @@
 from typing import List
 
-from dingo.io.input import Data
+from dingo.io import Data
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.model.prompt.prompt_image_relevant import PromptImageRelevant

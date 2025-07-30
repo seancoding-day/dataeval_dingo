@@ -1,0 +1,13 @@
+{
+    "input_path": "chupei/format-text",
+    "dataset": {
+        "source": "hugging_face",
+        "format": "plaintext",
+        "field": {
+            "content": "text"
+        }
+    },
+    "executor": {
+        "eval_group": "default"
+    }
+}

@@ -1,17 +1,26 @@
+from dingo.config import InputArgs
 from dingo.exec import Executor
-from dingo.io import InputArgs
 
 input_data = {
-    "input_path": "lmsys/mt_bench_human_judgments",  # huggingface dataset
-    "eval_group": "qa_standard_v1",
-    "save_data": True,
-    "save_correct": True,
-    "end_index": 5,
-    "data_format": "multi_turn_dialog",
-    "huggingface_split": "human",
-    "column_id": "question_id",
-    "column_content": "conversation_a",
-    "custom_config": {
+    "input_path": "lmsys/mt_bench_human_judgments",
+    "dataset": {
+        "source": "hugging_face",
+        "format": "multi_turn_dialog",
+        "field": {
+            "id": "question_id",
+            "content": "conversation_a"
+        },
+        "hf_config": {
+            "huggingface_split": "human"
+        }
+    },
+    "executor": {
+        "eval_group": "qa_standard_v1",
+        "result_save": {
+            "bad": True,
+            "good": True
+        },
+        "end_index": 5,
         "multi_turn_mode": "all"
     }
 }

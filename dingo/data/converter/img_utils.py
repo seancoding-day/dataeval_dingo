@@ -8,8 +8,8 @@ from botocore.exceptions import ClientError
 from botocore.response import StreamingBody
 from PIL import Image
 
+from dingo.config import InputArgs
 from dingo.data.datasource import S3DataSource
-from dingo.io import InputArgs
 
 
 def try_close(obj):
@@ -99,7 +99,7 @@ def find_s3_image(data: json, input_args: InputArgs) -> List:
     empty list.
     """
     res = data
-    levels = input_args.column_image.split(".")
+    levels = input_args.dataset.field.image.split(".")
     for key in levels:
         res = res[key]
     s3_data_source = S3DataSource(input_args)

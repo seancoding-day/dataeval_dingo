@@ -1,7 +1,13 @@
-from dingo.config.config import DynamicLLMConfig
-from dingo.io.input.Data import Data
+import os
+
+from dingo.config.input_args import EvaluatorLLMArgs
+from dingo.io.input import Data
 from dingo.model.llm.llm_text_quality_model_base import LLMTextQualityModelBase
 from dingo.model.rule.rule_common import RuleEnterAndSpace
+
+OPENAI_MODEL = 'deepseek-chat'
+OPENAI_URL = 'https://api.deepseek.com/v1'
+OPENAI_KEY = os.getenv("OPENAI_KEY")
 
 
 def llm():
@@ -11,10 +17,10 @@ def llm():
         content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
     )
 
-    LLMTextQualityModelBase.dynamic_config = DynamicLLMConfig(
-        key='',
-        api_url='',
-        # model='',
+    LLMTextQualityModelBase.dynamic_config = EvaluatorLLMArgs(
+        model=OPENAI_MODEL,
+        key=OPENAI_KEY,
+        api_url=OPENAI_URL,
     )
     res = LLMTextQualityModelBase.eval(data)
     print(res)

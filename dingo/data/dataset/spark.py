@@ -36,10 +36,10 @@ class SparkDataset(Dataset):
         self._targets = "text"
         if (
             source.get_source_type() == "hugging_face"
-            and source.input_args.data_format == "plaintext"
+            and source.input_args.dataset.format == "plaintext"
         ):
-            if source.input_args.column_content != "":
-                self._targets = source.input_args.column_content
+            if source.input_args.dataset.field.content != "":
+                self._targets = source.input_args.dataset.field.content
             if self._targets is not None and self._targets not in self._ds.column_names:
                 raise RuntimeError(
                     f"The specified Hugging Face dataset does not contain the specified targets column"
@@ -91,9 +91,9 @@ class SparkDataset(Dataset):
         for data_raw in self._ds:
             if (
                 self.source.get_source_type() == "hugging_face"
-                and self.input_args.data_format == "plaintext"
+                and self.input_args.dataset.format == "plaintext"
             ):
-                data_raw = data_raw[self.input_args.column_content]
+                data_raw = data_raw[self.input_args.datasetcolumn_content]
             data: Union[Generator[Data, None, None], Data] = self.converter(data_raw)
             if not isinstance(data, Data):
                 for d in data:

@@ -1,0 +1,13 @@
+{
+    "input_path": "test/data/test_local_json.json",
+    "dataset": {
+        "source": "local",
+        "format": "json",
+        "field": {
+            "content": "prediction"
+        }
+    },
+    "executor": {
+        "eval_group": "default"
+    }
+}

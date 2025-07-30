@@ -1,23 +1,30 @@
+from dingo.config import InputArgs
 from dingo.exec import Executor
-from dingo.io import InputArgs
 
 input_data = {
     "input_path": "../../test/data/test_local_jsonl.jsonl",
-    "save_data": True,
-    "save_correct": True,
-    "dataset": "local",
-    "data_format": "jsonl",
-    "column_content": "content",
-    "custom_config": {
+    "dataset": {
+        "source": "local",
+        "format": "jsonl",
+        "field": {
+            "content": "content"
+        }
+    },
+    "executor": {
         "prompt_list": ["PromptPolitics"],
+        "result_save": {
+            "bad": True,
+            "good": True
+        }
+    },
+    "evaluator": {
         "llm_config": {
             "LLMSecurityPolitics": {
                 "key": "",
                 "api_url": "",
             }
         }
-    },
-    "log_level": "INFO"
+    }
 }
 input_args = InputArgs(**input_data)
 executor = Executor.exec_map["local"](input_args)

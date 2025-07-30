@@ -1,13 +1,20 @@
+from dingo.config import InputArgs
 from dingo.exec import Executor
-from dingo.io import InputArgs
 
 
 def local_plaintext():
     input_data = {
-        "eval_group": "sft",
-        "input_path": "../../test/data/test_local_plaintext.txt",  # local filesystem dataset
-        "dataset": "local",
-        "data_format": "plaintext",
+        "input_path": "../../test/data/test_local_plaintext.txt",
+        "dataset": {
+            "source": "local",
+            "format": "plaintext",
+            "field": {
+                "content": "content"
+            }
+        },
+        "executor": {
+            "eval_group": "sft",
+        }
     }
 
     input_args = InputArgs(**input_data)
@@ -18,11 +25,17 @@ def local_plaintext():
 
 def local_json():
     input_data = {
-        "eval_group": "sft",
-        "input_path": "../../test/data/test_local_json.json",  # local filesystem dataset
-        "dataset": "local",
-        "data_format": "json",
-        "column_content": "prediction",
+        "input_path": "../../test/data/test_local_json.json",
+        "dataset": {
+            "source": "local",
+            "format": "json",
+            "field": {
+                "content": "prediction"
+            }
+        },
+        "executor": {
+            "eval_group": "sft",
+        }
     }
 
     input_args = InputArgs(**input_data)
@@ -33,11 +46,17 @@ def local_json():
 
 def local_jsonl():
     input_data = {
-        "eval_group": "sft",
-        "input_path": "../../test/data/test_local_jsonl.jsonl",  # local filesystem dataset
-        "dataset": "local",
-        "data_format": "jsonl",
-        "column_content": "content",
+        "input_path": "../../test/data/test_local_jsonl.jsonl",
+        "dataset": {
+            "source": "local",
+            "format": "jsonl",
+            "field": {
+                "content": "content"
+            }
+        },
+        "executor": {
+            "eval_group": "sft",
+        }
     }
 
     input_args = InputArgs(**input_data)
@@ -48,11 +67,17 @@ def local_jsonl():
 
 def local_listjson():
     input_data = {
-        "eval_group": "sft",
-        "input_path": "../../test/data/test_local_listjson.json",  # local filesystem dataset
-        "dataset": "local",
-        "data_format": "listjson",
-        "column_content": "output",
+        "input_path": "../../test/data/test_local_listjson.json",
+        "dataset": {
+            "source": "local",
+            "format": "listjson",
+            "field": {
+                "content": "output"
+            }
+        },
+        "executor": {
+            "eval_group": "sft",
+        }
     }
 
     input_args = InputArgs(**input_data)

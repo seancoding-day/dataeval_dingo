@@ -1,0 +1,25 @@
+{
+    "input_path": "test/data/test_local_json.json",
+    "dataset": {
+        "source": "local",
+        "format": "json",
+        "field": {
+            "content": "prediction"
+        }
+    },
+    "executor": {
+        "prompt_list": ["PromptRepeat"],
+        "result_save": {
+            "bad": true
+        }
+    },
+    "evaluator": {
+        "llm_config": {
+            "LLMTextQualityPromptBase": {
+                "model": "gpt-4o",
+                "key": "YOUR_API_KEY",
+                "api_url": "https://api.openai.com/v1/chat/completions"
+            }
+        }
+    }
+}

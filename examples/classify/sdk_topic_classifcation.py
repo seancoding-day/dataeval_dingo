@@ -1,18 +1,25 @@
+from dingo.config import InputArgs
 from dingo.exec import Executor
-from dingo.io import InputArgs
 
 
 def classify_topic():
     input_data = {
-        "eval_group": "test",
-        "input_path": "../../test/data/test_sft_jsonl.jsonl",  # local filesystem dataset
-        "save_data": True,
-        "save_correct": True,
-        "dataset": "local",
-        "data_format": "jsonl",
-        "column_content": "question",
-        "custom_config": {
+        "input_path": "../../test/data/test_sft_jsonl.jsonl",
+        "dataset": {
+            "source": "local",
+            "format": "jsonl",
+            "field": {
+                "content": "question"
+            }
+        },
+        "executor": {
             "prompt_list": ["PromptClassifyTopic"],
+            "result_save": {
+                "bad": True,
+                "good": True
+            }
+        },
+        "evaluator": {
             "llm_config": {
                 "LLMClassifyTopic": {
                     "key": "",

@@ -1,25 +1,38 @@
+import os
+
+from dingo.config import InputArgs
 from dingo.exec import Executor
-from dingo.io import InputArgs
+
+OPENAI_MODEL = 'deepseek-chat'
+OPENAI_URL = 'https://api.deepseek.com/v1'
+OPENAI_KEY = os.getenv("OPENAI_KEY")
 
 input_data = {
-    "input_path": "../../test/data/test_local_jsonl.jsonl",  # local filesystem dataset
-    "save_data": True,
-    "save_correct": True,
-    "dataset": "local",
-    "data_format": "jsonl",
-    "column_content": "content",
-    "custom_config":
-        {
-            "rule_list": ["RuleColonEnd"],
-            "prompt_list": ["PromptRepeat"],
-            "llm_config": {
-                "LLMTextQualityPromptBase": {
-                    "key": "enter your key, such as:EMPTY",
-                    "api_url": "enter your local llm api url, such as:http://127.0.0.1:8080/v1",
-                }
+    "input_path": "../../test/data/test_local_jsonl.jsonl",
+    "dataset": {
+        "source": "local",
+        "format": "jsonl",
+        "field": {
+            "content": "content"
+        }
+    },
+    "executor": {
+        "rule_list": ["RuleColonEnd"],
+        "prompt_list": ["PromptRepeat"],
+        "result_save": {
+            "bad": True,
+            "good": True
+        }
+    },
+    "evaluator": {
+        "llm_config": {
+            "LLMTextQualityPromptBase": {
+                "model": OPENAI_MODEL,
+                "key": OPENAI_KEY,
+                "api_url": OPENAI_URL,
             }
-        },
-    "log_level": "INFO"
+        }
+    }
 }
 input_args = InputArgs(**input_data)
 executor = Executor.exec_map["local"](input_args)

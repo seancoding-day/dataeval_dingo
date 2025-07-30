@@ -1,13 +1,23 @@
+from dingo.config import InputArgs
 from dingo.exec import Executor
-from dingo.io import InputArgs
 
 input_data = {
-    "input_path": "../../test/data/test_local_json.json",  # local filesystem dataset
-    "dataset": "local",
-    "data_format": "json",
-    "column_content": "prediction",
-    "custom_config": {
+    "input_path": "../../test/data/test_local_json.json",
+    "dataset": {
+        "source": "local",
+        "format": "json",
+        "field": {
+            "content": "prediction"
+        }
+    },
+    "executor": {
         "rule_list": ["RuleSpecialCharacter"],
+        "result_save": {
+            "bad": True,
+            "good": True
+        }
+    },
+    "evaluator": {
         "rule_config": {
             "RuleSpecialCharacter": {
                 "pattern": "sky"

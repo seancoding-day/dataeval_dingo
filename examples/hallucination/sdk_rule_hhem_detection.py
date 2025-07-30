@@ -12,7 +12,7 @@ Rule-based HHEM offers:
 - No API costs or rate limits
 """
 
-from dingo.io.input.Data import Data
+from dingo.io.input import Data
 from dingo.model.rule.rule_hallucination_hhem import RuleHallucinationHHEM
 
 

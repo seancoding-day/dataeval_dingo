@@ -29,32 +29,32 @@ jobs:
 
     - name: Integration Test(local plaintext)
       run: |
-        python -m dingo.run.cli --input_path test/data/test_local_plaintext.txt --dataset local -e default --data_format plaintext
-        python -m dingo.run.cli --input_path test/data/test_local_plaintext.txt --dataset local -e default --data_format plaintext --save_data
+        python -m dingo.run.cli --input .github/env/local_plaintext.json
+        python -m dingo.run.cli --input .github/env/local_plaintext_save.json
     - name: Integration Test(local json)
       run: |
-        python -m dingo.run.cli --input_path test/data/test_local_json.json --dataset local -e default --data_format json --column_content prediction
+        python -m dingo.run.cli --input .github/env/local_json.json
     - name: Integration Test(local jsonl)
       run: |
-        python -m dingo.run.cli --input_path test/data/test_local_jsonl.jsonl --dataset local -e default --data_format jsonl --column_content content
+        python -m dingo.run.cli --input .github/env/local_jsonl.json
     - name: Integration Test(local listjson)
       run: |
-        python -m dingo.run.cli --input_path test/data/test_local_listjson.json --dataset local -e default --data_format listjson --column_content output
+        python -m dingo.run.cli --input .github/env/local_listjson.json
     - name: Integration Test(huggingface plaintext)
       run: |
-        python -m dingo.run.cli --input_path chupei/format-text -e default --data_format plaintext --column_content text
+        python -m dingo.run.cli --input .github/env/hf_plaintext.json
     - name: Integration Test(huggingface json)
       run: |
-        python -m dingo.run.cli --input_path chupei/format-json -e default --data_format json --column_content prediction --column_prompt origin_prompt
+        python -m dingo.run.cli --input .github/env/hf_plaintext.json
     - name: Integration Test(huggingface jsonl)
       run: |
-        python -m dingo.run.cli --input_path chupei/format-jsonl -e default --data_format jsonl --column_content content
+        python -m dingo.run.cli --input .github/env/hf_jsonl.json
     - name: Integration Test(huggingface listjson)
       run: |
-        python -m dingo.run.cli --input_path chupei/format-listjson -e default --data_format listjson --column_content output --column_prompt instruction
+        python -m dingo.run.cli --input .github/env/hf_listjson.json
     - name: Integration Test(custom config)
       run: |
-        python -m dingo.run.cli --input_path test/data/test_local_json.json --dataset local -e test --data_format json --column_content prediction --custom_config test/config/config_rule.json --log_level=DEBUG
+        python -m dingo.run.cli --input .github/env/custom_config_rule.json
     - name: Run unit tests
       run: |
         pytest test/scripts --ignore=test/scripts/data
