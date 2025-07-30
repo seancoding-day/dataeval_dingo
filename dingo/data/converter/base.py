@@ -138,7 +138,7 @@ class MultiTurnDialogConverter(BaseConverter):
 
             # process each turn of dialogue based on mode
             if (
-                input_args.custom_config
+                input_args.evaluator
                 and input_args.executor.multi_turn_mode == "all"
             ):
                 content = ""
