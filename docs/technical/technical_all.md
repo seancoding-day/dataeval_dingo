@@ -266,18 +266,18 @@ class JsonLineConverter(BaseConverter):
             return Data(
                 **{
                     "data_id": (
-                        cls.find_levels_data(j, input_args.column_id)
-                        if input_args.column_id != ""
+                        cls.find_levels_data(j, input_args.dataset.field.id)
+                        if input_args.dataset.field.id != ""
                         else str(cls.data_id)
                     ),
                     "prompt": (
-                        cls.find_levels_data(j, input_args.column_prompt)
-                        if input_args.column_prompt != ""
+                        cls.find_levels_data(j, input_args.dataset.field.prompt)
+                        if input_args.dataset.field.prompt != ""
                         else ""
                     ),
                     "content": (
-                        cls.find_levels_data(j, input_args.column_content)
-                        if input_args.column_content != ""
+                        cls.find_levels_data(j, input_args.dataset.field.content)
+                        if input_args.dataset.field.content != ""
                         else ""
                     ),
                     "raw_data": j,

@@ -57,7 +57,7 @@ class S3DataSource(DataSource):
         Returns:
             An instance of `Iterable`.
         """
-        if self.input_args.data_format in ["json", "listjson"]:
+        if self.input_args.dataset.format in ["json", "listjson"]:
             raise RuntimeError("Format must in be 'jsonl' or 'plaintext'")
         return self._load()
 
