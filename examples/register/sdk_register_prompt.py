@@ -3,10 +3,10 @@ import os
 from dingo.model import Model
 from dingo.model.prompt.base import BasePrompt
 
-
 OPENAI_MODEL = 'deepseek-chat'
 OPENAI_URL = 'https://api.deepseek.com/v1'
 OPENAI_KEY = os.getenv("OPENAI_KEY")
+
 
 @Model.prompt_register("QUALITY_BAD_SIMILARITY", [])
 class PromptRepeatDemo(BasePrompt):

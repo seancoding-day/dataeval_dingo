@@ -9,6 +9,7 @@ OPENAI_MODEL = 'deepseek-chat'
 OPENAI_URL = 'https://api.deepseek.com/v1'
 OPENAI_KEY = os.getenv("OPENAI_KEY")
 
+
 def llm():
     data = Data(
         data_id='123',

@@ -13,6 +13,7 @@ OPENAI_MODEL = 'deepseek-chat'
 OPENAI_URL = 'https://api.deepseek.com/v1'
 OPENAI_KEY = os.getenv("OPENAI_KEY")
 
+
 @Model.llm_register('LlmTextQualityRegister')
 class LlmTextQualityRegister(BaseOpenAI):
     prompt = PromptTextQualityV2
