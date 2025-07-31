@@ -30,9 +30,6 @@
 
 </div>
 
-# Changelog
-
-- 2024/12/27: Project Initialization
 
 # 介绍
 
