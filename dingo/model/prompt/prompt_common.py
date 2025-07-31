@@ -2,7 +2,7 @@ from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
 
-@Model.prompt_register("QUALITY_BAD_SIMILARITY", [])
+@Model.prompt_register("QUALITY_BAD_SIMILARITY", [], ['LLMTextQualityModelBase'])
 class PromptRepeat(BasePrompt):
     content = """
     请判断一下文本是否存在重复问题。
@@ -13,7 +13,7 @@ class PromptRepeat(BasePrompt):
     """
 
 
-@Model.prompt_register("QUALITY_BAD_EFFECTIVENESS", [])
+@Model.prompt_register("QUALITY_BAD_EFFECTIVENESS", [], ['LLMTextQualityModelBase'])
 class PromptContentChaos(BasePrompt):
     content = """
     请判断一下文本是否存在乱码与反扒文本。
@@ -24,7 +24,7 @@ class PromptContentChaos(BasePrompt):
     """
 
 
-@Model.prompt_register("WORD_STICK", [])
+@Model.prompt_register("WORD_STICK", [], ['LLMTextQualityModelBase'])
 class PromptWordStick(BasePrompt):
     content = """
     ### Role
@@ -51,7 +51,7 @@ class PromptWordStick(BasePrompt):
     """
 
 
-@Model.prompt_register("CODE_LIST_ISSUE", [])
+@Model.prompt_register("CODE_LIST_ISSUE", [], ['LLMTextQualityModelBase'])
 class PromptCodeListIssue(BasePrompt):
     content = """
     ### Role
@@ -75,7 +75,7 @@ class PromptCodeListIssue(BasePrompt):
     """
 
 
-@Model.prompt_register("UNREAD_ISSUE", [])
+@Model.prompt_register("UNREAD_ISSUE", [], ['LLMTextQualityModelBase'])
 class PromptUnreadIssue(BasePrompt):
     content = """
     ### Role

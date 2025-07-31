@@ -14,6 +14,7 @@
   <a href="https://github.com/DataEval/dingo/network/members"><img src="https://img.shields.io/github/forks/DataEval/dingo" alt="GitHub 分支"></a>
   <a href="https://github.com/DataEval/dingo/issues"><img src="https://img.shields.io/github/issues/DataEval/dingo" alt="GitHub 问题"></a>
   <a href="https://mseep.ai/app/dataeval-dingo"><img src="https://mseep.net/pr/dataeval-dingo-badge.png" alt="MseeP.ai 安全评估徽章" height="20"></a>
+  <a href="https://deepwiki.com/MigoXLab/dingo"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 </p>
 
 
@@ -30,9 +31,6 @@
 
 </div>
 
-# Changelog
-
-- 2024/12/27: Project Initialization
 
 # 介绍
 
@@ -56,8 +54,8 @@ pip install dingo-python
 ### 2.1 评估LLM对话数据
 
 ```python
-from dingo.config.config import DynamicLLMConfig
-from dingo.io.input.Data import Data
+from dingo.config.input_args import EvaluatorLLMArgs
+from dingo.io.input import Data
 from dingo.model.llm.llm_text_quality_model_base import LLMTextQualityModelBase
 from dingo.model.rule.rule_common import RuleEnterAndSpace
 
@@ -67,8 +65,9 @@ data = Data(
     content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
 )
 
+
 def llm():
-    LLMTextQualityModelBase.dynamic_config = DynamicLLMConfig(
+    LLMTextQualityModelBase.dynamic_config = EvaluatorLLMArgs(
         key='YOUR_API_KEY',
         api_url='https://api.openai.com/v1/chat/completions',
         model='gpt-4o',
@@ -85,15 +84,22 @@ def rule():
 ### 2.2 评估数据集
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 
 # 评估来自Hugging Face的数据集
 input_data = {
-    "eval_group": "sft",           # SFT数据的规则集
-    "input_path": "tatsu-lab/alpaca", # Hugging Face的数据集
-    "data_format": "plaintext",    # 格式: plaintext
-    "save_data": True              # 保存评估结果
+    "input_path": "tatsu-lab/alpaca",  # Hugging Face的数据集
+    "dataset": {
+        "source": "hugging_face",
+        "format": "plaintext"  # 格式: plaintext
+    },
+    "executor": {
+        "eval_group": "sft",  # SFT数据的规则集
+        "result_save": {
+            "bad": True  # 保存评估结果
+        }
+    }
 }
 
 input_args = InputArgs(**input_data)
@@ -107,31 +113,18 @@ print(result)
 ### 3.1 使用规则集评估
 
 ```shell
-python -m dingo.run.cli --input_path data.txt --dataset local -e sft --data_format plaintext --save_data True
+python -m dingo.run.cli --input test/env/local_plaintext.json
 ```
 
 ### 3.2 使用LLM评估（例如GPT-4o）
 
 ```shell
-python -m dingo.run.cli --input_path data.json --dataset local -e openai --data_format json --column_content text --custom_config config_gpt.json --save_data True
-```
-
-`config_gpt.json`示例:
-```json
-{
-  "llm_config": {
-    "openai": {
-      "model": "gpt-4o",
-      "key": "您的API密钥",
-      "api_url": "https://api.openai.com/v1/chat/completions"
-    }
-  }
-}
+python -m dingo.run.cli --input test/env/local_json.json
 ```
 
 ## 4. 图形界面可视化
 
-进行评估后（设置`save_data=True`），系统会自动生成前端页面。若要手动启动前端页面，请运行：
+进行评估后（设置`result_save.bad=True`），系统会自动生成前端页面。若要手动启动前端页面，请运行：
 
 ```shell
 python -m dingo.run.vsl --input 输出目录
@@ -196,13 +189,15 @@ Dingo通过基于规则和基于提示的评估指标提供全面的数据质量
 
 ```python
 input_data = {
-    # 其他参数...
-    "custom_config": {
-        "prompt_list": ["QUALITY_BAD_SIMILARITY"],  # 要使用的特定prompt
+    # Other parameters...
+    "executor": {
+        "prompt_list": ["QUALITY_BAD_SIMILARITY"],  # Specific prompt to use
+    },
+    "evaluator": {
         "llm_config": {
-            "detect_text_quality": {  # 要使用的LLM模型
+            "LLMTextQualityPromptBase": {  # LLM model to use
                 "model": "gpt-4o",
-                "key": "您的API密钥",
+                "key": "YOUR_API_KEY",
                 "api_url": "https://api.openai.com/v1/chat/completions"
             }
         }
@@ -212,6 +207,12 @@ input_data = {
 
 您可以自定义这些prompt，以关注特定的质量维度或适应特定的领域需求。当与适当的LLM模型结合时，这些prompt能够在多个维度上对数据质量进行全面评估。
 
+### 幻觉检测和RAG系统评估
+
+有关使用Dingo幻觉检测功能的详细指导，包括HHEM-2.1-Open本地推理和基于LLM的评估：
+
+📖 **[查看幻觉检测指南 →](docs/hallucination_guide.md)**
+
 # 规则组
 
 Dingo为不同类型的数据集提供预配置的规则组：
@@ -219,15 +220,19 @@ Dingo为不同类型的数据集提供预配置的规则组：
 | 组名 | 用例 | 示例规则 |
 |-------|----------|---------------|
 | `default` | 通用文本质量 | `RuleColonEnd`, `RuleContentNull`, `RuleDocRepeat`等 |
-| `sft` | 微调数据集 | `default`中的规则加上`RuleLineStartWithBulletpoint` |
+| `sft` | 微调数据集 | `default`中的规则加上用于幻觉检测的`RuleHallucinationHHEM` |
+| `rag` | RAG系统评估 | 用于响应一致性检测的`RuleHallucinationHHEM`, `PromptHallucination` |
+| `hallucination` | 幻觉检测 | 基于LLM评估的`PromptHallucination` |
 | `pretrain` | 预训练数据集 | 包括`RuleAlphaWords`, `RuleCapitalWords`等20多条规则的全面集合 |
 
 使用特定规则组：
 
 ```python
 input_data = {
-    "eval_group": "sft",  # 使用"default"、"sft"或"pretrain"
-    # 其他参数...
+    "executor": {
+        "eval_group": "sft",  # Use "default", "sft", "rag", "hallucination", or "pretrain"
+    }
+    # other parameters...
 }
 ```
 
@@ -243,6 +248,8 @@ input_data = {
 
 - **内置规则**：20多种通用启发式评估规则
 - **LLM集成**：OpenAI、Kimi和本地模型（如Llama3）
+- **幻觉检测**：HHEM-2.1-Open本地模型和基于GPT的评估
+- **RAG系统评估**：响应一致性和上下文对齐评估
 - **自定义规则**：轻松扩展自己的规则和模型
 - **安全评估**：Perspective API集成
 
@@ -268,7 +275,7 @@ input_data = {
 ```python
 from dingo.model import Model
 from dingo.model.rule.base import BaseRule
-from dingo.config.config import DynamicRuleConfig
+from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
 from dingo.model.modelres import ModelRes
 
@@ -276,7 +283,7 @@ from dingo.model.modelres import ModelRes
 class MyCustomRule(BaseRule):
     """检查文本中的自定义模式"""
 
-    dynamic_config = DynamicRuleConfig(pattern=r'your_pattern_here')
+    dynamic_config = EvaluatorRuleArgs(pattern=r'your_pattern_here')
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -307,7 +314,7 @@ class MyCustomModel(BaseOpenAI):
 ### 2.1 本地执行
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 
 input_args = InputArgs(**input_data)
@@ -323,7 +330,7 @@ good_data = executor.get_good_info_list() # 高质量数据列表
 ### 2.2 Spark执行
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 from pyspark.sql import SparkSession
 
@@ -331,7 +338,13 @@ from pyspark.sql import SparkSession
 spark = SparkSession.builder.appName("Dingo").getOrCreate()
 spark_rdd = spark.sparkContext.parallelize([...])  # 以Data对象形式的数据
 
-input_args = InputArgs(eval_group="default", save_data=True)
+input_data = {
+    "executor": {
+        "eval_group": "default",
+        "result_save": {"bad": True}
+    }
+}
+input_args = InputArgs(**input_data)
 executor = Executor.exec_map["spark"](input_args, spark_session=spark, spark_rdd=spark_rdd)
 result = executor.execute()
 ```
@@ -387,6 +400,7 @@ result = executor.execute()
 
 - [RedPajama-Data](https://github.com/togethercomputer/RedPajama-Data)
 - [mlflow](https://github.com/mlflow/mlflow)
+- [deepeval](https://github.com/confident-ai/deepeval)
 
 # 贡献
 

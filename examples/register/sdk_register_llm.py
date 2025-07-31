@@ -1,4 +1,5 @@
 import json
+import os
 
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
@@ -7,6 +8,10 @@ from dingo.model.prompt.prompt_text_quality import PromptTextQualityV2
 from dingo.model.response.response_class import ResponseScoreTypeNameReason
 from dingo.utils import log
 from dingo.utils.exception import ConvertJsonError
+
+OPENAI_MODEL = 'deepseek-chat'
+OPENAI_URL = 'https://api.deepseek.com/v1'
+OPENAI_KEY = os.getenv("OPENAI_KEY")
 
 
 @Model.llm_register('LlmTextQualityRegister')
@@ -45,23 +50,31 @@ class LlmTextQualityRegister(BaseOpenAI):
 
 
 if __name__ == '__main__':
+    from dingo.config import InputArgs
     from dingo.exec import Executor
-    from dingo.io import InputArgs
 
     input_data = {
-        "eval_group": "test",
-        "input_path": "../../test/data/test_local_jsonl.jsonl",  # local filesystem dataset
-        "save_data": True,
-        "save_correct": True,
-        "dataset": "local",
-        "data_format": "jsonl",
-        "column_content": "content",
-        "custom_config": {
+        "input_path": "../../test/data/test_local_jsonl.jsonl",
+        "dataset": {
+            "source": "local",
+            "format": "jsonl",
+            "field": {
+                "content": "content",
+            }
+        },
+        "executor": {
             "prompt_list": ["PromptTextQualityV2"],
+            "result_save": {
+                "bad": True,
+                "good": True
+            }
+        },
+        "evaluator": {
             "llm_config": {
                 "LlmTextQualityRegister": {
-                    "key": "",
-                    "api_url": "",
+                    "model": OPENAI_MODEL,
+                    "key": OPENAI_KEY,
+                    "api_url": OPENAI_URL,
                 }
             }
         }

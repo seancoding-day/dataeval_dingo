@@ -1,13 +1,19 @@
+from dingo.config import InputArgs
 from dingo.exec import Executor
-from dingo.io import InputArgs
 
 
 def huggingface_plaintext():
     input_data = {
-        "eval_group": "sft",
-        "input_path": "chupei/format-text",  # huggingface dataset
-        "data_format": "plaintext",
-        "column_content": "text",
+        "input_path": "chupei/format-text",
+        "dataset": {
+            "format": "plaintext",
+            "field": {
+                "content": "text"
+            }
+        },
+        "executor": {
+            "eval_group": "sft"
+        }
     }
 
     input_args = InputArgs(**input_data)
@@ -18,11 +24,17 @@ def huggingface_plaintext():
 
 def huggingface_json():
     input_data = {
-        "eval_group": "sft",
-        "input_path": "chupei/format-json",  # huggingface dataset
-        "data_format": "json",
-        "column_content": "prediction",
-        "column_prompt": "origin_prompt",
+        "input_path": "chupei/format-json",
+        "dataset": {
+            "format": "json",
+            "field": {
+                "prompt": "origin_prompt",
+                "content": "prediction"
+            }
+        },
+        "executor": {
+            "eval_group": "sft",
+        }
     }
 
     input_args = InputArgs(**input_data)
@@ -33,10 +45,16 @@ def huggingface_json():
 
 def huggingface_jsonl():
     input_data = {
-        "eval_group": "sft",
-        "input_path": "chupei/format-jsonl",  # huggingface dataset
-        "data_format": "jsonl",
-        "column_content": "content",
+        "input_path": "chupei/format-jsonl",
+        "dataset": {
+            "format": "jsonl",
+            "field": {
+                "content": "content"
+            }
+        },
+        "executor": {
+            "eval_group": "sft",
+        }
     }
 
     input_args = InputArgs(**input_data)
@@ -47,11 +65,17 @@ def huggingface_jsonl():
 
 def huggingface_listjson():
     input_data = {
-        "eval_group": "sft",
-        "input_path": "chupei/format-listjson",  # huggingface dataset
-        "data_format": "listjson",
-        "column_content": "output",
-        "column_prompt": "instruction",
+        "input_path": "chupei/format-listjson",
+        "dataset": {
+            "format": "listjson",
+            "field": {
+                "prompt": "instruction",
+                "content": "output"
+            }
+        },
+        "executor": {
+            "eval_group": "sft",
+        }
     }
 
     input_args = InputArgs(**input_data)

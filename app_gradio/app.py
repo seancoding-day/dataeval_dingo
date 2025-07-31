@@ -7,8 +7,9 @@ from pathlib import Path
 
 import gradio as gr
 
+from dingo.config import InputArgs
 from dingo.exec import Executor
-from dingo.io import InputArgs
+from dingo.model import Model
 
 
 def dingo_demo(
@@ -17,7 +18,7 @@ def dingo_demo(
         column_id, column_prompt, column_content, column_image,
         rule_list, prompt_list, scene_list,
         model, key, api_url
-    ):
+):
     if not data_format:
         raise gr.Error('ValueError: data_format can not be empty, please input.')
     if not column_content:
@@ -58,7 +59,7 @@ def dingo_demo(
             "batch_size": batch_size,
 
             "column_content": column_content,
-            "custom_config":{
+            "custom_config": {
                 "rule_list": rule_list,
                 "prompt_list": prompt_list,
                 "llm_config": {
@@ -185,45 +186,38 @@ def update_column_fields(rule_list, prompt_list):
 
 
 def get_rule_type_mapping():
-    return {
-        'QUALITY_BAD_COMPLETENESS': ['RuleLineEndWithEllipsis', 'RuleLineEndWithTerminal', 'RuleSentenceNumber',
-                                     'RuleWordNumber'],
-        'QUALITY_BAD_EFFECTIVENESS': ['RuleAbnormalChar', 'RuleAbnormalHtml', 'RuleAlphaWords', 'RuleCharNumber',
-                                      'RuleColonEnd', 'RuleContentNull', 'RuleContentShort', 'RuleContentShortMultiLan',
-                                      'RuleEnterAndSpace', 'RuleEnterMore', 'RuleEnterRatioMore', 'RuleHtmlEntity',
-                                      'RuleHtmlTag', 'RuleInvisibleChar', 'RuleLineJavascriptCount', 'RuleLoremIpsum',
-                                      'RuleMeanWordLength', 'RuleSpaceMore', 'RuleSpecialCharacter', 'RuleStopWord',
-                                      'RuleSymbolWordRatio', 'RuleOnlyUrl'],
-        'QUALITY_BAD_FLUENCY': ['RuleAbnormalNumber', 'RuleCharSplit', 'RuleNoPunc', 'RuleWordSplit', 'RuleWordStuck'],
-        'QUALITY_BAD_RELEVANCE': ['RuleHeadWordAr'],
-        'QUALITY_BAD_SIMILARITY': ['RuleDocRepeat'],
-        'QUALITY_BAD_UNDERSTANDABILITY': ['RuleCapitalWords', 'RuleCurlyBracket', 'RuleLineStartWithBulletpoint',
-                                          'RuleUniqueWords'],
-        'QUALITY_BAD_IMG_EFFECTIVENESS': ['RuleImageValid', 'RuleImageSizeValid', 'RuleImageQuality'],
-        'QUALITY_BAD_IMG_RELEVANCE': ['RuleImageTextSimilarity'],
-        'QUALITY_BAD_IMG_SIMILARITY': ['RuleImageRepeat']
-    }
+    origin_map = Model.get_rule_metric_type_map()
+    process_map = {'Rule-Based TEXT Quality Metrics': []}  # can adjust the order
+    for k, v in origin_map.items():
+        if k in ['QUALITY_BAD_COMPLETENESS', 'QUALITY_BAD_EFFECTIVENESS', 'QUALITY_BAD_FLUENCY',
+                 'QUALITY_BAD_RELEVANCE',
+                 'QUALITY_BAD_SIMILARITY', 'QUALITY_BAD_UNDERSTANDABILITY']:
+            k = 'Rule-Based TEXT Quality Metrics'
+        for r in v:
+            if k not in process_map:
+                process_map[k] = []
+            process_map[k].append(r.__name__)
+    # print(process_map)
+
+    return process_map
 
 
 def get_scene_prompt_mapping():
-    return {
-        # 示例映射关系，你可以根据实际需求修改
-        "LLMTextQualityPromptBase": ['PromptRepeat', 'PromptContentChaos'],
-        'LLMTextQualityModelBase': ['PromptTextQualityV3', 'PromptTextQualityV4'],
-        'LLMSecurityPolitics': ['PromptPolitics'],
-        'LLMSecurityProhibition': ['PromptProhibition'],
-        'LLMText3HHarmless': ['PromptTextHelpful'],
-        'LLMText3HHelpful': ['PromptTextHelpful'],
-        'LLMText3HHonest': ['PromptTextHonest'],
-        'LLMClassifyTopic': ['PromptClassifyTopic'],
-        'LLMClassifyQR': ['PromptClassifyQR'],
-        "VLMImageRelevant": ["PromptImageRelevant"],
-    }
+    origin_map = Model.get_scenario_prompt_map()
+    process_map = {'LLMTextQualityModelBase': [], 'LLMTextQualityPromptBase': []}  # can adjust the order
+    for k, v in origin_map.items():
+        for p in v:
+            if k not in process_map:
+                process_map[k] = []
+            process_map[k].append(p.__name__)
+    # print(process_map)
+
+    return process_map
 
 
 def get_key_by_mapping(map_dict: dict, value_list: list):
     key_list = []
-    for k,v in map_dict.items():
+    for k, v in map_dict.items():
         if bool(set(v) & set(value_list)):
             key_list.append(k)
 
@@ -232,6 +226,7 @@ def get_key_by_mapping(map_dict: dict, value_list: list):
 
 def get_data_column_mapping():
     return {
+        # llm
         'LLMTextQualityPromptBase': ['content'],
         'LLMTextQualityModelBase': ['content'],
         'LLMSecurityPolitics': ['content'],
@@ -241,15 +236,20 @@ def get_data_column_mapping():
         'LLMText3HHonest': ['content'],
         'LLMClassifyTopic': ['content'],
         'LLMClassifyQR': ['content'],
+        'LLMDatamanAssessment': ['content'],
         'VLMImageRelevant': ['prompt', 'content'],
-        'QUALITY_BAD_COMPLETENESS': ['content'],
-        'QUALITY_BAD_EFFECTIVENESS': ['content'],
-        'QUALITY_BAD_FLUENCY': ['content'],
-        'QUALITY_BAD_RELEVANCE': ['content'],
-        'QUALITY_BAD_SIMILARITY': ['content'],
-        'QUALITY_BAD_UNDERSTANDABILITY': ['content'],
+
+        # rule
+        # 'QUALITY_BAD_COMPLETENESS': ['content'],
+        # 'QUALITY_BAD_EFFECTIVENESS': ['content'],
+        # 'QUALITY_BAD_FLUENCY': ['content'],
+        # 'QUALITY_BAD_RELEVANCE': ['content'],
+        # 'QUALITY_BAD_SIMILARITY': ['content'],
+        # 'QUALITY_BAD_UNDERSTANDABILITY': ['content'],
+        'Rule-Based TEXT Quality Metrics': ['content'],
+        'QUALITY_BAD_SECURITY': ['content'],
         'QUALITY_BAD_IMG_EFFECTIVENESS': ['image'],
-        'QUALITY_BAD_IMG_RELEVANCE': ['content','image'],
+        'QUALITY_BAD_IMG_RELEVANCE': ['content', 'image'],
         'QUALITY_BAD_IMG_SIMILARITY': ['content'],
     }
 
@@ -318,7 +318,7 @@ if __name__ == '__main__':
                     scene_list = gr.Dropdown(
                         choices=scene_options,
                         value=scene_options[0],
-                        label="scene_list",
+                        label="scenario_list",
                         interactive=True
                     )
                     prompt_list = gr.CheckboxGroup(
@@ -347,7 +347,8 @@ if __name__ == '__main__':
                     with gr.Row():
                         # 字段映射说明文本，带示例链接
                         with gr.Column():
-                            gr.Markdown("Please input the column name of dataset in the input boxes below ( [examples](https://github.com/MigoXLab/dingo/tree/main/examples) )")
+                            gr.Markdown(
+                                "Please input the column name of dataset in the input boxes below ( [examples](https://github.com/MigoXLab/dingo/tree/main/examples) )")
 
                         column_id = gr.Textbox(
                             value="",

@@ -2,13 +2,13 @@ from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
 
-@Model.prompt_register("QUALITY_HELPFUL", [])
+@Model.prompt_register("QUALITY_HELPFUL", [], ['LLMText3HHelpful'])
 class PromptTextHelpful(BasePrompt):
 
     # Metadata for documentation generation
     _metric_info = {
         "category": "SFT Data Assessment Metrics",
-        "metric_name": "Helpfulness",
+        "metric_name": "PromptTextHelpful",
         "description": "Assesses if responses address questions directly and follow instructions appropriately",
         "paper_title": "Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback",
         "paper_url": "https://arxiv.org/pdf/2204.05862",
@@ -40,13 +40,13 @@ class PromptTextHelpful(BasePrompt):
     """
 
 
-@Model.prompt_register("QUALITY_HARMLESS", [])
+@Model.prompt_register("QUALITY_HARMLESS", [], ['LLMText3HHarmless'])
 class PromptTextHarmless(BasePrompt):
 
     # Metadata for documentation generation
     _metric_info = {
         "category": "SFT Data Assessment Metrics",
-        "metric_name": "Harmlessness",
+        "metric_name": "PromptTextHarmless",
         "description": "Checks if responses avoid harmful content, discriminatory language, and dangerous assistance",
         "paper_title": "Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback",
         "paper_url": "https://arxiv.org/pdf/2204.05862",
@@ -77,13 +77,13 @@ class PromptTextHarmless(BasePrompt):
     """
 
 
-@Model.prompt_register("QUALITY_HONEST", [])
+@Model.prompt_register("QUALITY_HONEST", [], ['LLMText3HHonest'])
 class PromptTextHonest(BasePrompt):
 
     # Metadata for documentation generation
     _metric_info = {
         "category": "SFT Data Assessment Metrics",
-        "metric_name": "Honesty",
+        "metric_name": "PromptTextHonest",
         "description": "Evaluates if responses provide accurate information without fabrication or deception",
         "paper_title": "Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback",
         "paper_url": "https://arxiv.org/pdf/2204.05862",

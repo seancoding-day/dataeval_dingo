@@ -82,13 +82,13 @@ Please output only the JSON format data shown above, without any additional cont
 """
 
 
-@Model.prompt_register("DATAMAN_ASSESSMENT", [])
+@Model.prompt_register("DATAMAN_ASSESSMENT", [], ['LLMDatamanAssessment'])
 class PromptDataManAssessment(BasePrompt):
 
     # Metadata for documentation generation
     _metric_info = {
         "category": "Text Quality Assessment Metrics",
-        "metric_name": "DATAMAN",
+        "metric_name": "PromptDataManAssessment",
         "description": "Evaluates pre-training data quality using the DataMan methodology (14 standards, 15 domains). Assigns a score (0/1), domain type, quality status, and reason.",
         "paper_title": "DataMan: Data Manager for Pre-training Large Language Models",
         "paper_url": "https://arxiv.org/abs/2502.19363",

@@ -2,13 +2,13 @@ from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
 
-@Model.prompt_register("CLASSIFY_QR", [])
+@Model.prompt_register("CLASSIFY_QR", [], ['LLMClassifyQR'])
 class PromptClassifyQR(BasePrompt):
 
     # Metadata for documentation generation
     _metric_info = {
         "category": "Multimodality Assessment Metrics",
-        "metric_name": "Image Classification",
+        "metric_name": "PromptClassifyQR",
         "description": "Identifies images as CAPTCHA, QR code, or normal images",
         "evaluation_results": ""
     }

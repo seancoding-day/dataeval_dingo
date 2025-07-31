@@ -45,7 +45,7 @@ Both positive and negative examples will generate corresponding summary files af
 ## Evaluation Method
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 
 input_data = {

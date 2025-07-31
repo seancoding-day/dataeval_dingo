@@ -5,7 +5,7 @@ from typing import Callable, Dict, List, Optional
 
 from pydantic import BaseModel
 
-from dingo.config import GlobalConfig
+from dingo.config import InputArgs
 from dingo.model.llm.base import BaseLLM
 from dingo.model.prompt.base import BasePrompt
 from dingo.model.rule.base import BaseRule
@@ -18,22 +18,33 @@ class BaseEvalModel(BaseModel):
 
 
 class Model:
-    """
-    Model configuration class.
-    """
+    input_args: InputArgs
     module_loaded = False
+
+    # group
     rule_groups = {}  # such as: {'default': [<class.RuleAlphaWords>]}
     prompt_groups = {}
 
+    # metric map
     rule_metric_type_map = {}   # such as: {'QUALITY_INEFFECTIVENESS': [<class.RuleAlphaWords>]}
     prompt_metric_type_map = {}  # such as: {'QUALITY_INEFFECTIVENESS': [<class.QaRepeat>]}
 
+    # other map
+    scenario_prompt_map = {}
     rule_name_map = {}  # such as: {'RuleAlphaWords': <class.RuleAlphaWords>}
     prompt_name_map = {}
     llm_name_map = {}
 
     def __init__(self):
         return
+
+    @classmethod
+    def get_scenario_prompt_map(cls):
+        return cls.scenario_prompt_map
+
+    @classmethod
+    def get_prompt_by_scenario(cls, sn: str) -> List:
+        return cls.scenario_prompt_map[sn]
 
     @classmethod
     def get_group(cls, group_name) -> Dict[str, List]:
@@ -206,13 +217,17 @@ class Model:
         return decorator
 
     @classmethod
-    def prompt_register(cls, metric_type: str, group: List[str]) -> Callable:
+    def prompt_register(cls, metric_type: str, group: List[str], scenario: List[str] = []) -> Callable:
         def decorator(root_class):
             # group
             for group_name in group:
                 if group_name not in cls.prompt_groups:
                     cls.prompt_groups[group_name] = []
                 cls.prompt_groups[group_name].append(root_class)
+            for sn in scenario:
+                if sn not in cls.scenario_prompt_map:
+                    cls.scenario_prompt_map[sn] = []
+                cls.scenario_prompt_map[sn].append(root_class)
             cls.prompt_name_map[root_class.__name__] = root_class
             root_class.group = group
 
@@ -228,75 +243,63 @@ class Model:
 
     @classmethod
     def apply_config_rule(cls):
-        if GlobalConfig.config and GlobalConfig.config.rule_config:
-            for rule, rule_config in GlobalConfig.config.rule_config.items():
-                if rule not in cls.rule_name_map:
-                    continue
-                assert isinstance(rule, str)
-                log.debug(f"[Rule config]: config {rule_config} for {rule}")
-                cls_rule: BaseRule = cls.rule_name_map[rule]
+        if cls.input_args.evaluator.rule_config:
+            for rule_name, rule_args in cls.input_args.evaluator.rule_config.items():
+                log.debug(f"[Rule config]: config {rule_args} for {rule_name}")
+                cls_rule: BaseRule = cls.rule_name_map[rule_name]
                 config_default = getattr(cls_rule, 'dynamic_config')
-                for k, v in rule_config:
+                for k, v in rule_args:
                     if v is not None:
                         setattr(config_default, k, v)
                 setattr(cls_rule, 'dynamic_config', config_default)
 
     @classmethod
     def apply_config_llm(cls):
-        if GlobalConfig.config and GlobalConfig.config.llm_config:
-            for llm, llm_config in GlobalConfig.config.llm_config.items():
-                if llm not in cls.llm_name_map.keys():
-                    continue
-                assert isinstance(llm, str)
-                log.debug(f"[Rule config]: config {llm_config} for {llm}")
-                cls_llm: BaseLLM = cls.llm_name_map[llm]
+        if cls.input_args.evaluator.llm_config:
+            for llm_name, llm_args in cls.input_args.evaluator.llm_config.items():
+                log.debug(f"[LLM config]: config {llm_args} for {llm_name}")
+                cls_llm: BaseLLM = cls.llm_name_map[llm_name]
                 config_default = getattr(cls_llm, 'dynamic_config')
-                for k, v in llm_config:
+                for k, v in llm_args:
                     if v is not None:
                         setattr(config_default, k, v)
                 setattr(cls_llm, 'dynamic_config', config_default)
 
     @classmethod
-    def apply_config_rule_list(cls, eval_group: str = ''):
-        if GlobalConfig.config and GlobalConfig.config.rule_list:
-            model: List[BaseRule] = []
-            for rule in GlobalConfig.config.rule_list:
-                assert isinstance(rule, str)
-                if rule not in Model.rule_name_map:
-                    raise KeyError(f"{rule} not in Model.rule_name_map, there are {str(Model.rule_name_map.keys())}")
-                model.append(Model.rule_name_map[rule])
-            Model.rule_groups[eval_group] = model
+    def apply_config_rule_list(cls):
+        if cls.input_args.executor.rule_list:
+            eg = cls.input_args.executor.eval_group
+            Model.rule_groups[eg] = []
+            for rule_name in cls.input_args.executor.rule_list:
+                if rule_name not in Model.rule_name_map:
+                    raise KeyError(f"{rule_name} not in Model.rule_name_map, there are {str(Model.rule_name_map.keys())}")
+                Model.rule_groups[eg].append(Model.rule_name_map[rule_name])
 
     @classmethod
-    def apply_config_prompt_list(cls, eval_group: str = ''):
-        if GlobalConfig.config and GlobalConfig.config.prompt_list:
-            model: List[BasePrompt] = []
-            for prompt in GlobalConfig.config.prompt_list:
-                assert isinstance(prompt, str)
-                if prompt not in Model.prompt_name_map:
-                    raise KeyError(f"{prompt} not in Model.prompt_name_map, there are {str(Model.prompt_name_map.keys())}")
-                model.append(Model.prompt_name_map[prompt])
-            Model.prompt_groups[eval_group] = model
+    def apply_config_prompt_list(cls):
+        if cls.input_args.executor.prompt_list:
+            eg = cls.input_args.executor.eval_group
+            Model.prompt_groups[eg] = []
+            for prompt_name in cls.input_args.executor.prompt_list:
+                if prompt_name not in Model.prompt_name_map:
+                    raise KeyError(f"{prompt_name} not in Model.prompt_name_map, there are {str(Model.prompt_name_map.keys())}")
+                Model.prompt_groups[eg].append(Model.prompt_name_map[prompt_name])
 
     @classmethod
-    def apply_config(cls, custom_config: Optional[str | dict], eval_group: str = ''):
-        GlobalConfig.read_config_file(custom_config)
+    def apply_config(cls, input_args: InputArgs):
+        cls.input_args = input_args
         cls.apply_config_rule()
         cls.apply_config_llm()
-        if GlobalConfig.config:
-            if GlobalConfig.config.rule_list or GlobalConfig.config.prompt_list:
-                if eval_group in Model.rule_groups or eval_group in Model.prompt_groups:
-                    raise KeyError(f'eval group: [{eval_group}] already in Model, please input other name.')
-        cls.apply_config_rule_list(eval_group)
-        cls.apply_config_prompt_list(eval_group)
+        cls.apply_config_rule_list()
+        cls.apply_config_prompt_list()
 
     @classmethod
-    def apply_config_for_spark_driver(cls, custom_config: Optional[str | dict], eval_group: str = ''):
-        GlobalConfig.read_config_file(custom_config)
+    def apply_config_for_spark_driver(cls, input_args: InputArgs):
+        cls.input_args = input_args
         cls.apply_config_rule()
         cls.apply_config_llm()
-        cls.apply_config_rule_list(eval_group)
-        cls.apply_config_prompt_list(eval_group)
+        cls.apply_config_rule_list()
+        cls.apply_config_prompt_list()
 
     @classmethod
     def load_model(cls):

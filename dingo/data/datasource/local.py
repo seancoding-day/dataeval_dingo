@@ -1,8 +1,8 @@
 import os
 from typing import Any, Dict, Generator, List, Optional
 
+from dingo.config import InputArgs
 from dingo.data.datasource.base import DataSource
-from dingo.io import InputArgs
 
 
 def find_all_files(path: str, file_list: List[str]):
@@ -76,7 +76,7 @@ class LocalDataSource(DataSource):
         load_kwargs = {
             "path": self.path,
         }
-        if self.input_args.data_format in ["json", "listjson"]:
+        if self.input_args.dataset.format in ["json", "listjson"]:
             load_kwargs["by_line"] = False
         return load_local_file(**load_kwargs)
 

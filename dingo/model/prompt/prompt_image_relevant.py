@@ -2,13 +2,13 @@ from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
 
-@Model.prompt_register("IMAGE_RELEVANT", [])
+@Model.prompt_register("IMAGE_RELEVANT", [], ['VLMImageRelevant'])
 class PromptImageRelevant(BasePrompt):
 
     # Metadata for documentation generation
     _metric_info = {
         "category": "Multimodality Assessment Metrics",
-        "metric_name": "Image Relevance",
+        "metric_name": "PromptImageRelevant",
         "description": "Evaluates if an image matches reference image in terms of face count, feature details, and visual elements",
         "evaluation_results": ""
     }

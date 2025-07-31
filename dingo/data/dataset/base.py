@@ -53,7 +53,7 @@ class Dataset:
         self._name = name
         self._source = source
         self.input_args = source.input_args
-        self._converter = self.input_args.data_format
+        self._converter = self.input_args.dataset.format
 
         if source.get_source_type() == "hugging_face" and self._converter == "listjson":
             self._converter = "jsonl"

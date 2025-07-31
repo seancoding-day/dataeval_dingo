@@ -2,8 +2,9 @@ import json
 from functools import reduce, wraps
 from typing import Callable, Dict, List, Protocol, Union
 
+from dingo.config import InputArgs
 from dingo.data.converter.img_utils import find_s3_image
-from dingo.io import Data, InputArgs
+from dingo.io import Data
 
 
 class ConverterProto(Protocol):
@@ -106,8 +107,8 @@ class MultiTurnDialogConverter(BaseConverter):
             cls.data_id += 1
 
             raw_history: list = (
-                j.get(input_args.column_content, [])
-                if input_args.column_content != ""
+                j.get(input_args.dataset.field.content, [])
+                if input_args.dataset.field.content != ""
                 else j.get("history", [])
             )
             keys = list({key for d in raw_history for key in d.keys()})
@@ -137,8 +138,8 @@ class MultiTurnDialogConverter(BaseConverter):
 
             # process each turn of dialogue based on mode
             if (
-                input_args.custom_config
-                and input_args.custom_config.get("multi_turn_mode") == "all"
+                input_args.evaluator
+                and input_args.executor.multi_turn_mode == "all"
             ):
                 content = ""
                 for i, turn in enumerate(history):
@@ -149,8 +150,8 @@ class MultiTurnDialogConverter(BaseConverter):
                 yield Data(
                     **{
                         "data_id": (
-                            cls.find_levels_data(j, input_args.column_id)
-                            if input_args.column_id != ""
+                            cls.find_levels_data(j, input_args.dataset.field.id)
+                            if input_args.dataset.field.id != ""
                             else str(cls.data_id)
                         ),
                         "prompt": "",
@@ -179,18 +180,18 @@ class JsonConverter(BaseConverter):
                 yield Data(
                     **{
                         "data_id": (
-                            cls.find_levels_data(v, input_args.column_id)
-                            if input_args.column_id != ""
+                            cls.find_levels_data(v, input_args.dataset.field.id)
+                            if input_args.dataset.field.id != ""
                             else str(k)
                         ),
                         "prompt": (
-                            cls.find_levels_data(v, input_args.column_prompt)
-                            if input_args.column_prompt != ""
+                            cls.find_levels_data(v, input_args.dataset.field.prompt)
+                            if input_args.dataset.field.prompt != ""
                             else ""
                         ),
                         "content": (
-                            cls.find_levels_data(v, input_args.column_content)
-                            if input_args.column_content != ""
+                            cls.find_levels_data(v, input_args.dataset.field.content)
+                            if input_args.dataset.field.content != ""
                             else ""
                         ),
                         "raw_data": v,
@@ -247,19 +248,24 @@ class JsonLineConverter(BaseConverter):
             return Data(
                 **{
                     "data_id": (
-                        cls.find_levels_data(j, input_args.column_id)
-                        if input_args.column_id != ""
+                        cls.find_levels_data(j, input_args.dataset.field.id)
+                        if input_args.dataset.field.id != ""
                         else str(cls.data_id)
                     ),
                     "prompt": (
-                        cls.find_levels_data(j, input_args.column_prompt)
-                        if input_args.column_prompt != ""
+                        cls.find_levels_data(j, input_args.dataset.field.prompt)
+                        if input_args.dataset.field.prompt != ""
                         else ""
                     ),
                     "content": (
-                        cls.find_levels_data(j, input_args.column_content)
-                        if input_args.column_content != ""
+                        cls.find_levels_data(j, input_args.dataset.field.content)
+                        if input_args.dataset.field.content != ""
                         else ""
+                    ),
+                    "context": (
+                        cls.find_levels_data(j, input_args.dataset.field.context)
+                        if input_args.dataset.field.context != ""
+                        else j.get("context", None)  # Fallback to 'context' key if column_context not specified
                     ),
                     "raw_data": j,
                 }
@@ -287,18 +293,18 @@ class ListJsonConverter(BaseConverter):
                 yield Data(
                     **{
                         "data_id": (
-                            cls.find_levels_data(j, input_args.column_id)
-                            if input_args.column_id != ""
+                            cls.find_levels_data(j, input_args.dataset.field.id)
+                            if input_args.dataset.field.id != ""
                             else str(cls.data_id)
                         ),
                         "prompt": (
-                            cls.find_levels_data(j, input_args.column_prompt)
-                            if input_args.column_prompt != ""
+                            cls.find_levels_data(j, input_args.dataset.field.prompt)
+                            if input_args.dataset.field.prompt != ""
                             else ""
                         ),
                         "content": (
-                            cls.find_levels_data(j, input_args.column_content)
-                            if input_args.column_content != ""
+                            cls.find_levels_data(j, input_args.dataset.field.content)
+                            if input_args.dataset.field.content != ""
                             else ""
                         ),
                         "raw_data": j,
@@ -328,22 +334,22 @@ class ImageConverter(BaseConverter):
             return Data(
                 **{
                     "data_id": (
-                        cls.find_levels_data(j, input_args.column_id)
-                        if input_args.column_id != ""
+                        cls.find_levels_data(j, input_args.dataset.field.id)
+                        if input_args.dataset.field.id != ""
                         else str(cls.data_id)
                     ),
                     "prompt": (
-                        cls.find_levels_data(j, input_args.column_prompt)
-                        if input_args.column_prompt != ""
+                        cls.find_levels_data(j, input_args.dataset.field.prompt)
+                        if input_args.dataset.field.prompt != ""
                         else ""
                     ),
                     "content": (
-                        cls.find_levels_data(j, input_args.column_content)
-                        if input_args.column_content != ""
+                        cls.find_levels_data(j, input_args.dataset.field.content)
+                        if input_args.dataset.field.content != ""
                         else ""
                     ),
-                    "image": cls.find_levels_image(j, input_args.column_image)
-                    if input_args.column_image != ""
+                    "image": cls.find_levels_image(j, input_args.dataset.field.image)
+                    if input_args.dataset.field.image != ""
                     else "",
                     "raw_data": j,
                 }
@@ -371,22 +377,22 @@ class S3ImageConverter(BaseConverter):
             return Data(
                 **{
                     "data_id": (
-                        cls.find_levels_data(j, input_args.column_id)
-                        if input_args.column_id != ""
+                        cls.find_levels_data(j, input_args.dataset.field.id)
+                        if input_args.dataset.field.id != ""
                         else str(cls.data_id)
                     ),
                     "prompt": (
-                        cls.find_levels_data(j, input_args.column_prompt)
-                        if input_args.column_prompt != ""
+                        cls.find_levels_data(j, input_args.dataset.field.prompt)
+                        if input_args.dataset.field.prompt != ""
                         else ""
                     ),
                     "content": (
-                        cls.find_levels_data(j, input_args.column_content)
-                        if input_args.column_content != ""
+                        cls.find_levels_data(j, input_args.dataset.field.content)
+                        if input_args.dataset.field.content != ""
                         else ""
                     ),
                     "image": find_s3_image(j, input_args)
-                    if input_args.column_image != ""
+                    if input_args.dataset.field.image != ""
                     else "",
                     "raw_data": j,
                 }

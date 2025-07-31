@@ -3,7 +3,7 @@ import os
 import numpy as np
 from PIL import Image
 
-from dingo.config.config import DynamicRuleConfig
+from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
 from dingo.model.model import Model
 from dingo.model.modelres import ModelRes
@@ -18,7 +18,7 @@ class RuleImageValid(BaseRule):
     _metric_info = {
         "category": "Rule-Based IMG Quality Metrics",
         "quality_dimension": "IMG_EFFECTIVENESS",
-        "metric_name": "Image Valid Detection",
+        "metric_name": "RuleImageValid",
         "description": "Checks whether image is not all white or black, ensuring visual content validity",
         "paper_title": "",
         "paper_url": "",
@@ -26,7 +26,7 @@ class RuleImageValid(BaseRule):
         "evaluation_results": ""
     }
 
-    dynamic_config = DynamicRuleConfig()
+    dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -53,7 +53,7 @@ class RuleImageSizeValid(BaseRule):
     _metric_info = {
         "category": "Rule-Based IMG Quality Metrics",
         "quality_dimension": "IMG_EFFECTIVENESS",
-        "metric_name": "Image Size Valid Detection",
+        "metric_name": "RuleImageSizeValid",
         "description": "Checks whether image ratio of width to height is within valid range",
         "paper_title": "",
         "paper_url": "",
@@ -61,7 +61,7 @@ class RuleImageSizeValid(BaseRule):
         "evaluation_results": ""
     }
 
-    dynamic_config = DynamicRuleConfig()
+    dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -91,7 +91,7 @@ class RuleImageQuality(BaseRule):
     _metric_info = {
         "category": "Rule-Based IMG Quality Metrics",
         "quality_dimension": "IMG_EFFECTIVENESS",
-        "metric_name": "Image Quality Assessment",
+        "metric_name": "RuleImageQuality",
         "description": "Evaluates image quality using NIMA (Neural Image Assessment) metrics",
         "paper_title": "NIMA: Neural Image Assessment",
         "paper_url": "https://arxiv.org/abs/1709.05424",
@@ -99,7 +99,7 @@ class RuleImageQuality(BaseRule):
         "evaluation_results": ""
     }
 
-    dynamic_config = DynamicRuleConfig(threshold=5.5)
+    dynamic_config = EvaluatorRuleArgs(threshold=5.5)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -133,7 +133,7 @@ class RuleImageRepeat(BaseRule):
     _metric_info = {
         "category": "Rule-Based IMG Quality Metrics",
         "quality_dimension": "IMG_SIMILARITY",
-        "metric_name": "Image Duplicate Detection",
+        "metric_name": "RuleImageRepeat",
         "description": "Detects duplicate images using PHash and CNN methods to ensure data diversity",
         "paper_title": "ImageNet Classification with Deep Convolutional Neural Networks",
         "paper_url": "https://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf",
@@ -141,7 +141,7 @@ class RuleImageRepeat(BaseRule):
         "evaluation_results": ""
     }
 
-    dynamic_config = DynamicRuleConfig()
+    dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -189,7 +189,7 @@ class RuleImageTextSimilarity(BaseRule):
     _metric_info = {
         "category": "Rule-Based IMG Quality Metrics",
         "quality_dimension": "IMG_RELEVANCE",
-        "metric_name": "Image-Text Similarity",
+        "metric_name": "RuleImageTextSimilarity",
         "description": "Evaluates semantic similarity between image and text content using CLIP model",
         "paper_title": "Learning Transferable Visual Representations with Natural Language Supervision",
         "paper_url": "https://arxiv.org/abs/2103.00020",
@@ -197,7 +197,7 @@ class RuleImageTextSimilarity(BaseRule):
         "evaluation_results": ""
     }
 
-    dynamic_config = DynamicRuleConfig(threshold=0.17)
+    dynamic_config = EvaluatorRuleArgs(threshold=0.17)
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:

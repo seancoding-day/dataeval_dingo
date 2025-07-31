@@ -1,20 +1,28 @@
+from dingo.config import InputArgs
 from dingo.exec import Executor
-from dingo.io import InputArgs
 
 
 def image_relevant():
     input_data = {
-        "eval_group": "test",
-        "input_path": "../../test/data/test_img_jsonl.jsonl",  # local filesystem dataset
-        "dataset": "local",
-        "data_format": "jsonl",
-        "save_data": True,
-        "save_correct": True,
-        "column_id": "id",
-        "column_prompt": "url_1",
-        "column_content": "url_2",
-        "custom_config": {
+        "input_path": "../../test/data/test_img_jsonl.jsonl",
+        "output_path": "output/hallucination_evaluation/",
+        "dataset": {
+            "source": "local",
+            "format": "jsonl",
+            "field": {
+                "id": "id",
+                "prompt": "url_1",
+                "content": "url_2"
+            }
+        },
+        "executor": {
             "prompt_list": ["PromptImageRelevant"],
+            "result_save": {
+                "bad": True,
+                "good": True
+            }
+        },
+        "evaluator": {
             "llm_config": {
                 "VLMImageRelevant": {
                     "key": "",

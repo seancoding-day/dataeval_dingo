@@ -2,13 +2,13 @@ from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
 
-@Model.prompt_register("CLASSIFY_TOPIC", [])
+@Model.prompt_register("CLASSIFY_TOPIC", [], ['LLMClassifyTopic'])
 class PromptClassifyTopic(BasePrompt):
 
     # Metadata for documentation generation
     _metric_info = {
         "category": "Classification Metrics",
-        "metric_name": "Topic Categorization",
+        "metric_name": "PromptClassifyTopic",
         "description": "Classifies text into categories like language processing, writing, code, mathematics, role-play, or knowledge Q&A. Based on BERTopic and INSTAG methodologies",
         "paper_title": "BERTopic & INSTAG",
         "paper_url": "https://maartengr.github.io/BERTopic/index.html#quick-start, https://arxiv.org/pdf/2308.07074",

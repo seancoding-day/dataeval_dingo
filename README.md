@@ -14,6 +14,7 @@
   <a href="https://github.com/DataEval/dingo/network/members"><img src="https://img.shields.io/github/forks/DataEval/dingo" alt="GitHub forks"></a>
   <a href="https://github.com/DataEval/dingo/issues"><img src="https://img.shields.io/github/issues/DataEval/dingo" alt="GitHub issues"></a>
   <a href="https://mseep.ai/app/dataeval-dingo"><img src="https://mseep.net/pr/dataeval-dingo-badge.png" alt="MseeP.ai Security Assessment Badge" height="20"></a>
+  <a href="https://deepwiki.com/MigoXLab/dingo"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 </p>
 
 </div>
@@ -32,10 +33,6 @@
     👋 join us on <a href="https://discord.gg/Jhgb2eKWh8" target="_blank">Discord</a> and <a href="./docs/assets/wechat.jpg" target="_blank">WeChat</a>
 </p>
 
-
-# Changelog
-
-- 2024/12/27: Project Initialization
 
 # Introduction
 
@@ -58,8 +55,8 @@ pip install dingo-python
 ### 1. Evaluate LLM chat data
 
 ```python
-from dingo.config.config import DynamicLLMConfig
-from dingo.io.input.Data import Data
+from dingo.config.input_args import EvaluatorLLMArgs
+from dingo.io.input import Data
 from dingo.model.llm.llm_text_quality_model_base import LLMTextQualityModelBase
 from dingo.model.rule.rule_common import RuleEnterAndSpace
 
@@ -69,8 +66,9 @@ data = Data(
     content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
 )
 
+
 def llm():
-    LLMTextQualityModelBase.dynamic_config = DynamicLLMConfig(
+    LLMTextQualityModelBase.dynamic_config = EvaluatorLLMArgs(
         key='YOUR_API_KEY',
         api_url='https://api.openai.com/v1/chat/completions',
         model='gpt-4o',
@@ -87,15 +85,22 @@ def rule():
 ### 2. Evaluate Dataset
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 
 # Evaluate a dataset from Hugging Face
 input_data = {
-    "eval_group": "sft",           # Rule set for SFT data
-    "input_path": "tatsu-lab/alpaca", # Dataset from Hugging Face
-    "data_format": "plaintext",    # Format: plaintext
-    "save_data": True              # Save evaluation results
+    "input_path": "tatsu-lab/alpaca",  # Dataset from Hugging Face
+    "dataset": {
+        "source": "hugging_face",
+        "format": "plaintext"  # Format: plaintext
+    },
+    "executor": {
+        "eval_group": "sft",  # Rule set for SFT data
+        "result_save": {
+            "bad": True  # Save evaluation results
+        }
+    }
 }
 
 input_args = InputArgs(**input_data)
@@ -109,31 +114,18 @@ print(result)
 ### Evaluate with Rule Sets
 
 ```shell
-python -m dingo.run.cli --input_path data.txt --dataset local -e sft --data_format plaintext --save_data True
+python -m dingo.run.cli --input test/env/local_plaintext.json
 ```
 
 ### Evaluate with LLM (e.g., GPT-4o)
 
 ```shell
-python -m dingo.run.cli --input_path data.json --dataset local -e openai --data_format json --column_content text --custom_config config_gpt.json --save_data True
-```
-
-Example `config_gpt.json`:
-```json
-{
-  "llm_config": {
-    "openai": {
-      "model": "gpt-4o",
-      "key": "YOUR_API_KEY",
-      "api_url": "https://api.openai.com/v1/chat/completions"
-    }
-  }
-}
+python -m dingo.run.cli --input test/env/local_json.json
 ```
 
 ## GUI Visualization
 
-After evaluation (with `save_data=True`), a frontend page will be automatically generated. To manually start the frontend:
+After evaluation (with `result_save.bad=True`), a frontend page will be automatically generated. To manually start the frontend:
 
 ```shell
 python -m dingo.run.vsl --input output_directory
@@ -200,10 +192,12 @@ To use these assessment prompts in your evaluations, specify them in your config
 ```python
 input_data = {
     # Other parameters...
-    "custom_config": {
+    "executor": {
         "prompt_list": ["QUALITY_BAD_SIMILARITY"],  # Specific prompt to use
+    },
+    "evaluator": {
         "llm_config": {
-            "detect_text_quality": {  # LLM model to use
+            "LLMTextQualityPromptBase": {  # LLM model to use
                 "model": "gpt-4o",
                 "key": "YOUR_API_KEY",
                 "api_url": "https://api.openai.com/v1/chat/completions"
@@ -215,6 +209,12 @@ input_data = {
 
 You can customize these prompts to focus on specific quality dimensions or to adapt to particular domain requirements. When combined with appropriate LLM models, these prompts enable comprehensive evaluation of data quality across multiple dimensions.
 
+### Hallucination Detection & RAG System Evaluation
+
+For detailed guidance on using Dingo's hallucination detection capabilities, including HHEM-2.1-Open local inference and LLM-based evaluation:
+
+📖 **[View Hallucination Detection Guide →](docs/hallucination_guide.md)**
+
 # Rule Groups
 
 Dingo provides pre-configured rule groups for different types of datasets:
@@ -222,14 +222,18 @@ Dingo provides pre-configured rule groups for different types of datasets:
 | Group | Use Case | Example Rules |
 |-------|----------|---------------|
 | `default` | General text quality | `RuleColonEnd`, `RuleContentNull`, `RuleDocRepeat`, etc. |
-| `sft` | Fine-tuning datasets | Rules from `default` plus `RuleLineStartWithBulletpoint` |
+| `sft` | Fine-tuning datasets | Rules from `default` plus `RuleHallucinationHHEM` for hallucination detection |
+| `rag` | RAG system evaluation | `RuleHallucinationHHEM`, `PromptHallucination` for response consistency |
+| `hallucination` | Hallucination detection | `PromptHallucination` with LLM-based evaluation |
 | `pretrain` | Pre-training datasets | Comprehensive set of 20+ rules including `RuleAlphaWords`, `RuleCapitalWords`, etc. |
 
 To use a specific rule group:
 
 ```python
 input_data = {
-    "eval_group": "sft",  # Use "default", "sft", or "pretrain"
+    "executor": {
+        "eval_group": "sft",  # Use "default", "sft", "rag", "hallucination", or "pretrain"
+    }
     # other parameters...
 }
 ```
@@ -246,6 +250,8 @@ input_data = {
 
 - **Built-in Rules**: 20+ general heuristic evaluation rules
 - **LLM Integration**: OpenAI, Kimi, and local models (e.g., Llama3)
+- **Hallucination Detection**: HHEM-2.1-Open local model and GPT-based evaluation
+- **RAG System Evaluation**: Response consistency and context alignment assessment
 - **Custom Rules**: Easily extend with your own rules and models
 - **Security Evaluation**: Perspective API integration
 
@@ -271,7 +277,7 @@ If the built-in rules don't meet your requirements, you can create custom ones:
 ```python
 from dingo.model import Model
 from dingo.model.rule.base import BaseRule
-from dingo.config.config import DynamicRuleConfig
+from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
 from dingo.model.modelres import ModelRes
 
@@ -279,7 +285,7 @@ from dingo.model.modelres import ModelRes
 class MyCustomRule(BaseRule):
     """Check for custom pattern in text"""
 
-    dynamic_config = DynamicRuleConfig(pattern=r'your_pattern_here')
+    dynamic_config = EvaluatorRuleArgs(pattern=r'your_pattern_here')
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -310,7 +316,7 @@ See more examples in:
 ### Local Execution
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 
 input_args = InputArgs(**input_data)
@@ -326,7 +332,7 @@ good_data = executor.get_good_info_list() # List of high-quality data
 ### Spark Execution
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 from pyspark.sql import SparkSession
 
@@ -334,7 +340,13 @@ from pyspark.sql import SparkSession
 spark = SparkSession.builder.appName("Dingo").getOrCreate()
 spark_rdd = spark.sparkContext.parallelize([...])  # Your data as Data objects
 
-input_args = InputArgs(eval_group="default", save_data=True)
+input_data = {
+    "executor": {
+        "eval_group": "default",
+        "result_save": {"bad": True}
+    }
+}
+input_args = InputArgs(**input_data)
 executor = Executor.exec_map["spark"](input_args, spark_session=spark, spark_rdd=spark_rdd)
 result = executor.execute()
 ```
@@ -390,6 +402,7 @@ The current built-in detection rules and model methods focus on common data qual
 
 - [RedPajama-Data](https://github.com/togethercomputer/RedPajama-Data)
 - [mlflow](https://github.com/mlflow/mlflow)
+- [deepeval](https://github.com/confident-ai/deepeval)
 
 # Contribution
 

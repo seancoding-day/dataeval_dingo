@@ -95,7 +95,7 @@ Below are the experimental results showcasing the performance of the prompt acro
 ## Evaluation
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 
 

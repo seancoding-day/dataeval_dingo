@@ -2,13 +2,13 @@ from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
 
-@Model.prompt_register("QUALITY_BAD_SECURITY", [])
+@Model.prompt_register("QUALITY_BAD_SECURITY", [], ['LLMSecurityPolitics'])
 class PromptPolitics(BasePrompt):
 
     # Metadata for documentation generation
     _metric_info = {
         "category": "Text Quality Assessment Metrics",
-        "metric_name": "Politics",
+        "metric_name": "PromptPolitics",
         "description": "Evaluates whether the text contains politics-related content",
         "paper_title": "",
         "paper_url": "",

@@ -14,6 +14,7 @@
   <a href="https://github.com/DataEval/dingo/network/members"><img src="https://img.shields.io/github/forks/DataEval/dingo" alt="GitHub forks"></a>
   <a href="https://github.com/DataEval/dingo/issues"><img src="https://img.shields.io/github/issues/DataEval/dingo" alt="GitHub issues"></a>
   <a href="https://mseep.ai/app/dataeval-dingo"><img src="https://mseep.net/pr/dataeval-dingo-badge.png" alt="MseeP.ai Security Assessment Badge" height="20"></a>
+  <a href="https://deepwiki.com/MigoXLab/dingo"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
 </p>
 
 </div>
@@ -32,10 +33,6 @@
     👋 <a href="https://discord.gg/Jhgb2eKWh8" target="_blank">Discord</a>と<a href="./docs/assets/wechat.jpg" target="_blank">WeChat</a>でご参加ください
 </p>
 
-
-# 更新履歴
-
-- 2024/12/27: プロジェクト初期化
 
 # はじめに
 
@@ -58,19 +55,19 @@ pip install dingo-python
 ### 1. LLMチャットデータの評価
 
 ```python
-from dingo.config.config import DynamicLLMConfig
-from dingo.io.input.MetaData import MetaData
+from dingo.config.input_args import EvaluatorLLMArgs
+from dingo.io.input import Data
 from dingo.model.llm.llm_text_quality_model_base import LLMTextQualityModelBase
 from dingo.model.rule.rule_common import RuleEnterAndSpace
 
-data = MetaData(
+data = Data(
     data_id='123',
     prompt="hello, introduce the world",
     content="Hello! The world is a vast and diverse place, full of wonders, cultures, and incredible natural beauty."
 )
 
 def llm():
-    LLMTextQualityModelBase.dynamic_config = DynamicLLMConfig(
+    LLMTextQualityModelBase.dynamic_config = EvaluatorLLMArgs(
         key='YOUR_API_KEY',
         api_url='https://api.openai.com/v1/chat/completions',
         model='gpt-4o',
@@ -87,15 +84,22 @@ def rule():
 ### 2. データセットの評価
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 
 # Hugging Faceからデータセットを評価
 input_data = {
-    "eval_group": "sft",           # SFTデータ用のルールセット
-    "input_path": "tatsu-lab/alpaca", # Hugging Faceからのデータセット
-    "data_format": "plaintext",    # フォーマット: plaintext
-    "save_data": True              # 評価結果を保存
+    "input_path": "tatsu-lab/alpaca",  # Hugging Faceからのデータセット
+    "dataset": {
+        "source": "hugging_face",
+        "format": "plaintext"  # フォーマット: plaintext
+    },
+    "executor": {
+        "eval_group": "sft",  # SFTデータ用のルールセット
+        "result_save": {
+            "bad": True  # 評価結果を保存
+        }
+    }
 }
 
 input_args = InputArgs(**input_data)
@@ -109,31 +113,18 @@ print(result)
 ### ルールセットでの評価
 
 ```shell
-python -m dingo.run.cli --input_path data.txt --dataset local -e sft --data_format plaintext --save_data True
+python -m dingo.run.cli --input test/env/local_plaintext.json
 ```
 
 ### LLM（例：GPT-4o）での評価
 
 ```shell
-python -m dingo.run.cli --input_path data.json --dataset local -e openai --data_format json --column_content text --custom_config config_gpt.json --save_data True
-```
-
-`config_gpt.json`の例:
-```json
-{
-  "llm_config": {
-    "openai": {
-      "model": "gpt-4o",
-      "key": "YOUR_API_KEY",
-      "api_url": "https://api.openai.com/v1/chat/completions"
-    }
-  }
-}
+python -m dingo.run.cli --input test/env/local_json.json
 ```
 
 ## GUI可視化
 
-評価後（`save_data=True`で）、フロントエンドページが自動的に生成されます。手動でフロントエンドを開始するには：
+評価後（`result_save.bad=True`で）、フロントエンドページが自動的に生成されます。手動でフロントエンドを開始するには：
 
 ```shell
 python -m dingo.run.vsl --input output_directory
@@ -197,11 +188,13 @@ Dingoはルールベースおよびプロンプトベースの評価メトリク
 
 ```python
 input_data = {
-    # その他のパラメータ...
-    "custom_config": {
-        "prompt_list": ["QUALITY_BAD_SIMILARITY"],  # 使用する特定のプロンプト
+    # Other parameters...
+    "executor": {
+        "prompt_list": ["QUALITY_BAD_SIMILARITY"],  # Specific prompt to use
+    },
+    "evaluator": {
         "llm_config": {
-            "detect_text_quality": {  # 使用するLLMモデル
+            "LLMTextQualityPromptBase": {  # LLM model to use
                 "model": "gpt-4o",
                 "key": "YOUR_API_KEY",
                 "api_url": "https://api.openai.com/v1/chat/completions"
@@ -213,6 +206,12 @@ input_data = {
 
 これらのプロンプトは、特定の品質次元に焦点を当てたり、特定のドメイン要件に適応させるためにカスタマイズできます。適切なLLMモデルと組み合わせることで、これらのプロンプトは複数の次元にわたる包括的なデータ品質評価を可能にします。
 
+### 幻覚検出とRAGシステム評価
+
+HHEM-2.1-Openローカル推論とLLMベース評価を含む、Dingoの幻覚検出機能の使用に関する詳細なガイダンス：
+
+📖 **[幻覚検出ガイドを見る →](docs/hallucination_guide.md)**
+
 # ルールグループ
 
 Dingoは異なるタイプのデータセット用に事前設定されたルールグループを提供します：
@@ -220,15 +219,19 @@ Dingoは異なるタイプのデータセット用に事前設定されたルー
 | グループ | 使用例 | ルール例 |
 |----------|--------|----------|
 | `default` | 一般的なテキスト品質 | `RuleColonEnd`, `RuleContentNull`, `RuleDocRepeat`など |
-| `sft` | ファインチューニングデータセット | `default`のルールに加えて`RuleLineStartWithBulletpoint` |
+| `sft` | ファインチューニングデータセット | `default`のルールに加えて幻覚検出用の`RuleHallucinationHHEM` |
+| `rag` | RAGシステム評価 | 応答一貫性検出用の`RuleHallucinationHHEM`, `PromptHallucination` |
+| `hallucination` | 幻覚検出 | LLMベース評価の`PromptHallucination` |
 | `pretrain` | 事前学習データセット | `RuleAlphaWords`, `RuleCapitalWords`などを含む20以上のルールの包括的セット |
 
 特定のルールグループを使用するには：
 
 ```python
 input_data = {
-    "eval_group": "sft",  # "default", "sft", または "pretrain"を使用
-    # その他のパラメータ...
+    "executor": {
+        "eval_group": "sft",  # Use "default", "sft", "rag", "hallucination", or "pretrain"
+    }
+    # other parameters...
 }
 ```
 
@@ -245,6 +248,8 @@ input_data = {
 評価システムには以下が含まれます：
 - **テキスト品質評価メトリクス**: DataMan手法と拡張された多次元評価を使用した事前学習データの品質評価
 - **SFTデータ評価メトリクス**: 教師ありファインチューニングデータの正直、有用、無害評価
+- **幻覚検出**: HHEM-2.1-OpenローカルモデルとGPTベースの評価
+- **RAGシステム評価**: 応答一貫性とコンテキスト整合性評価
 - **分類メトリクス**: トピック分類とコンテンツ分類
 - **マルチモーダル評価メトリクス**: 画像分類と関連性評価
 - **ルールベース品質メトリクス**: ヒューリスティックルールによる効果性と類似性検出を用いた自動品質チェック
@@ -271,18 +276,18 @@ input_data = {
 ```python
 from dingo.model import Model
 from dingo.model.rule.base import BaseRule
-from dingo.config.config import DynamicRuleConfig
-from dingo.io import MetaData
+from dingo.config.input_args import EvaluatorRuleArgs
+from dingo.io import Data
 from dingo.model.modelres import ModelRes
 
 @Model.rule_register('QUALITY_BAD_RELEVANCE', ['default'])
 class MyCustomRule(BaseRule):
     """テキスト内のカスタムパターンをチェック"""
 
-    dynamic_config = DynamicRuleConfig(pattern=r'your_pattern_here')
+    dynamic_config = EvaluatorRuleArgs(pattern=r'your_pattern_here')
 
     @classmethod
-    def eval(cls, input_data: MetaData) -> ModelRes:
+    def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         # ここにルール実装
         return res
@@ -310,7 +315,7 @@ class MyCustomModel(BaseOpenAI):
 ### ローカル実行
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 
 input_args = InputArgs(**input_data)
@@ -326,7 +331,7 @@ good_data = executor.get_good_info_list() # 高品質データのリスト
 ### Spark実行
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 from pyspark.sql import SparkSession
 
@@ -334,7 +339,13 @@ from pyspark.sql import SparkSession
 spark = SparkSession.builder.appName("Dingo").getOrCreate()
 spark_rdd = spark.sparkContext.parallelize([...])  # MetaDataオブジェクトとしてのデータ
 
-input_args = InputArgs(eval_group="default", save_data=True)
+input_data = {
+    "executor": {
+        "eval_group": "default",
+        "result_save": {"bad": True}
+    }
+}
+input_args = InputArgs(**input_data)
 executor = Executor.exec_map["spark"](input_args, spark_session=spark, spark_rdd=spark_rdd)
 result = executor.execute()
 ```
@@ -390,6 +401,7 @@ result = executor.execute()
 
 - [RedPajama-Data](https://github.com/togethercomputer/RedPajama-Data)
 - [mlflow](https://github.com/mlflow/mlflow)
+- [deepeval](https://github.com/confident-ai/deepeval)
 
 # 貢献
 

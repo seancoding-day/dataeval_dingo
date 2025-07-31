@@ -2,8 +2,9 @@ import json
 
 from pyspark.sql import DataFrame, SparkSession
 
+from dingo.config import InputArgs
 from dingo.exec import Executor
-from dingo.io import Data, InputArgs
+from dingo.io import Data
 
 ##################
 # please prepare #
@@ -18,8 +19,12 @@ input_rdd = input_df.rdd.map(lambda x: Data(
 #################
 
 input_data = {
-    "eval_group": "default",
-    'save_data': True
+    "executor": {
+        "eval_group": "default",
+        "result_save": {
+            "bad": True
+        }
+    }
 }
 input_args = InputArgs(**input_data)
 executor = Executor.exec_map["spark"](input_args, spark_session=spark, spark_rdd=input_rdd)
