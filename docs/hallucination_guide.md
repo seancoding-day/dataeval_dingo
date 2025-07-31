@@ -33,12 +33,12 @@
 ### 数据格式要求
 
 ```python
-from dingo.io.input.Data import Data
+from dingo.io.input import Data
 
 data = Data(
     data_id="test_1",
-    prompt="用户的问题",           # 原始问题（可选）
-    content="LLM的回答",          # 需要检测的回答
+    prompt="用户的问题",  # 原始问题（可选）
+    content="LLM的回答",  # 需要检测的回答
     context=["参考上下文1", "参考上下文2"]  # 参考上下文（必需）
 )
 ```
@@ -68,8 +68,9 @@ pip install -r requirements/hhem_integration.txt
 ```
 
 #### 基本使用
+
 ```python
-from dingo.io.input.Data import Data
+from dingo.io.input import Data
 from dingo.model.rule.rule_hallucination_hhem import RuleHallucinationHHEM
 
 # 准备测试数据
@@ -95,12 +96,12 @@ print(f"详细分析: {result.reason[0]}")
 ### 方法二：GPT-based 云端检测
 
 ```python
-from dingo.config.config import DynamicLLMConfig
-from dingo.io.input.Data import Data
+from dingo.config.input_args import EvaluatorLLMArgs
+from dingo.io.input import Data
 from dingo.model.llm.llm_hallucination import LLMHallucination
 
 # 配置 LLM
-LLMHallucination.dynamic_config = DynamicLLMConfig(
+LLMHallucination.dynamic_config = EvaluatorLLMArgs(
     key='YOUR_OPENAI_API_KEY',
     api_url='https://api.openai.com/v1/chat/completions',
     model='gpt-4o',
@@ -131,7 +132,7 @@ print(f"详细原因: {result.reason[0]}")
 ### 使用 HHEM-2.1-Open（本地，免费）
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 
 input_data = {
@@ -159,7 +160,7 @@ print(f"HHEM 幻觉检测完成: 发现 {result.bad_count}/{result.total_count} 
 ### 使用 GPT（在线，需要 API）
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 
 input_data = {

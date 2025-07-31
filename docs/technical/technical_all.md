@@ -50,7 +50,7 @@ python -m dingo.run.cli
 **代码启动**
 ```python
 from dingo.exec import Executor
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 
 input_data = {
     "input_path": "data.txt",
@@ -125,7 +125,7 @@ python -m dingo.run.cli
 在代码环境中，配置都是 Python 格式的，遵从基本的 Python 语法，通过定义变量的形式指定每个配置项。
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 
 input_data = {
     "input_path": "data.txt",
@@ -266,18 +266,18 @@ class JsonLineConverter(BaseConverter):
             return Data(
                 **{
                     "data_id": (
-                        cls.find_levels_data(j, input_args.column_id)
-                        if input_args.column_id != ""
+                        cls.find_levels_data(j, input_args.dataset.field.id)
+                        if input_args.dataset.field.id != ""
                         else str(cls.data_id)
                     ),
                     "prompt": (
-                        cls.find_levels_data(j, input_args.column_prompt)
-                        if input_args.column_prompt != ""
+                        cls.find_levels_data(j, input_args.dataset.field.prompt)
+                        if input_args.dataset.field.prompt != ""
                         else ""
                     ),
                     "content": (
-                        cls.find_levels_data(j, input_args.column_content)
-                        if input_args.column_content != ""
+                        cls.find_levels_data(j, input_args.dataset.field.content)
+                        if input_args.dataset.field.content != ""
                         else ""
                     ),
                     "raw_data": j,
@@ -315,7 +315,7 @@ def convertor(cls, input_args: InputArgs) -> Callable:
 class RuleColonEnd(BaseRule):
     """check whether the last char is ':'"""
 
-    dynamic_config = DynamicRuleConfig()
+    dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -349,7 +349,7 @@ class RuleColonEnd(BaseRule):
 然后，定义类属性 dynamic_config ，否则用户无法对规则进行自定义操作
 
 ```python
-dynamic_config = DynamicRuleConfig()
+dynamic_config = EvaluatorRuleArgs()
 ```
 
 最后，实现 eval 类函数，需要注意接收变量与返回值的类型
@@ -412,7 +412,7 @@ content = """
 class BaseOpenAI(BaseLLM):
     prompt = None
     client = None
-    dynamic_config = DynamicLLMConfig()
+    dynamic_config = EvaluatorLLMArgs()
 
     @classmethod
     def set_prompt(cls, prompt: BasePrompt):
@@ -474,7 +474,7 @@ class BaseOpenAI(BaseLLM):
 ```python
     prompt = None
     client = None
-    dynamic_config = DynamicLLMConfig()
+    dynamic_config = EvaluatorLLMArgs()
 ```
 
 第四步，实现 set_prompt 类函数，用于设置场景提示词:

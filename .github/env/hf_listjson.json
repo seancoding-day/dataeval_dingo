@@ -1,0 +1,14 @@
+{
+    "input_path": "chupei/format-listjson",
+    "dataset": {
+        "source": "hugging_face",
+        "format": "listjson",
+        "field": {
+            "prompt": "instruction",
+            "content": "output"
+        }
+    },
+    "executor": {
+        "eval_group": "default"
+    }
+}

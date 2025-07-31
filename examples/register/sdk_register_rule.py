@@ -1,6 +1,6 @@
 import re
 
-from dingo.config.config import DynamicRuleConfig
+from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
 from dingo.model.model import Model
 from dingo.model.modelres import ModelRes
@@ -10,7 +10,7 @@ from dingo.model.rule.base import BaseRule
 @Model.rule_register('QUALITY_BAD_RELEVANCE', ['test'])
 class CommonPatternDemo(BaseRule):
     """let user input pattern to search"""
-    dynamic_config = DynamicRuleConfig(pattern = "blue")
+    dynamic_config = EvaluatorRuleArgs(pattern = "blue")
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
@@ -25,15 +25,21 @@ class CommonPatternDemo(BaseRule):
 
 
 if __name__ == '__main__':
+    from dingo.config import InputArgs
     from dingo.exec import Executor
-    from dingo.io import InputArgs
 
     input_data = {
-        "eval_group": "test",
-        "input_path": "../../test/data/test_local_json.json",  # local filesystem dataset
-        "dataset": "local",
-        "data_format": "json",
-        "column_content": "prediction"
+        "input_path": "../../test/data/test_local_json.json",
+        "dataset": {
+            "source": "local",
+            "format": "json",
+            "field": {
+                "content": "prediction"
+            }
+        },
+        "executor": {
+            "rule_list": ['CommonPatternDemo']
+        }
     }
     input_args = InputArgs(**input_data)
     executor = Executor.exec_map["local"](input_args)

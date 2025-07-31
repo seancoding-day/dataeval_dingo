@@ -66,7 +66,7 @@ After evaluation, both positive and negative data will generate corresponding su
 Translate this markdown into English.
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec import Executor
 
 input_data = {

@@ -1,1 +1,1 @@
-from dingo.config.config import GlobalConfig  # noqa E402.
+from dingo.config.input_args import InputArgs  # noqa E402.

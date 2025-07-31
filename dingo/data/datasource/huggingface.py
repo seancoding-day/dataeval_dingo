@@ -2,8 +2,8 @@ from typing import Any, Dict, Mapping, Optional, Sequence, Union
 
 import datasets
 
+from dingo.config import InputArgs
 from dingo.data.datasource.base import DataSource
-from dingo.io import InputArgs
 
 
 @DataSource.register()
@@ -35,13 +35,13 @@ class HuggingFaceSource(DataSource):
             trust_remote_code: Whether to trust remote code from the dataset repo.
         """
         self.path = input_args.input_path
-        self.config_name = input_args.huggingface_config_name
+        self.config_name = input_args.dataset.hf_config.huggingface_config_name
         self.data_dir = data_dir
         self.data_files = data_files
         self.revision = revision
         self.trust_remote_code = trust_remote_code
-        if input_args.huggingface_split != "":
-            self.split = input_args.huggingface_split
+        if input_args.dataset.hf_config.huggingface_split != "":
+            self.split = input_args.dataset.hf_config.huggingface_split
         else:
             self.split = "train"
         super().__init__(input_args=input_args)

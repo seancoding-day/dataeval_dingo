@@ -1,0 +1,13 @@
+{
+    "input_path": "test/data/test_local_jsonl.jsonl",
+    "dataset": {
+        "source": "local",
+        "format": "jsonl",
+        "field": {
+            "content": "content"
+        }
+    },
+    "executor": {
+        "eval_group": "default"
+    }
+}

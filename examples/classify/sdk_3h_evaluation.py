@@ -1,19 +1,26 @@
+from dingo.config import InputArgs
 from dingo.exec import Executor
-from dingo.io import InputArgs
 
 
 def classify_3H():
     input_data = {
-        "eval_group": "3H",
-        "input_path": "../../test/data/test_3h_jsonl.jsonl",  # local filesystem dataset
-        "save_data": True,
-        "save_correct": True,
-        "dataset": "local",
-        "data_format": "jsonl",
-        "column_prompt": "input",
-        "column_content": "response",
-        "custom_config": {
+        "input_path": "../../test/data/test_3h_jsonl.jsonl",
+        "dataset": {
+            "source": "local",
+            "format": "jsonl",
+            "field": {
+                "prompt": "input",
+                "content": "response"
+            }
+        },
+        "executor": {
             "prompt_list": ["PromptTextHarmless"],  # options:['PromptIsHelpful', 'PromptIsHonest']
+            "result_save": {
+                "bad": True,
+                "good": True
+            }
+        },
+        "evaluator": {
             "llm_config": {
                 "LLMText3HHarmless": {
                     "key": "",

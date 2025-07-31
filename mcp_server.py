@@ -5,8 +5,8 @@ from typing import Any, Dict, List, Literal, Optional, Tuple
 
 from fastmcp import FastMCP
 
+from dingo.config import InputArgs
 from dingo.exec import Executor
-from dingo.io import InputArgs
 from dingo.model import Model
 from dingo.utils import log
 

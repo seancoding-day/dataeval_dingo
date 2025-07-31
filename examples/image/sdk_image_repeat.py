@@ -1,18 +1,23 @@
+from dingo.config import InputArgs
 from dingo.exec import Executor
-from dingo.io import InputArgs
 
 
 def image_repeat():
     input_data = {
-        "eval_group": "test",
-        "input_path": "../../test/data/test_img_repeat.jsonl",  # local filesystem dataset
-        "dataset": "local",
-        "data_format": "jsonl",
-        "save_data": True,
-        "save_correct": True,
-        "column_content": "content",
-        "custom_config": {
-            "rule_list": ["RuleImageRepeat"]
+        "input_path": "../../test/data/test_img_repeat.jsonl",
+        "dataset": {
+            "source": "local",
+            "format": "jsonl",
+            "field": {
+                "content": "content"
+            }
+        },
+        "executor": {
+            "rule_list": ["RuleImageRepeat"],
+            "result_save": {
+                "bad": True,
+                "good": True
+            }
         }
     }
     input_args = InputArgs(**input_data)

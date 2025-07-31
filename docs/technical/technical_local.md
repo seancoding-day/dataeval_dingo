@@ -142,7 +142,7 @@
 ## 六、典型用法
 
 ```python
-from dingo.io import InputArgs
+from dingo.config import InputArgs
 from dingo.exec.local import LocalExecutor
 
 input_args = InputArgs(
