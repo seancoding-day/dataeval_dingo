@@ -3,17 +3,19 @@ import json
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.model.modelres import ModelRes
+from dingo.model.prompt.prompt_dataman_assessment import PromptDataManAssessment
 from dingo.model.response.response_class import ResponseScoreTypeNameReason
 from dingo.utils import log
 from dingo.utils.exception import ConvertJsonError
 
 
-@Model.llm_register("dataman_assessment")
-class DatamanAssessment(BaseOpenAI):
+@Model.llm_register("LLMDatamanAssessment")
+class LLMDatamanAssessment(BaseOpenAI):
     """
     Implementation of DataMan assessment using OpenAI API.
     Evaluates text based on 14 quality standards and assigns a domain type.
     """
+    prompt = PromptDataManAssessment
 
     @classmethod
     def process_response(cls, response: str) -> ModelRes:
