@@ -181,6 +181,7 @@ Our evaluation system includes:
 - **Classification Metrics**: Topic categorization and content classification
 - **Multimodality Assessment Metrics**: Image classification and relevance evaluation
 - **Rule-Based Quality Metrics**: Automated quality checks using heuristic rules for effectiveness and similarity detection
+- **Factuality Assessment Metrics**: Two-stage factuality evaluation based on GPT-5 System Card
 - etc
 
 Most metrics are backed by academic sources to ensure objectivity and scientific rigor.
@@ -214,6 +215,12 @@ You can customize these prompts to focus on specific quality dimensions or to ad
 For detailed guidance on using Dingo's hallucination detection capabilities, including HHEM-2.1-Open local inference and LLM-based evaluation:
 
 📖 **[View Hallucination Detection Guide →](docs/hallucination_guide.md)**
+
+### Factuality Assessment
+
+For comprehensive guidance on using Dingo's two-stage factuality evaluation system:
+
+📖 **[View Factuality Assessment Guide →](docs/factcheck_guide.md)**
 
 # Rule Groups
 
