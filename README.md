@@ -15,6 +15,8 @@
   <a href="https://github.com/DataEval/dingo/issues"><img src="https://img.shields.io/github/issues/DataEval/dingo" alt="GitHub issues"></a>
   <a href="https://mseep.ai/app/dataeval-dingo"><img src="https://mseep.net/pr/dataeval-dingo-badge.png" alt="MseeP.ai Security Assessment Badge" height="20"></a>
   <a href="https://deepwiki.com/MigoXLab/dingo"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
+
+[![Trust Score](https://archestra.ai/mcp-catalog/api/badge/quality/DataEval/dingo)](https://archestra.ai/mcp-catalog/dataeval__dingo)
 </p>
 
 </div>
