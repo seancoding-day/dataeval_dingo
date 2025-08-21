@@ -1,9 +1,9 @@
-import os
-import requests
-import time
 import json
+import os
+import time
 
 import numpy as np
+import requests
 from PIL import Image
 
 from dingo.config.input_args import EvaluatorRuleArgs
