@@ -1,4 +1,7 @@
 import os
+import requests
+import time
+import json
 
 import numpy as np
 from PIL import Image
@@ -237,7 +240,62 @@ class RuleImageTextSimilarity(BaseRule):
         return res
 
 
+@Model.rule_register("QUALITY_BAD_IMG_ARTIMUSE", [])
+class RuleImageArtimuse(BaseRule):
+    dynamic_config = EvaluatorRuleArgs(threshold=6, refer_path=['https://artimuse.intern-ai.org.cn/'])
+
+    @classmethod
+    def eval(cls, input_data: Data) -> ModelRes:
+        try:
+            response_create_task = requests.post(
+                cls.dynamic_config.refer_path[0] + 'api/v1/task/create_task',
+                json={
+                    "img_url": input_data.content,
+                    "style": 1
+                },
+                timeout=30  # 设置超时时间
+            )
+            response_create_task_json = response_create_task.json()
+            # print(response_create_task_json)
+            task_id = response_create_task_json.get('data').get('id')
+
+            time.sleep(2)
+            request_time = 0
+            while (request_time < 5):
+                request_time += 1
+                response_get_status = requests.post(
+                    cls.dynamic_config.refer_path[0] + 'api/v1/task/status',
+                    json={
+                        "id": task_id
+                    },
+                    timeout=30  # 设置超时时间
+                )
+                response_get_status_json = response_get_status.json()
+                # print(response_get_status_json)
+                status_data = response_get_status_json.get('data')
+                if status_data['phase'] == 'Succeeded':
+                    break
+                time.sleep(2)
+
+            return ModelRes(
+                error_status=True if status_data['score_overall'] < 6 else False,
+                type="Artimuse_Succeeded",
+                name="BadImage" if status_data['score_overall'] < 6 else "GoodImage",
+                reason=[json.dumps(status_data['aspects'], ensure_ascii=False)],
+            )
+        except Exception as e:
+            return ModelRes(
+                error_status=False,
+                type="Artimuse_Fail",
+                name="Exception",
+                reason=[str(e)],
+            )
+
+
 if __name__ == "__main__":
-    data = Data(data_id="", prompt="", content="")
-    tmp = RuleImageRepeat().eval(data)
-    print(tmp)
+    data = Data(
+        data_id='1',
+        content="https://openxlab.oss-cn-shanghai.aliyuncs.com/artimuse/upload/ef39eef6-2b40-4ea3-8285-934684734298-stsupload-1753254621827-dog.jpg"
+    )
+    res = RuleImageArtimuse.eval(data)
+    print(res)
