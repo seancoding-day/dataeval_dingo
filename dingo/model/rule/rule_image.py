@@ -242,6 +242,18 @@ class RuleImageTextSimilarity(BaseRule):
 
 @Model.rule_register("QUALITY_BAD_IMG_ARTIMUSE", [])
 class RuleImageArtimuse(BaseRule):
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based IMG Quality Metrics",
+        "quality_dimension": "IMG_ARTIMUSE",
+        "metric_name": "RuleImageArtimuse",
+        "description": "Evaluates image quality in the field of aesthetics using artimuse",
+        "paper_title": "",
+        "paper_url": "",
+        "paper_authors": "",
+        "evaluation_results": ""
+    }
+
     dynamic_config = EvaluatorRuleArgs(threshold=6, refer_path=['https://artimuse.intern-ai.org.cn/'])
 
     @classmethod
