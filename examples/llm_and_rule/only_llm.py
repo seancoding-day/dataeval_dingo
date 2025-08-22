@@ -1,32 +1,35 @@
+import os
+
 from dingo.config import InputArgs
 from dingo.exec import Executor
 
 if __name__ == '__main__':
+    OPENAI_MODEL = 'deepseek-chat'
+    OPENAI_URL = 'https://api.deepseek.com/v1'
+    OPENAI_KEY = os.getenv("OPENAI_KEY")
+
     input_data = {
-        "input_path": "../../test/data/compare/test_compare_content.jsonl",
+        "input_path": "../../test/data/test_local_jsonl.jsonl",
         "dataset": {
             "source": "local",
             "format": "jsonl",
             "field": {
-                "id": "track_id",
-                "content": "clean_html"
+                "content": "content"
             }
         },
         "executor": {
-            "prompt_list": ["PromptHtmlAbstract"],
-            "batch_size": 10,
-            "max_workers": 10,
+            "prompt_list": ["PromptRepeat"],
             "result_save": {
                 "bad": True,
-                "good": True,
-                "raw": True
+                "good": True
             }
         },
         "evaluator": {
             "llm_config": {
-                "LLMHtmlAbstract": {
-                    "key": "",
-                    "api_url": ""
+                "LLMTextQualityPromptBase": {
+                    "model": OPENAI_MODEL,
+                    "key": OPENAI_KEY,
+                    "api_url": OPENAI_URL,
                 }
             }
         }
