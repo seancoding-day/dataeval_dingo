@@ -21,7 +21,7 @@ if __name__ == '__main__':
         "evaluator": {
             "rule_config": {
                 "RuleSpecialCharacter": {
-                    "pattern": "sky"
+                    "key_list": ["sky", "apple"]
                 }
             }
         }
