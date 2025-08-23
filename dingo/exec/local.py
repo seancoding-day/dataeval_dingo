@@ -173,6 +173,11 @@ class LocalExecutor(ExecProto):
         log.debug("[Summary]: " + str(self.summary))
 
     def evaluate_single_data(self, group_type, group, data: Data):
+        # Ensure dynamic configs are applied in child processes as well
+        try:
+            Model.apply_config(self.input_args)
+        except Exception as e:
+            raise RuntimeError(f"Failed to apply config in child process: {e}")
         result_info = ResultInfo(
             data_id=data.data_id, prompt=data.prompt, content=data.content
         )
