@@ -51,6 +51,7 @@ This document provides comprehensive information about all quality metrics used 
 
 | Type | Metric | Description | Paper Source | Evaluation Results |
 |------|--------|-------------|--------------|-------------------|
+| `QUALITY_BAD_IMG_ARTIMUSE` | RuleImageArtimuse | Evaluates image quality in the field of aesthetics using artimuse | Internal Implementation | N/A |
 | `QUALITY_BAD_IMG_EFFECTIVENESS` | RuleImageValid, RuleImageSizeValid, RuleImageQuality | Checks whether image is not all white or black, ensuring visual content validity; Checks whether image ratio of width... | Internal Implementation | N/A |
 | `QUALITY_BAD_IMG_RELEVANCE` | RuleImageTextSimilarity | Evaluates semantic similarity between image and text content using CLIP model | [Learning Transferable Visual Representations with Natural Language Supervision](https://arxiv.org/abs/2103.00020) (Radford et al., 2021) | N/A |
 | `QUALITY_BAD_IMG_SIMILARITY` | RuleImageRepeat | Detects duplicate images using PHash and CNN methods to ensure data diversity | [ImageNet Classification with Deep Convolutional Neural Networks](https://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf) (Krizhevsky et al., 2012) | N/A |
@@ -60,6 +61,15 @@ This document provides comprehensive information about all quality metrics used 
 | Type | Metric | Description | Paper Source | Evaluation Results |
 |------|--------|-------------|--------------|-------------------|
 | `QUALITY_BAD_FACTUALITY` | LLMFactCheckPublic | Two-stage factuality evaluation pipeline from GPT-5 | [GPT-5 System Card](https://cdn.openai.com/pdf/8124a3ce-ab78-4f06-96eb-49ea29ffb52f/gpt5-system-card-aug7.pdf) (OpenAI) | N/A |
+
+### Meta Rater Evaluation Metrics
+
+| Type | Metric | Description | Paper Source | Evaluation Results |
+|------|--------|-------------|--------------|-------------------|
+| `META_RATER_CLEANLINESS` | PromptMetaRaterCleanliness | Evaluates text formatting, content appropriateness, and completeness, assessing whether text appears human-edited and... | [Meta-rater: A Multi-dimensional Data Selection Method for Pre-training Language Models](https://arxiv.org/pdf/2504.14194) (Zhuang et al., 2025) | N/A |
+| `META_RATER_PROFESSIONALISM` | PromptMetaRaterProfessionalism | Evaluates the degree of expertise and prerequisite knowledge required to comprehend text on a 5-point scale | [Meta-rater: A Multi-dimensional Data Selection Method for Pre-training Language Models](https://arxiv.org/pdf/2504.14194) (Zhuang et al., 2025) | N/A |
+| `META_RATER_READABILITY` | PromptMetaRaterProfessionalism | Evaluates the clarity and coherence of text using appropriate vocabulary and sentence structures on a 5-point scale | [Meta-rater: A Multi-dimensional Data Selection Method for Pre-training Language Models](https://arxiv.org/pdf/2504.14194) (Zhuang et al., 2025) | N/A |
+| `META_RATER_REASONING` | PromptMetaRaterProfessionalism | Evaluates the reasoning complexity and logical depth of text content, from simple logical judgments to complex multid... | [Meta-rater: A Multi-dimensional Data Selection Method for Pre-training Language Models](https://arxiv.org/pdf/2504.14194) (Zhuang et al., 2025) | N/A |
 
 ### Text Generation
 
