@@ -33,6 +33,14 @@
     👋 <a href="https://discord.gg/Jhgb2eKWh8" target="_blank">Discord</a>と<a href="./docs/assets/wechat.jpg" target="_blank">WeChat</a>でご参加ください
 </p>
 
+<p align="center">
+  このプロジェクトが役に立ったら、GitHubで⭐を付けてください！
+  <br/>
+  <a href="https://github.com/DataEval/dingo/stargazers" target="_blank">
+    <img src="docs/assets/clickstar.gif" alt="Star をクリック" width="480">
+  </a>
+</p>
+
 
 # はじめに
 
