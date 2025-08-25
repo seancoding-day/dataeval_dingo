@@ -1,7 +1,6 @@
 from dingo.config import InputArgs
 from dingo.exec import Executor
 
-
 if __name__ == '__main__':
     input_data = {
         "input_path": "../../test/data/test_meta_rater.jsonl",
@@ -13,7 +12,7 @@ if __name__ == '__main__':
             }
         },
         "executor": {
-            "prompt_list": ["PromptMetaRaterProfessionalism"], # options: "PromptMetaRaterReadability", "PromptMetaRaterReasoning", "PromptMetaRaterCleanliness"
+            "prompt_list": ["PromptMetaRaterProfessionalism"],  # options: "PromptMetaRaterReadability", "PromptMetaRaterReasoning", "PromptMetaRaterCleanliness"
             "result_save": {
                 "bad": True,
                 "good": True
