@@ -34,6 +34,15 @@
 </p>
 
 
+<p align="center">
+  If you like Dingo, please give us a ⭐ on GitHub!
+  <br/>
+  <a href="https://github.com/DataEval/dingo/stargazers" target="_blank">
+    <img src="docs/assets/clickstar.gif" alt="Click Star" width="480">
+  </a>
+</p>
+
+
 # Introduction
 
 Dingo is a data quality evaluation tool that helps you automatically detect data quality issues in your datasets. Dingo provides a variety of built-in rules and model evaluation methods, and also supports custom evaluation methods. Dingo supports commonly used text datasets and multimodal datasets, including pre-training datasets, fine-tuning datasets, and evaluation datasets. In addition, Dingo supports multiple usage methods, including local CLI and SDK, making it easy to integrate into various evaluation platforms, such as [OpenCompass](https://github.com/open-compass/opencompass).

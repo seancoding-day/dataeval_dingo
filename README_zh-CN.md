@@ -29,6 +29,14 @@
     👋 加入我们 <a href="https://discord.gg/Jhgb2eKWh8" target="_blank">Discord</a> 和 <a href="./docs/assets/wechat.jpg" target="_blank">微信</a>
 </p>
 
+<p align="center">
+  如果觉得有帮助，欢迎在 GitHub 上点个 ⭐ 支持！
+  <br/>
+  <a href="https://github.com/DataEval/dingo/stargazers" target="_blank">
+    <img src="docs/assets/clickstar.gif" alt="点击 Star 支持" width="480">
+  </a>
+</p>
+
 </div>
 
 
