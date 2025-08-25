@@ -38,7 +38,7 @@
   If you like Dingo, please give us a ⭐ on GitHub!
   <br/>
   <a href="https://github.com/DataEval/dingo/stargazers" target="_blank">
-    <img src="docs/assets/clickstar.gif" alt="Click Star" width="480">
+    <img src="docs/assets/clickstar_2.gif" alt="Click Star" width="480">
   </a>
 </p>
 

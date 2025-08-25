@@ -33,7 +33,7 @@
   如果觉得有帮助，欢迎在 GitHub 上点个 ⭐ 支持！
   <br/>
   <a href="https://github.com/DataEval/dingo/stargazers" target="_blank">
-    <img src="docs/assets/clickstar.gif" alt="点击 Star 支持" width="480">
+    <img src="docs/assets/clickstar_2.gif" alt="点击 Star 支持" width="480">
   </a>
 </p>
 
