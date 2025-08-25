@@ -37,7 +37,7 @@
   このプロジェクトが役に立ったら、GitHubで⭐を付けてください！
   <br/>
   <a href="https://github.com/DataEval/dingo/stargazers" target="_blank">
-    <img src="docs/assets/clickstar.gif" alt="Star をクリック" width="480">
+    <img src="docs/assets/clickstar_2.gif" alt="Star をクリック" width="480">
   </a>
 </p>
 

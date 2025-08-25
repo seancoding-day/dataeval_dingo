@@ -290,9 +290,9 @@ class RuleImageArtimuse(BaseRule):
                 time.sleep(2)
 
             return ModelRes(
-                error_status=True if status_data['score_overall'] < 6 else False,
+                error_status=True if status_data['score_overall'] < cls.dynamic_config.threshold else False,
                 type="Artimuse_Succeeded",
-                name="BadImage" if status_data['score_overall'] < 6 else "GoodImage",
+                name="BadImage" if status_data['score_overall'] < cls.dynamic_config.threshold else "GoodImage",
                 reason=[json.dumps(status_data['aspects'], ensure_ascii=False)],
             )
         except Exception as e:
