@@ -4,6 +4,16 @@ from dingo.model.prompt.base import BasePrompt
 
 @Model.prompt_register('MathCompare', [], ['LLMMathCompare'])
 class PromptMathCompare(BasePrompt):
+    _metric_info = {
+        'category': 'SFT Data Assessment Metrics',
+        'metric_name': 'PromptMathCompare',
+        'description': 'Compares the effectiveness of two tools in extracting mathematical formulas from HTML to Markdown format by evaluating recognition rate and accuracy to determine which tool performs better',
+        'paper_title': '',
+        'paper_url': '',
+        'paper_authors': '',
+        'evaluation_results': ''
+    }
+
     # prompt v3
     content = """
 你是一位专业的数学公式识别评估专家，擅长分析 HTML 代码和 Markdown 文本中的数学公式。现在我会提供三段内容：
