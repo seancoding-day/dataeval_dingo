@@ -48,20 +48,26 @@ def dingo_demo(
 
     try:
         input_data = {
-            "dataset": dataset_source,
-            "data_format": data_format,
             "input_path": final_input_path,
             "output_path": "" if dataset_source == 'hugging_face' else os.path.dirname(final_input_path),
-            "save_data": True,
-            "save_raw": True,
-
-            "max_workers": max_workers,
-            "batch_size": batch_size,
-
-            "column_content": column_content,
-            "custom_config": {
+            "dataset": {
+                "source": dataset_source,
+                "format": data_format,
+                "field": {
+                    "content": column_content
+                }
+            },
+            "executor": {
                 "rule_list": rule_list,
                 "prompt_list": prompt_list,
+                "result_save": {
+                    "bad": True,
+                    "raw": True
+                },
+                "max_workers": max_workers,
+                "batch_size": batch_size,
+            },
+            "evaluator": {
                 "llm_config": {
                     scene_list: {
                         "model": model,
@@ -72,11 +78,11 @@ def dingo_demo(
             }
         }
         if column_id:
-            input_data['column_id'] = column_id
+            input_data['dataset']['field']['id'] = column_id
         if column_prompt:
-            input_data['column_prompt'] = column_prompt
+            input_data['dataset']['field']['prompt'] = column_prompt
         if column_image:
-            input_data['column_image'] = column_image
+            input_data['dataset']['field']['image'] = column_image
 
         # print(input_data)
         # exit(0)
