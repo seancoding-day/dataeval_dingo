@@ -265,35 +265,43 @@ class RuleImageArtimuse(BaseRule):
                     "img_url": input_data.content,
                     "style": 1
                 },
-                timeout=30  # 设置超时时间
+                headers={
+                    "Content-Type": "application/json",
+                    "User-Agent": "dingo",
+                },
+                # timeout=30  # 设置超时时间
             )
             response_create_task_json = response_create_task.json()
             # print(response_create_task_json)
             task_id = response_create_task_json.get('data').get('id')
 
-            time.sleep(2)
+            time.sleep(5)
             request_time = 0
-            while (request_time < 5):
+            while (True):
                 request_time += 1
                 response_get_status = requests.post(
                     cls.dynamic_config.refer_path[0] + 'api/v1/task/status',
                     json={
                         "id": task_id
                     },
-                    timeout=30  # 设置超时时间
+                    headers={
+                        "Content-Type": "application/json",
+                        "User-Agent": "dingo",
+                    },
+                    # timeout=30  # 设置超时时间
                 )
                 response_get_status_json = response_get_status.json()
                 # print(response_get_status_json)
                 status_data = response_get_status_json.get('data')
                 if status_data['phase'] == 'Succeeded':
                     break
-                time.sleep(2)
+                time.sleep(5)
 
             return ModelRes(
                 error_status=True if status_data['score_overall'] < cls.dynamic_config.threshold else False,
                 type="Artimuse_Succeeded",
                 name="BadImage" if status_data['score_overall'] < cls.dynamic_config.threshold else "GoodImage",
-                reason=[json.dumps(status_data['aspects'], ensure_ascii=False)],
+                reason=[json.dumps(status_data, ensure_ascii=False)],
             )
         except Exception as e:
             return ModelRes(
