@@ -2,18 +2,19 @@
 
 ## 概述
 
+在介绍规则之前，先简要说明 ArtiMuse：
+
+ArtiMuse 是一个面向图像美学质量评估（Image Aesthetics Assessment, IAA）的在线模型/服务，能够输出整体美学分数并提供细粒度、可解释的评估信息，适用于作品筛选、内容推荐等场景。论文：[ArtiMuse: Fine-Grained Image Aesthetics Assessment with Joint Scoring and Expert-Level Understanding](https://arxiv.org/abs/2507.14533)。
+
 RuleImageArtimuse 基于 ArtiMuse 在线服务对输入图片进行美学质量评估。规则会创建评估任务并轮询状态，取得总体分数及服务端返回的细粒度信息；随后与阈值比较，给出 Good/Bad 判定，并在结果中回传完整的可解释信息。
 
-测试数据使用 JSONL 格式构造，每行一个 JSON 对象，至少包含 id 与 content 字段，其中 content 为可公网访问的图片 URL。项目中提供了 test/data/test_imgae_artimuse.jsonl 作为模板，亦可自行仿照编写，例如：{"id": "1", "content": "https://example.com/a.jpg"}，{"id": "2", "content": "https://example.com/b.jpg"}。
+本文档的测试图片均由 Google Gemini 2.5 Flash Image（社区常称 “nano‑banana”）按提示词生成，后经人工筛选整理并托管在 OpenXLab；完整清单见 [test/data/artimuse/test_artimuse_nano_banana.jsonl](../test/data/artimuse/test_artimuse_nano_banana.jsonl)。我们将这批样例汇总为迷你集合 nano_banana，覆盖人像、室内、产品、电商、插画等多种风格，便于快速复现。
 
-在仓库根目录直接运行 python examples/artimuse/artimuse.py 即可调用在线 ArtiMuse 接口完成评估，或在自定义的 InputArgs 中设置 output_path 指向你的本地目录以指定输出位置。执行后，LocalExecutor 会在该目录下创建以时间戳与 8 位短 ID 命名的子目录，并写入 summary.json 与逐条样本的明细 JSONL，可通过命令 python -m dingo.run.vsl --input <输出目录> 打开静态页面查看结果。
+在仓库根目录运行 `python [examples/artimuse/artimuse.py](../examples/artimuse/artimuse.py)` 可完成评估；如设置 `output_path`，将在该目录生成带时间戳与短 ID 的子目录，包含 `summary.json` 与逐条明细。可用 `python -m dingo.run.vsl --input <输出目录>` 打开可视化页面。
 
-评测结果的判定逻辑与代码一致：从服务端返回的 data 中读取 score_overall 与设定阈值比较，低于阈值判定为 BadImage，否则为 GoodImage；返回的 reason 字段保存了服务端 data 的字符串化 JSON，至少包含 phase 与 score_overall 等关键字段，便于后续分析与追溯。
+判定基于 `data.score_overall` 与阈值 `threshold`：低于阈值为 BadImage，否则为 GoodImage；服务端 `data` 原样写入 `reason[0]` 便于溯源。结合 nano_banana 的样例，低分多见于贴纸或合成画面写实性不足、Logo/文字遮挡主体、风格迁移过强导致色彩与细节失真、截图噪声多而缺乏摄影要素、纯 Logo 缺少摄影主体、以及过度后期造成的不自然等情况；应尽量突出主体、控制曝光与清晰度、减少压缩与过重滤镜、移除干扰元素，并保持整体风格一致。
 
 
-样例 20250903_203109_deb630bc 即是通过 Dingo 的本地执行引擎运行 RuleImageArtimuse 自动生成的输出。执行器会在指定的 output_path 下新建以时间戳和 8 位短 ID 组成的目录（形如 YYYYmmdd_HHMMSS_shortid），并写入 summary.json 以及逐条样本的明细 JSONL。该样例目录包含 Artimuse_Succeeded/BadImage.jsonl、Artimuse_Succeeded/GoodImage.jsonl 和 summary.json。
-
-在仓库根目录直接运行 examples/artimuse/artimuse.py 即可调用在线 ArtiMuse 接口完成评估；若在 InputArgs 中将 output_path 指向你的本地目录，则会生成与上文相同结构的目录。评估完成后，可用命令 python -m dingo.run.vsl --input <上述输出目录> 打开静态页面进行可视化。
 
 ## 规则配置
 
