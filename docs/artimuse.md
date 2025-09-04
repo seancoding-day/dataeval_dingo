@@ -2,7 +2,11 @@
 
 ## 概述
 
-`RuleImageArtimuse` 是一个基于 Artimuse API 的图像质量评估规则类，用于判断输入图像的质量是否达到合格标准。该规则通过调用 Artimuse 服务的图像评估接口，获取图像的总体评分和各个方面的详细评估结果。
+RuleImageArtimuse 基于 ArtiMuse 在线服务对输入图片进行美学质量评估。规则会创建评估任务并轮询状态，取得总体分数及服务端返回的细粒度信息；随后与阈值比较，给出 Good/Bad 判定，并在结果中回传完整的可解释信息。
+
+样例 20250903_203109_deb630bc 即是通过 Dingo 的本地执行引擎运行 RuleImageArtimuse 自动生成的输出。执行器会在指定的 output_path 下新建以时间戳和 8 位短 ID 组成的目录（形如 YYYYmmdd_HHMMSS_shortid），并写入 summary.json 以及逐条样本的明细 JSONL。该样例目录包含 Artimuse_Succeeded/BadImage.jsonl、Artimuse_Succeeded/GoodImage.jsonl 和 summary.json。
+
+在仓库根目录直接运行 examples/artimuse/artimuse.py 即可调用在线 ArtiMuse 接口完成评估；若在 InputArgs 中将 output_path 指向你的本地目录，则会生成与上文相同结构的目录。评估完成后，可用命令 python -m dingo.run.vsl --input <上述输出目录> 打开静态页面进行可视化。
 
 ## 规则配置
 
@@ -19,23 +23,22 @@
 #### 参数
 - `input_data`: 包含图像 URL 的 Data 对象
   - `data_id`: 数据标识符
-  - `content`: 图像的网络 URL
+  - `content`: 图像的网络 URL（本规则仅读取该字段）
 
 #### 处理流程
 
 1. **创建评估任务**
-   - 向 Artimuse API 发送 POST 请求创建图像评估任务
-   - 指定评估风格为 `1`（可根据需要调整：1-专业, 2-毒舌）
-   - 设置 30 秒超时时间
+   - 向 ArtiMuse 接口 POST `{refer_path}/api/v1/task/create_task`
+   - 请求体包含图片地址，内部固定 `style=1`
 
 2. **获取任务状态**
-   - 等待 2 秒后开始查询任务状态
-   - 最多尝试 5 次查询，每次间隔 2 秒
-   - 当任务状态变为 `Succeeded` 时停止查询
+   - 先等待 5 秒
+   - 之后每 5 秒 POST `{refer_path}/api/v1/task/status` 查询一次，直到 `phase == "Succeeded"`
+   - 代码未设置请求超时，也未限制最大轮询次数
 
 3. **返回评估结果**
-   - 根据总体评分判断图像质量是否合格
-   - 返回包含详细评估信息的 `ModelRes` 对象
+   - 读取 `score_overall` 与阈值比较，低于阈值判定为 `BadImage`，否则为 `GoodImage`
+   - 将服务端返回的 `data` 以字符串化 JSON 放入 `reason`
 
 #### 返回值
 
@@ -43,8 +46,8 @@
 
 - `error_status`: 布尔值，表示图像质量是否不合格（低于阈值）
 - `type`: 评估结果类型（"Artimuse_Succeeded" 或 "Artimuse_Fail"）
-- `name`: 评估结果名称（"BadImage" 或 "GoodImage"）
-- `reason`: 包含详细评估信息的数组
+- `name`: 评估结果名称（"BadImage" 或 "GoodImage" 或 "Exception"）
+- `reason`: 包含详细评估信息或异常信息的数组（字符串化 JSON）
 
 ## 异常处理
 
@@ -79,18 +82,17 @@ print(res)
 
 ## 注意事项
 
-1. 确保提供的图像 URL 可公开访问
-2. 评估过程可能需要较长时间（最多约 12 秒）
-3. 当前使用固定风格参数进行评估，可根据需要调整
-4. 阈值可根据实际需求通过 `dynamic_config` 进行调整
+1. 确保提供的图像 URL 可公开访问（避免鉴权、重定向或短链失效）
+2. 首次查询前等待 5 秒，之后每 5 秒轮询一次；总耗时取决于服务端完成时间
+3. 阈值与接口端点可通过 `dynamic_config` 调整：`threshold` 与 `refer_path`
 
 ## 错误排查
 
 如果评估失败，可能的原因包括：
 
 1. 网络连接问题
-2. Artimuse 服务不可用
+2. ArtiMuse 服务不可用
 3. 图像 URL 不可访问
-4. 请求超时
+4. 服务端长时间无响应或不可达
 
 建议在使用前确保网络环境稳定，并验证图像 URL 的有效性。
