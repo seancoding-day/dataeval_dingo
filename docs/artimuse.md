@@ -4,6 +4,13 @@
 
 RuleImageArtimuse 基于 ArtiMuse 在线服务对输入图片进行美学质量评估。规则会创建评估任务并轮询状态，取得总体分数及服务端返回的细粒度信息；随后与阈值比较，给出 Good/Bad 判定，并在结果中回传完整的可解释信息。
 
+测试数据使用 JSONL 格式构造，每行一个 JSON 对象，至少包含 id 与 content 字段，其中 content 为可公网访问的图片 URL。项目中提供了 test/data/test_imgae_artimuse.jsonl 作为模板，亦可自行仿照编写，例如：{"id": "1", "content": "https://example.com/a.jpg"}，{"id": "2", "content": "https://example.com/b.jpg"}。
+
+在仓库根目录直接运行 python examples/artimuse/artimuse.py 即可调用在线 ArtiMuse 接口完成评估，或在自定义的 InputArgs 中设置 output_path 指向你的本地目录以指定输出位置。执行后，LocalExecutor 会在该目录下创建以时间戳与 8 位短 ID 命名的子目录，并写入 summary.json 与逐条样本的明细 JSONL，可通过命令 python -m dingo.run.vsl --input <输出目录> 打开静态页面查看结果。
+
+评测结果的判定逻辑与代码一致：从服务端返回的 data 中读取 score_overall 与设定阈值比较，低于阈值判定为 BadImage，否则为 GoodImage；返回的 reason 字段保存了服务端 data 的字符串化 JSON，至少包含 phase 与 score_overall 等关键字段，便于后续分析与追溯。
+
+
 样例 20250903_203109_deb630bc 即是通过 Dingo 的本地执行引擎运行 RuleImageArtimuse 自动生成的输出。执行器会在指定的 output_path 下新建以时间戳和 8 位短 ID 组成的目录（形如 YYYYmmdd_HHMMSS_shortid），并写入 summary.json 以及逐条样本的明细 JSONL。该样例目录包含 Artimuse_Succeeded/BadImage.jsonl、Artimuse_Succeeded/GoodImage.jsonl 和 summary.json。
 
 在仓库根目录直接运行 examples/artimuse/artimuse.py 即可调用在线 ArtiMuse 接口完成评估；若在 InputArgs 中将 output_path 指向你的本地目录，则会生成与上文相同结构的目录。评估完成后，可用命令 python -m dingo.run.vsl --input <上述输出目录> 打开静态页面进行可视化。
