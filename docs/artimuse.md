@@ -2,7 +2,19 @@
 
 ## 概述
 
-`RuleImageArtimuse` 是一个基于 Artimuse API 的图像质量评估规则类，用于判断输入图像的质量是否达到合格标准。该规则通过调用 Artimuse 服务的图像评估接口，获取图像的总体评分和各个方面的详细评估结果。
+在介绍规则之前，先简要说明 ArtiMuse：
+
+ArtiMuse 是一个面向图像美学质量评估（Image Aesthetics Assessment, IAA）的在线模型/服务，能够输出整体美学分数并提供细粒度、可解释的评估信息，适用于作品筛选、内容推荐等场景。论文：[ArtiMuse: Fine-Grained Image Aesthetics Assessment with Joint Scoring and Expert-Level Understanding](https://arxiv.org/abs/2507.14533)。
+
+RuleImageArtimuse 基于 ArtiMuse 在线服务对输入图片进行美学质量评估。规则会创建评估任务并轮询状态，取得总体分数及服务端返回的细粒度信息；随后与阈值比较，给出 Good/Bad 判定，并在结果中回传完整的可解释信息。
+
+本文档的测试图片均由 Google Gemini 2.5 Flash Image（社区常称 “nano‑banana”）按提示词生成，后经人工筛选整理并托管在 OpenXLab；完整清单见 [test/data/artimuse/test_artimuse_nano_banana.jsonl](../test/data/artimuse/test_artimuse_nano_banana.jsonl)。我们将这批样例汇总为迷你集合 nano_banana，覆盖人像、室内、产品、电商、插画等多种风格，便于快速复现。
+
+在仓库根目录运行 `python [examples/artimuse/artimuse.py](../examples/artimuse/artimuse.py)` 可完成评估；如设置 `output_path`，将在该目录生成带时间戳与短 ID 的子目录，包含 `summary.json` 与逐条明细。可用 `python -m dingo.run.vsl --input <输出目录>` 打开可视化页面。
+
+判定基于 `data.score_overall` 与阈值 `threshold`：低于阈值为 BadImage，否则为 GoodImage；服务端 `data` 原样写入 `reason[0]` 便于溯源。结合 nano_banana 的样例，低分多见于贴纸或合成画面写实性不足、Logo/文字遮挡主体、风格迁移过强导致色彩与细节失真、截图噪声多而缺乏摄影要素、纯 Logo 缺少摄影主体、以及过度后期造成的不自然等情况；应尽量突出主体、控制曝光与清晰度、减少压缩与过重滤镜、移除干扰元素，并保持整体风格一致。
+
+
 
 ## 规则配置
 
@@ -19,23 +31,22 @@
 #### 参数
 - `input_data`: 包含图像 URL 的 Data 对象
   - `data_id`: 数据标识符
-  - `content`: 图像的网络 URL
+  - `content`: 图像的网络 URL（本规则仅读取该字段）
 
 #### 处理流程
 
 1. **创建评估任务**
-   - 向 Artimuse API 发送 POST 请求创建图像评估任务
-   - 指定评估风格为 `1`（可根据需要调整：1-专业, 2-毒舌）
-   - 设置 30 秒超时时间
+   - 向 ArtiMuse 接口 POST `{refer_path}/api/v1/task/create_task`
+   - 请求体包含图片地址，内部固定 `style=1`
 
 2. **获取任务状态**
-   - 等待 2 秒后开始查询任务状态
-   - 最多尝试 5 次查询，每次间隔 2 秒
-   - 当任务状态变为 `Succeeded` 时停止查询
+   - 先等待 5 秒
+   - 之后每 5 秒 POST `{refer_path}/api/v1/task/status` 查询一次，直到 `phase == "Succeeded"`
+   - 代码未设置请求超时，也未限制最大轮询次数
 
 3. **返回评估结果**
-   - 根据总体评分判断图像质量是否合格
-   - 返回包含详细评估信息的 `ModelRes` 对象
+   - 读取 `score_overall` 与阈值比较，低于阈值判定为 `BadImage`，否则为 `GoodImage`
+   - 将服务端返回的 `data` 以字符串化 JSON 放入 `reason`
 
 #### 返回值
 
@@ -43,8 +54,8 @@
 
 - `error_status`: 布尔值，表示图像质量是否不合格（低于阈值）
 - `type`: 评估结果类型（"Artimuse_Succeeded" 或 "Artimuse_Fail"）
-- `name`: 评估结果名称（"BadImage" 或 "GoodImage"）
-- `reason`: 包含详细评估信息的数组
+- `name`: 评估结果名称（"BadImage" 或 "GoodImage" 或 "Exception"）
+- `reason`: 包含详细评估信息或异常信息的数组（字符串化 JSON）
 
 ## 异常处理
 
@@ -79,18 +90,17 @@ print(res)
 
 ## 注意事项
 
-1. 确保提供的图像 URL 可公开访问
-2. 评估过程可能需要较长时间（最多约 12 秒）
-3. 当前使用固定风格参数进行评估，可根据需要调整
-4. 阈值可根据实际需求通过 `dynamic_config` 进行调整
+1. 确保提供的图像 URL 可公开访问（避免鉴权、重定向或短链失效）
+2. 首次查询前等待 5 秒，之后每 5 秒轮询一次；总耗时取决于服务端完成时间
+3. 阈值与接口端点可通过 `dynamic_config` 调整：`threshold` 与 `refer_path`
 
 ## 错误排查
 
 如果评估失败，可能的原因包括：
 
 1. 网络连接问题
-2. Artimuse 服务不可用
+2. ArtiMuse 服务不可用
 3. 图像 URL 不可访问
-4. 请求超时
+4. 服务端长时间无响应或不可达
 
 建议在使用前确保网络环境稳定，并验证图像 URL 的有效性。
