@@ -16,6 +16,7 @@ This document provides comprehensive information about all quality metrics used 
 
 | Type | Metric | Description | Paper Source | Evaluation Results |
 |------|--------|-------------|--------------|-------------------|
+| `MathCompare` | PromptMathCompare | Compares the effectiveness of two tools in extracting mathematical formulas from HTML to Markdown format by evaluatin... | Internal Implementation | N/A |
 | `QUALITY_BAD_HALLUCINATION` | PromptHallucination | Evaluates whether the response contains factual contradictions or hallucinations against provided context information | [TruthfulQA: Measuring How Models Mimic Human Falsehoods](https://arxiv.org/abs/2109.07958) (Lin et al., 2021) | N/A |
 | `QUALITY_BAD_HALLUCINATION` | RuleHallucinationHHEM | Uses Vectara's HHEM-2.1-Open model for local hallucination detection by evaluating consistency between response and c... | [HHEM-2.1-Open](https://huggingface.co/vectara/hallucination_evaluation_model) (Forrest Bao, Miaoran Li, Rogger Luo, Ofer Mendelevitch) | N/A |
 | `QUALITY_HARMLESS` | PromptTextHarmless | Checks if responses avoid harmful content, discriminatory language, and dangerous assistance | [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/pdf/2204.05862) (Bai et al., 2022) | [📊 See Results](eval/prompt/qa_data_evaluated_by_3h.md) |
