@@ -3,26 +3,21 @@ from dingo.exec import Executor
 
 if __name__ == '__main__':
     input_data = {
-        "input_path": "lmsys/mt_bench_human_judgments",
+        "input_path": "../../test/data/test_imgae_artimuse.jsonl",
         "dataset": {
-            "source": "hugging_face",
-            "format": "multi_turn_dialog",
+            "source": "local",
+            "format": "jsonl",
             "field": {
-                "id": "question_id",
-                "content": "conversation_a"
-            },
-            "hf_config": {
-                "huggingface_split": "human"
+                "data_id": "id",
+                "content": "content"
             }
         },
         "executor": {
-            "eval_group": "qa_standard_v1",
+            "rule_list": ["RuleImageArtimuse"],
             "result_save": {
                 "bad": True,
                 "good": True
-            },
-            "end_index": 5,
-            "multi_turn_mode": "all"
+            }
         }
     }
     input_args = InputArgs(**input_data)

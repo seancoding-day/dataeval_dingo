@@ -29,6 +29,14 @@
     👋 加入我们 <a href="https://discord.gg/Jhgb2eKWh8" target="_blank">Discord</a> 和 <a href="./docs/assets/wechat.jpg" target="_blank">微信</a>
 </p>
 
+<p align="center">
+  如果觉得有帮助，欢迎在 GitHub 上点个 ⭐ 支持！
+  <br/>
+  <a href="https://github.com/DataEval/dingo/stargazers" target="_blank">
+    <img src="docs/assets/clickstar_2.gif" alt="点击 Star 支持" width="480">
+  </a>
+</p>
+
 </div>
 
 
@@ -179,6 +187,7 @@ Dingo通过基于规则和基于提示的评估指标提供全面的数据质量
 - **分类指标**：主题分类和内容分类
 - **多模态评估指标**：图像分类和相关性评估
 - **基于规则的质量指标**：使用启发式规则进行效果性和相似性检测的自动化质量检查
+- **事实性评估指标**：基于 GPT-5 System Card 的两阶段事实性评估
 - 等等
 
 大部分指标都由学术来源支持，以确保客观性和科学严谨性。
@@ -212,6 +221,12 @@ input_data = {
 有关使用Dingo幻觉检测功能的详细指导，包括HHEM-2.1-Open本地推理和基于LLM的评估：
 
 📖 **[查看幻觉检测指南 →](docs/hallucination_guide.md)**
+
+### 事实性评估
+
+有关使用Dingo两阶段事实性评估系统的详细指导：
+
+📖 **[查看事实性评估指南 →](docs/factcheck_guide.md)**
 
 # 规则组
 

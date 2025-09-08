@@ -36,6 +36,15 @@
 </p>
 
 
+<p align="center">
+  If you like Dingo, please give us a ⭐ on GitHub!
+  <br/>
+  <a href="https://github.com/DataEval/dingo/stargazers" target="_blank">
+    <img src="docs/assets/clickstar_2.gif" alt="Click Star" width="480">
+  </a>
+</p>
+
+
 # Introduction
 
 Dingo is a data quality evaluation tool that helps you automatically detect data quality issues in your datasets. Dingo provides a variety of built-in rules and model evaluation methods, and also supports custom evaluation methods. Dingo supports commonly used text datasets and multimodal datasets, including pre-training datasets, fine-tuning datasets, and evaluation datasets. In addition, Dingo supports multiple usage methods, including local CLI and SDK, making it easy to integrate into various evaluation platforms, such as [OpenCompass](https://github.com/open-compass/opencompass).
@@ -183,6 +192,7 @@ Our evaluation system includes:
 - **Classification Metrics**: Topic categorization and content classification
 - **Multimodality Assessment Metrics**: Image classification and relevance evaluation
 - **Rule-Based Quality Metrics**: Automated quality checks using heuristic rules for effectiveness and similarity detection
+- **Factuality Assessment Metrics**: Two-stage factuality evaluation based on GPT-5 System Card
 - etc
 
 Most metrics are backed by academic sources to ensure objectivity and scientific rigor.
@@ -216,6 +226,12 @@ You can customize these prompts to focus on specific quality dimensions or to ad
 For detailed guidance on using Dingo's hallucination detection capabilities, including HHEM-2.1-Open local inference and LLM-based evaluation:
 
 📖 **[View Hallucination Detection Guide →](docs/hallucination_guide.md)**
+
+### Factuality Assessment
+
+For comprehensive guidance on using Dingo's two-stage factuality evaluation system:
+
+📖 **[View Factuality Assessment Guide →](docs/factcheck_guide.md)**
 
 # Rule Groups
 

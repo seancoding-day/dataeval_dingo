@@ -3,28 +3,24 @@ from dingo.exec import Executor
 
 if __name__ == '__main__':
     input_data = {
-        "input_path": "../../test/data/compare/test_compare_content.jsonl",
+        "input_path": "../../test/data/test_meta_rater.jsonl",
         "dataset": {
             "source": "local",
             "format": "jsonl",
             "field": {
-                "id": "track_id",
-                "content": "clean_html"
+                "content": "content"
             }
         },
         "executor": {
-            "prompt_list": ["PromptHtmlAbstract"],
-            "batch_size": 10,
-            "max_workers": 10,
+            "prompt_list": ["PromptMetaRaterProfessionalism"],  # options: "PromptMetaRaterReadability", "PromptMetaRaterReasoning", "PromptMetaRaterCleanliness"
             "result_save": {
                 "bad": True,
-                "good": True,
-                "raw": True
+                "good": True
             }
         },
         "evaluator": {
             "llm_config": {
-                "LLMHtmlAbstract": {
+                "LLMMetaRaterEvaluation": {
                     "key": "",
                     "api_url": ""
                 }
