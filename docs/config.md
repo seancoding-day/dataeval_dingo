@@ -227,4 +227,6 @@ run(config)
 |------|-------------|
 | all | 拼接多轮对话中的所有回合 |
 
-具体使用方法请参考相关示例文件。
+具体使用方法请参考相关示例文件:
+[sdk_mtbench101_rule_all.py](../examples/multi_turn_dialogues/sdk_mtbench101_rule_all.py)、[sdk_mtbench101_llm.py](../examples/multi_turn_dialogues/sdk_mtbench101_llm.py)、
+[sdk_mtbench_rule_all.py](../examples/multi_turn_dialogues/sdk_mtbench_rule_all.py)、[sdk_mtbench_llm.py](../examples/multi_turn_dialogues/sdk_mtbench_llm.py)。
