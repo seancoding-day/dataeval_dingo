@@ -134,7 +134,7 @@ LLM 调参配置：
   "output_path": "outputs/",
   "log_level": "WARNING",
   "use_browser": false,
-  
+
   "dataset": {
     "source": "hugging_face",
     "format": "json",
@@ -150,7 +150,7 @@ LLM 调参配置：
       "huggingface_config_name": null
     }
   },
-  
+
   "executor": {
     "eval_group": "",
     "rule_list": [],
@@ -166,7 +166,7 @@ LLM 调参配置：
       "raw": false
     }
   },
-  
+
   "evaluator": {
     "rule_config": {
       "rule_name": {
