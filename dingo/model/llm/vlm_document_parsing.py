@@ -1,5 +1,6 @@
-import json
+from typing import List
 
+from dingo.io import Data
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.model.modelres import ModelRes
@@ -24,7 +25,6 @@ class VLMDocumentParsingQuality(BaseOpenAI):
             }
         ]
         return messages
-
 
     @classmethod
     def process_response(cls, response: str) -> ModelRes:
