@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from dingo.config import InputArgs
 from dingo.exec import Executor
@@ -9,7 +10,7 @@ if __name__ == '__main__':
     OPENAI_KEY = os.getenv("OPENAI_KEY")
 
     input_data = {
-        "input_path": "/Users/chupei/code/dingo/test/data/test_3h_jsonl.jsonl",
+        "input_path": str(Path("test/data/test_3h_jsonl.jsonl")),
         "dataset": {
             "source": "local",
             "format": "jsonl",
