@@ -46,8 +46,8 @@ def evaluate_hallucination_jsonl_dataset():
             "llm_config": {
                 "LLMHallucination": {
                     "model": "deepseek-chat",
-                    "key": "YOUR_API_KEY",
-                    "api_url": "https://api.deepseek.com"
+                    "key": "Your API Key",
+                    "api_url": "https://api.deepseek.com/v1"
                 }
             }
         }
