@@ -6,6 +6,7 @@ from dingo.model.model import Model
 from dingo.model.modelres import ModelRes
 from dingo.model.rule.base import BaseRule
 
+
 @Model.rule_register(
     "QUALITY_BAD_EFFECTIVENESS",
     [
@@ -35,8 +36,8 @@ class RuleAudioDuration(BaseRule):
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
-        from scipy.signal import welch
         import librosa
+        from scipy.signal import welch
 
         res = ModelRes()
 
@@ -102,7 +103,7 @@ class RuleAudio(BaseRule):
                 frame_count = w.getnframes()
                 sample_rate = w.getframerate()
                 duration = frame_count / sample_rate
-        
+
         if duration > 10:
             res.error_status = True
             res.type = cls.metric_type

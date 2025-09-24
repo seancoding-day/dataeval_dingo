@@ -141,7 +141,7 @@ class RuleAlphaWords(BaseRule):
 
 
 @Model.rule_register(
-    "QUALITY_BAD_EFFECTIVENESS", 
+    "QUALITY_BAD_EFFECTIVENESS",
     [
         "multi_lan_ar",
         "multi_lan_ko",
@@ -166,7 +166,7 @@ class RuleAudioDataFormat(BaseRule):
     }
 
     dynamic_config = EvaluatorRuleArgs()
-    
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -1168,7 +1168,7 @@ class RuleInvisibleChar(BaseRule):
 
 
 @Model.rule_register(
-    "QUALITY_BAD_EFFECTIVENESS", 
+    "QUALITY_BAD_EFFECTIVENESS",
     [
         "multi_lan_ar",
         "multi_lan_ko",
@@ -1193,7 +1193,7 @@ class RuleImageDataFormat(BaseRule):
     }
 
     dynamic_config = EvaluatorRuleArgs()
-    
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -1526,7 +1526,7 @@ class RuleMeanWordLength(BaseRule):
 
 
 @Model.rule_register(
-    "QUALITY_BAD_EFFECTIVENESS", 
+    "QUALITY_BAD_EFFECTIVENESS",
     [
         "multi_lan_ar",
         "multi_lan_ko",
@@ -1551,7 +1551,7 @@ class RuleNlpDataFormat(BaseRule):
     }
 
     dynamic_config = EvaluatorRuleArgs()
-    
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -1695,7 +1695,7 @@ class RuleSentenceNumber(BaseRule):
 
 
 @Model.rule_register(
-    "QUALITY_BAD_EFFECTIVENESS", 
+    "QUALITY_BAD_EFFECTIVENESS",
     [
         "multi_lan_ar",
         "multi_lan_ko",
@@ -1720,7 +1720,7 @@ class RuleSftDataFormat(BaseRule):
     }
 
     dynamic_config = EvaluatorRuleArgs()
-    
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -2025,7 +2025,7 @@ class RuleUnsafeWords(BaseRule):
 
 
 @Model.rule_register(
-    "QUALITY_BAD_EFFECTIVENESS", 
+    "QUALITY_BAD_EFFECTIVENESS",
     [
         "multi_lan_ar",
         "multi_lan_ko",
@@ -2050,7 +2050,7 @@ class RuleVedioDataFormat(BaseRule):
     }
 
     dynamic_config = EvaluatorRuleArgs()
-    
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
