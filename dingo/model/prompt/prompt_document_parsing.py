@@ -1,6 +1,7 @@
 from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
+
 @Model.prompt_register("PromptDocumentParsingQuality", [], ['VLMDocumentParsingQuality'])
 class PromptDocumentParsingQuality(BasePrompt):
     # Metadata for documentation generation
@@ -10,7 +11,7 @@ class PromptDocumentParsingQuality(BasePrompt):
         "description": "Evaluate the quality of general document parsing",
         "evaluation_results": "",
     }
-    content = """
+    content = r"""
         *角色*
     你是一名严谨细致的文档转换质量评估助手。
 
@@ -67,7 +68,7 @@ class PromptDocumentParsingQuality(BasePrompt):
         -单元格丢失: 在表格主体结构基本正确的情况下，某个或少数几个<td>单元格在HTML中完全丢失。
         -表格异常拆分:原图中一个完整的表格，被错误地识别成了多个独立的HTML<table>结构。
         -单元格内容错误: 无论单元格内原始内容是文本、数字、公式片段还是其他符号，只要其在HTML表格标签内的文本内容与原图不符，均归为此类。这包括字符识别错误、内容遗漏、内容冗余、标题分级错误、单元格内公式识别为文本或识别错误/丢失等。重要说明：此标签涵盖所有表格单元格内部的内容准确性问题。不再将表格内的公式错误、文本错误等单独归类到其他大类。
-        
+
     **3. 分行分段相关问题**
         -非跨栏内容段落粘连: 原图中单栏布局下的多行文本或多个连续段落，在OCR结果中被错误地合并成一个段落。
         -段落异常拆分: 原图中一个完整的段落，在OCR结果中被错误地分割成了多行、多段文本。
@@ -97,7 +98,7 @@ class PromptDocumentParsingQuality(BasePrompt):
         -标点符号识别错误: 标点符号的类型、形态（全角/半角）或语言属性（中文/英文）识别错误。例如，原图中为中文全角标点符号"："，Markdown文本中识别为英文半角标点符号":"，或反之；原图中为英文半角逗号","，Markdown文本中识别为中文全角逗号"，"，或反之。也包括标点符号种类本身的错误，如逗号识别为句号。
         -标点符号丢失: 原图中的标点符号在OCR结果中丢失。
         -文本格式丢失: 原图中文本具有的加粗、斜体等格式在Markdown中丢失。
-        -文本格式应用错误: 原图中没有特定格式的普通文本，在Markdown中被错误地应用了加粗、斜体等格式。 
+        -文本格式应用错误: 原图中没有特定格式的普通文本，在Markdown中被错误地应用了加粗、斜体等格式。
         -文本中引用/角标的格式丢失: 原图中文本的上标或下标，在Markdown结果中完全丢失，未通过LaTeX指数/下标或其他方式表示，或者被错误地识别为与主体文本在同一基线的普通字符。
         -文本中引用/角标的识别错误: 原图中文本的上标或下标属性虽然被识别（例如以LaTeX指数/下标形式出现），但其内容（如数字、字母）识别错误，或者其位置识别错误（例如上标被错误识别为下标，或反之）。
         -特殊结构识别丢失: 如考题类下划线、选项括号识别丢失。
@@ -112,7 +113,7 @@ class PromptDocumentParsingQuality(BasePrompt):
 
     **10.其他**
         -其他问题: 此分类用于标记不属于上述任何具体类别的其他OCR质量问题。经过仔细判断后确认无法归入其他既有标签的OCR质量问题。当使用此标签时，必须在 reason 字段中提供清晰、详细的描述，说明该问题的具体性内容。
-    
+
     *重要指示*
     你必须严格遵循关键评估原则与指南中的各项要求进行评估和报告。特别是第13条关于JSON有效性和转义规则的指示。
     每个错误对象必须包含error_id, error_category, error_label, 和details字段。
