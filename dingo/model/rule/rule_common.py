@@ -1524,6 +1524,7 @@ class RuleMeanWordLength(BaseRule):
             res.reason = ["The mean length of word is: " + str(mean_length)]
         return res
 
+
 @Model.rule_register(
     "QUALITY_BAD_EFFECTIVENESS", 
     [
@@ -1564,6 +1565,7 @@ class RuleNlpDataFormat(BaseRule):
             res.type = cls.metric_type
             res.name = cls.__name__
             res.reason = ["NLP Data format error"]
+
 
 @Model.rule_register(
     "QUALITY_BAD_FLUENCY",

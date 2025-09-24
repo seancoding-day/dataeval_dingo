@@ -7,7 +7,7 @@ from dingo.model.modelres import ModelRes
 from dingo.model.rule.base import BaseRule
 
 @Model.rule_register(
-"QUALITY_BAD_EFFECTIVENESS",
+    "QUALITY_BAD_EFFECTIVENESS",
     [
         "multi_lan_ar",
         "multi_lan_ko",
@@ -64,7 +64,7 @@ class RuleAudioDuration(BaseRule):
 
 
 @Model.rule_register(
-"QUALITY_BAD_EFFECTIVENESS",
+    "QUALITY_BAD_EFFECTIVENESS",
     [
         "multi_lan_ar",
         "multi_lan_ko",
