@@ -140,6 +140,48 @@ class RuleAlphaWords(BaseRule):
         return res
 
 
+@Model.rule_register(
+    "QUALITY_BAD_EFFECTIVENESS",
+    [
+        "multi_lan_ar",
+        "multi_lan_ko",
+        "multi_lan_ru",
+        "multi_lan_th",
+        "multi_lan_vi",
+        "multi_lan_cs",
+        "multi_lan_hu",
+        "multi_lan_sr",
+    ]
+)
+class RuleAudioDataFormat(BaseRule):
+    """check whether the audio data format is right"""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleAudioDataFormat",
+        "description": "Check whether the audio data format is right",
+        "evaluation_results": ""
+    }
+
+    dynamic_config = EvaluatorRuleArgs()
+
+    @classmethod
+    def eval(cls, input_data: Data) -> ModelRes:
+        res = ModelRes()
+
+        raw_data = input_data.raw_data
+        key_list = ["id", "audio", "text"]
+        if all(key in raw_data for key in key_list):
+            return res
+        else:
+            res.error_status = True
+            res.type = cls.metric_type
+            res.name = cls.__name__
+            res.reason = ["Audio Data format error"]
+
+
 @Model.rule_register("QUALITY_BAD_UNDERSTANDABILITY", ["pretrain"])
 class RuleCapitalWords(BaseRule):
     """check whether capital words ratio > 0.2"""
@@ -1125,6 +1167,48 @@ class RuleInvisibleChar(BaseRule):
         return res
 
 
+@Model.rule_register(
+    "QUALITY_BAD_EFFECTIVENESS",
+    [
+        "multi_lan_ar",
+        "multi_lan_ko",
+        "multi_lan_ru",
+        "multi_lan_th",
+        "multi_lan_vi",
+        "multi_lan_cs",
+        "multi_lan_hu",
+        "multi_lan_sr",
+    ]
+)
+class RuleImageDataFormat(BaseRule):
+    """check whether the nlp data format is right"""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleImageDataFormat",
+        "description": "Check whether the image data format is right",
+        "evaluation_results": ""
+    }
+
+    dynamic_config = EvaluatorRuleArgs()
+
+    @classmethod
+    def eval(cls, input_data: Data) -> ModelRes:
+        res = ModelRes()
+
+        raw_data = input_data.raw_data
+        key_list = ["img_id", "image"]
+        if all(key in raw_data for key in key_list):
+            return res
+        else:
+            res.error_status = True
+            res.type = cls.metric_type
+            res.name = cls.__name__
+            res.reason = ["Image Data format error"]
+
+
 @Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pdf_all"])
 class RuleLatexSpecialChar(BaseRule):
     """check pdf content latex abnormal char."""
@@ -1442,6 +1526,48 @@ class RuleMeanWordLength(BaseRule):
 
 
 @Model.rule_register(
+    "QUALITY_BAD_EFFECTIVENESS",
+    [
+        "multi_lan_ar",
+        "multi_lan_ko",
+        "multi_lan_ru",
+        "multi_lan_th",
+        "multi_lan_vi",
+        "multi_lan_cs",
+        "multi_lan_hu",
+        "multi_lan_sr",
+    ]
+)
+class RuleNlpDataFormat(BaseRule):
+    """check whether the nlp data format is right"""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleNlpDataFormat",
+        "description": "Check whether the nlp data format is right",
+        "evaluation_results": ""
+    }
+
+    dynamic_config = EvaluatorRuleArgs()
+
+    @classmethod
+    def eval(cls, input_data: Data) -> ModelRes:
+        res = ModelRes()
+
+        raw_data = input_data.raw_data
+        key_list = ["track_id", "content"]
+        if all(key in raw_data for key in key_list):
+            return res
+        else:
+            res.error_status = True
+            res.type = cls.metric_type
+            res.name = cls.__name__
+            res.reason = ["NLP Data format error"]
+
+
+@Model.rule_register(
     "QUALITY_BAD_FLUENCY",
     [
         "default",
@@ -1472,7 +1598,7 @@ class RuleNoPunc(BaseRule):
         "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
         "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
         "paper_authors": "Together Computer, 2023",
-        "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
+        "evaluation_results": ""
     }
 
     dynamic_config = EvaluatorRuleArgs(threshold=112)
@@ -1566,6 +1692,48 @@ class RuleSentenceNumber(BaseRule):
             res.name = cls.__name__
             res.reason = ["The number of sentence is: " + str(num_sentence)]
         return res
+
+
+@Model.rule_register(
+    "QUALITY_BAD_EFFECTIVENESS",
+    [
+        "multi_lan_ar",
+        "multi_lan_ko",
+        "multi_lan_ru",
+        "multi_lan_th",
+        "multi_lan_vi",
+        "multi_lan_cs",
+        "multi_lan_hu",
+        "multi_lan_sr",
+    ]
+)
+class RuleSftDataFormat(BaseRule):
+    """check whether the nlp data format is right"""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleSftDataFormat",
+        "description": "Check whether the sft data format is right",
+        "evaluation_results": ""
+    }
+
+    dynamic_config = EvaluatorRuleArgs()
+
+    @classmethod
+    def eval(cls, input_data: Data) -> ModelRes:
+        res = ModelRes()
+
+        raw_data = input_data.raw_data
+        key_list = ["track_id", "type", "prompt", "completion"]
+        if all(key in raw_data for key in key_list):
+            return res
+        else:
+            res.error_status = True
+            res.type = cls.metric_type
+            res.name = cls.__name__
+            res.reason = ["SFT Data format error"]
 
 
 @Model.rule_register(
@@ -1854,6 +2022,48 @@ class RuleUnsafeWords(BaseRule):
             res.name = cls.__name__
             res.reason = [value for index, value in matches]
         return res
+
+
+@Model.rule_register(
+    "QUALITY_BAD_EFFECTIVENESS",
+    [
+        "multi_lan_ar",
+        "multi_lan_ko",
+        "multi_lan_ru",
+        "multi_lan_th",
+        "multi_lan_vi",
+        "multi_lan_cs",
+        "multi_lan_hu",
+        "multi_lan_sr",
+    ]
+)
+class RuleVedioDataFormat(BaseRule):
+    """check whether the vedio data format is right"""
+
+    # Metadata for documentation generation
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleVedioDataFormat",
+        "description": "Check whether the vedio data format is right",
+        "evaluation_results": ""
+    }
+
+    dynamic_config = EvaluatorRuleArgs()
+
+    @classmethod
+    def eval(cls, input_data: Data) -> ModelRes:
+        res = ModelRes()
+
+        raw_data = input_data.raw_data
+        key_list = ["id", "video", "text"]
+        if all(key in raw_data for key in key_list):
+            return res
+        else:
+            res.error_status = True
+            res.type = cls.metric_type
+            res.name = cls.__name__
+            res.reason = ["Vedio Data format error"]
 
 
 @Model.rule_register(

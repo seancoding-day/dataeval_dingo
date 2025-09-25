@@ -16,7 +16,7 @@ class VLMDocumentParsingQuality(BaseOpenAI):
     def build_messages(cls, input_data: Data) -> List:
         messages = [
             {
-                "role": "user", 
+                "role": "user",
                 "content": [
                     {"type": "text", "text": cls.prompt.content},
                     {"type": "image_url", "image_url": {"url": input_data.img}},
