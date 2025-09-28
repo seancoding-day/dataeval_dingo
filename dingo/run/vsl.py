@@ -59,36 +59,68 @@ def create_data_source(root_path, summary_data, folder_structure, evaluation_det
     }
 
 
-def inject_data_to_html(html_path, data_source):
-    # 生成新的HTML文件名
-    timestamp = int(time.time())
-    new_html_filename = f"index_{timestamp}.static.html"
-    new_html_path = os.path.join(os.path.dirname(html_path), new_html_filename)
+def inject_data_to_html(html_path, data_source, output_filename=None, add_back_button=False):
+    """
+    通用的数据注入HTML方法
 
-    # 复制原始HTML文件
-    shutil.copy2(html_path, new_html_path)
+    Args:
+        html_path: 基础HTML模板路径
+        data_source: 要注入的数据
+        output_filename: 输出文件名，如果为None则自动生成
+        add_back_button: 是否添加返回按钮
 
-    # 读取新的HTML文件内容
-    with open(new_html_path, 'r', encoding='utf-8') as file:
+    Returns:
+        生成的HTML文件名
+    """
+    web_static_dir = os.path.dirname(html_path)
+
+    # 生成输出文件名
+    if output_filename is None:
+        timestamp = int(time.time())
+        output_filename = f"index_{timestamp}.static.html"
+
+    output_path = os.path.join(web_static_dir, output_filename)
+
+    # 复制基础HTML文件
+    shutil.copy2(html_path, output_path)
+
+    # 读取HTML内容
+    with open(output_path, 'r', encoding='utf-8') as file:
         content = file.read()
 
+    # 准备注入的脚本
     json_data = json.dumps(data_source, ensure_ascii=False)
     encoded_data = base64.b64encode(json_data.encode('utf-8')).decode('utf-8')
 
     script = f"""<script>
     window.dataSource = JSON.parse(decodeURIComponent(escape(atob("{encoded_data}"))));
-    </script>
-    """
+    </script>"""
 
-    # 注入数据到新的HTML文件
+    # 添加返回按钮（如果需要）
+    back_button = ""
+    if add_back_button:
+        back_button = f"""
+        <div style="position: fixed; top: 10px; left: 10px; z-index: 1000;">
+            <a href="index.html" style="background: #007bff; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none;">
+                ← 返回目录列表
+            </a>
+        </div>
+        """
+
+    # 注入脚本和返回按钮
     head_pattern = re.compile(r'(<head.*?>)', re.IGNORECASE)
-    modified_content = head_pattern.sub(r'\1\n' + script, content, count=1)
+    content = head_pattern.sub(r'\1\n' + script, content, count=1)
 
-    with open(new_html_path, 'w', encoding='utf-8') as file:
-        file.write(modified_content)
+    if back_button:
+        body_pattern = re.compile(r'(<body.*?>)', re.IGNORECASE)
+        content = body_pattern.sub(r'\1\n' + back_button, content, count=1)
 
-    print(f"Data source injected into {new_html_path}")
-    return new_html_filename
+    # 写入文件
+    with open(output_path, 'w', encoding='utf-8') as file:
+        file.write(content)
+
+    print(f"✅ Generated: {output_filename}")
+    return output_filename
 
 
 def start_http_server(directory, port=8000):
@@ -128,53 +160,20 @@ def scan_subdirectories(root_path):
 def generate_subdir_html(subdir_path, subdir_name, web_static_dir, base_html_path):
     """为单个子目录生成HTML文件"""
     try:
+        # 准备数据
         folder_structure = get_folder_structure(subdir_path)
         summary_data = get_summary_data(os.path.join(subdir_path, "summary.json"))
         evaluation_details = get_evaluation_details(subdir_path)
         data_source = create_data_source(subdir_path, summary_data, folder_structure, evaluation_details)
 
-        # 生成子目录对应的HTML文件名
+        # 使用通用方法生成HTML
         subdir_html_filename = f"{subdir_name}.html"
-        subdir_html_path = os.path.join(web_static_dir, subdir_html_filename)
-
-        # 复制基础HTML文件
-        shutil.copy2(base_html_path, subdir_html_path)
-
-        # 读取HTML内容
-        with open(subdir_html_path, 'r', encoding='utf-8') as file:
-            content = file.read()
-
-        # 注入数据
-        json_data = json.dumps(data_source, ensure_ascii=False)
-        encoded_data = base64.b64encode(json_data.encode('utf-8')).decode('utf-8')
-
-        script = f"""<script>
-    window.dataSource = JSON.parse(decodeURIComponent(escape(atob("{encoded_data}"))));
-    </script>
-    """
-
-        # 添加返回按钮
-        back_button = f"""
-        <div style="position: fixed; top: 10px; left: 10px; z-index: 1000;">
-            <a href="index.html" style="background: #007bff; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none;">
-                ← 返回目录列表
-            </a>
-        </div>
-        """
-
-        # 注入脚本和返回按钮
-        head_pattern = re.compile(r'(<head.*?>)', re.IGNORECASE)
-        content = head_pattern.sub(r'\1\n' + script, content, count=1)
-
-        body_pattern = re.compile(r'(<body.*?>)', re.IGNORECASE)
-        content = body_pattern.sub(r'\1\n' + back_button, content, count=1)
-
-        # 写入文件
-        with open(subdir_html_path, 'w', encoding='utf-8') as file:
-            file.write(content)
-
-        print(f"✅ Generated: {subdir_html_filename}")
-        return subdir_html_filename
+        return inject_data_to_html(
+            html_path=base_html_path,
+            data_source=data_source,
+            output_filename=subdir_html_filename,
+            add_back_button=True
+        )
 
     except Exception as e:
         print(f"❌ Error generating HTML for {subdir_name}: {e}")
