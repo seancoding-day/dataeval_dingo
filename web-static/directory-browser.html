@@ -191,7 +191,7 @@
                         </div>
                         <div class="meta-info" style="font-size: 12px; color: #888; min-width: 200px;">
                             创建: ${dir.summary.create_time || 'N/A'} |
-                            评分: ${dir.summary.score ? dir.summary.score.toFixed(1) : 'N/A'}%
+                            评分: ${typeof dir.summary.score === 'number' ? dir.summary.score.toFixed(1) : '0.0'}%
                         </div>
                     </div>
                     <a href="${dir.name}.html" class="view-button">查看详情 →</a>
