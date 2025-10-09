@@ -8,6 +8,7 @@ from dingo.model.model import Model
 from dingo.model.modelres import ModelRes
 from dingo.model.rule.base import BaseRule
 
+
 @Model.rule_register('QUALITY_BAD_RELEVANCE', ['test'])
 class RegisterRuleColon(BaseRule):
     """let user input pattern to search"""
@@ -26,9 +27,9 @@ class RegisterRuleColon(BaseRule):
             res.reason = [content[-100:]]
         return res
 
+
 class TestModelRes:
     def test_type_name_list(self):
-
 
         data = Data(
             data_id='0',
