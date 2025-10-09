@@ -318,7 +318,7 @@ class RuleImageLabelOverlap(BaseRule):
         "category": "Rule-Based IMG Quality Metrics",
         "quality_dimension": "IMG_LABEL_OVERLAP",
         "metric_name": "RuleImageLabelOverlap",
-        "description": "", ## TODO: lindong input
+        "description": "",  # TODO: lindong input
         "paper_title": "",
         "paper_url": "",
         "paper_authors": "",
@@ -338,7 +338,7 @@ class RuleImageLabelVisualization(BaseRule):
         "category": "Rule-Based IMG Quality Metrics",
         "quality_dimension": "IMG_LABEL_VISUALIZATION",
         "metric_name": "RuleImageLabelVisualization",
-        "description": "", ## TODO: lindong input
+        "description": "",  # TODO: lindong input
         "paper_title": "",
         "paper_url": "",
         "paper_authors": "",
