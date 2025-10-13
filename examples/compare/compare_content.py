@@ -13,7 +13,7 @@ if __name__ == '__main__':
             }
         },
         "executor": {
-            "prompt_list": ["PromptHtmlAbstract"],
+            "prompt_list": ["PromptHtmlExtractCompare"],
             "batch_size": 10,
             "max_workers": 10,
             "result_save": {
@@ -24,7 +24,7 @@ if __name__ == '__main__':
         },
         "evaluator": {
             "llm_config": {
-                "LLMHtmlAbstract": {
+                "LLMHtmlExtractCompare": {
                     "key": "",
                     "api_url": ""
                 }
