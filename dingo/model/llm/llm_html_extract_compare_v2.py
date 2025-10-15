@@ -112,18 +112,22 @@ class LLMHtmlExtractCompareV2(BaseOpenAI):
         return messages
 
     @classmethod
-    def process_response(cls, response: str) -> ModelRes:
+    def _parse_response_to_structured(cls, response: str) -> ResponseJudgementReason:
         """
-        处理 LLM 返回结果
+        将 LLM 原始响应解析为结构化的 ResponseJudgementReason 对象
 
         解析格式：
         1. 提取 <Judgement>A/B/C</Judgement> 标签中的判断结果
         2. 其余内容作为推理过程
 
-        返回映射：
-        - A -> TOOL_ONE_BETTER (工具A更好)
-        - B -> TOOL_EQUAL (两者相同)
-        - C -> TOOL_TWO_BETTER (工具B更好)
+        Args:
+            response: LLM 原始响应文本
+
+        Returns:
+            ResponseJudgementReason: 结构化响应对象
+
+        Raises:
+            ValueError: 如果无法解析出有效的判断结果
         """
         log.info(response)
 
@@ -144,24 +148,85 @@ class LLMHtmlExtractCompareV2(BaseOpenAI):
         # 提取推理过程（去除判断标签）
         reason = re.sub(r"<Judgement>[ABC]</Judgement>", "", response).strip()
 
-        # 创建结果对象
+        # 使用 Pydantic 模型进行验证
+        return ResponseJudgementReason(
+            judgement=judgement,
+            reason=reason
+        )
+
+    @classmethod
+    def _convert_to_model_result(cls, structured_response: ResponseJudgementReason) -> ModelRes:
+        """
+        将结构化响应转换为 ModelRes 对象
+
+        映射规则：
+        - A -> TOOL_ONE_BETTER (工具A更好，error_status=False)
+        - B -> TOOL_EQUAL (两者相同，error_status=False)
+        - C -> TOOL_TWO_BETTER (工具B更好，error_status=True)
+
+        Args:
+            structured_response: 结构化响应对象
+
+        Returns:
+            ModelRes: 评估结果对象
+        """
         result = ModelRes()
 
-        # 映射判断结果到类型
-        if judgement == "A":
-            result.type = "TOOL_ONE_BETTER"
-            result.error_status = False  # 工具A更好，认为正常
-        elif judgement == "B":
-            result.type = "TOOL_EQUAL"
-            result.error_status = False  # 两者相同，认为正常
-        elif judgement == "C":
-            result.type = "TOOL_TWO_BETTER"
-            result.error_status = True  # 工具B更好，标记为错误（因为期望A更好）
+        # 映射判断结果到类型和状态
+        judgement_mapping = {
+            "A": {
+                "type": "TOOL_ONE_BETTER",
+                "error_status": False,  # 工具A更好，正常
+                "description": "工具A提取的信息更完整"
+            },
+            "B": {
+                "type": "TOOL_EQUAL",
+                "error_status": False,  # 两者相同，正常
+                "description": "两个工具提取的信息量相同"
+            },
+            "C": {
+                "type": "TOOL_TWO_BETTER",
+                "error_status": True,  # 工具B更好，标记为问题
+                "description": "工具B提取的信息更完整"
+            }
+        }
 
-        # 设置名称（使用判断结果）
-        result.name = f"Judgement_{judgement}"
+        mapping = judgement_mapping.get(structured_response.judgement)
+        if not mapping:
+            raise ValueError(f"无效的判断结果: {structured_response.judgement}")
 
-        # 设置推理过程
-        result.reason = [reason]
+        result.type = mapping["type"]
+        result.error_status = mapping["error_status"]
+        result.name = f"Judgement_{structured_response.judgement}"
+        result.reason = [structured_response.reason]
+
+        return result
+
+    @classmethod
+    def process_response(cls, response: str) -> ModelRes:
+        """
+        处理 LLM 返回结果
+
+        数据流：
+        1. 原始响应 (str) -> 结构化响应 (ResponseJudgementReason)
+        2. 结构化响应 -> 评估结果 (ModelRes)
+
+        这种分层设计的好处：
+        - 更清晰的责任分离
+        - 利用 Pydantic 的验证功能
+        - 便于单元测试
+        - 便于扩展和维护
+
+        Args:
+            response: LLM 原始响应文本
+
+        Returns:
+            ModelRes: 评估结果对象
+        """
+        # 步骤1: 解析为结构化响应
+        structured_response = cls._parse_response_to_structured(response)
+
+        # 步骤2: 转换为模型结果
+        result = cls._convert_to_model_result(structured_response)
 
         return result
