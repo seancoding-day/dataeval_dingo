@@ -28,3 +28,12 @@ class ResponseScoreTypeNameReason(BaseModel):
     class Config:
         extra = "forbid"
         validate_assignment = True
+
+
+class ResponseJudgementReason(BaseModel):
+    judgement: str  # A, B, or C
+    reason: str = ""
+
+    class Config:
+        extra = "forbid"
+        validate_assignment = True
