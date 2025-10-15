@@ -8,7 +8,7 @@ from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.model.modelres import ModelRes
 from dingo.model.prompt.prompt_html_extract_compare_v2 import PromptHtmlExtractCompareV2
-from dingo.model.response.response_class import ResponseJudgementReason
+from dingo.model.response.response_class import ResponseNameReason
 from dingo.utils import log
 
 
@@ -112,9 +112,9 @@ class LLMHtmlExtractCompareV2(BaseOpenAI):
         return messages
 
     @classmethod
-    def _parse_response_to_structured(cls, response: str) -> ResponseJudgementReason:
+    def _parse_response_to_structured(cls, response: str) -> ResponseNameReason:
         """
-        将 LLM 原始响应解析为结构化的 ResponseJudgementReason 对象
+        将 LLM 原始响应解析为结构化的 ResponseNameReason 对象
 
         解析格式：
         1. 提取 <Judgement>A/B/C</Judgement> 标签中的判断结果
@@ -124,7 +124,7 @@ class LLMHtmlExtractCompareV2(BaseOpenAI):
             response: LLM 原始响应文本
 
         Returns:
-            ResponseJudgementReason: 结构化响应对象
+            ResponseNameReason: 结构化响应对象，name 字段存储判断结果 (A/B/C)
 
         Raises:
             ValueError: 如果无法解析出有效的判断结果
@@ -148,14 +148,14 @@ class LLMHtmlExtractCompareV2(BaseOpenAI):
         # 提取推理过程（去除判断标签）
         reason = re.sub(r"<Judgement>[ABC]</Judgement>", "", response).strip()
 
-        # 使用 Pydantic 模型进行验证
-        return ResponseJudgementReason(
-            judgement=judgement,
+        # 使用 Pydantic 模型进行验证，name 字段存储判断结果
+        return ResponseNameReason(
+            name=judgement,
             reason=reason
         )
 
     @classmethod
-    def _convert_to_model_result(cls, structured_response: ResponseJudgementReason) -> ModelRes:
+    def _convert_to_model_result(cls, structured_response: ResponseNameReason) -> ModelRes:
         """
         将结构化响应转换为 ModelRes 对象
 
@@ -165,12 +165,15 @@ class LLMHtmlExtractCompareV2(BaseOpenAI):
         - C -> TOOL_TWO_BETTER (工具B更好，error_status=True)
 
         Args:
-            structured_response: 结构化响应对象
+            structured_response: 结构化响应对象，name 字段存储判断结果 (A/B/C)
 
         Returns:
             ModelRes: 评估结果对象
         """
         result = ModelRes()
+
+        # 从 name 字段获取判断结果
+        judgement = structured_response.name
 
         # 映射判断结果到类型和状态
         judgement_mapping = {
@@ -191,13 +194,13 @@ class LLMHtmlExtractCompareV2(BaseOpenAI):
             }
         }
 
-        mapping = judgement_mapping.get(structured_response.judgement)
+        mapping = judgement_mapping.get(judgement)
         if not mapping:
-            raise ValueError(f"无效的判断结果: {structured_response.judgement}")
+            raise ValueError(f"无效的判断结果: {judgement}")
 
         result.type = mapping["type"]
         result.error_status = mapping["error_status"]
-        result.name = f"Judgement_{structured_response.judgement}"
+        result.name = f"Judgement_{judgement}"
         result.reason = [structured_response.reason]
 
         return result
@@ -208,7 +211,7 @@ class LLMHtmlExtractCompareV2(BaseOpenAI):
         处理 LLM 返回结果
 
         数据流：
-        1. 原始响应 (str) -> 结构化响应 (ResponseJudgementReason)
+        1. 原始响应 (str) -> 结构化响应 (ResponseNameReason)
         2. 结构化响应 -> 评估结果 (ModelRes)
 
         这种分层设计的好处：

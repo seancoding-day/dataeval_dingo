@@ -17,7 +17,7 @@ import pytest
 
 from dingo.io import Data
 from dingo.model.llm.llm_html_extract_compare_v2 import LLMHtmlExtractCompareV2
-from dingo.model.response.response_class import ResponseJudgementReason
+from dingo.model.response.response_class import ResponseNameReason
 
 
 class TestExtractTextDiff:
@@ -87,7 +87,7 @@ class TestParseResponse:
 
         result = LLMHtmlExtractCompareV2._parse_response_to_structured(response)
 
-        assert result.judgement == "A"
+        assert result.name == "A"
         assert "思考过程" in result.reason
 
     def test_parse_judgement_b(self):
@@ -96,7 +96,7 @@ class TestParseResponse:
 
         result = LLMHtmlExtractCompareV2._parse_response_to_structured(response)
 
-        assert result.judgement == "B"
+        assert result.name == "B"
 
     def test_parse_judgement_c(self):
         """测试判断C"""
@@ -104,7 +104,7 @@ class TestParseResponse:
 
         result = LLMHtmlExtractCompareV2._parse_response_to_structured(response)
 
-        assert result.judgement == "C"
+        assert result.name == "C"
 
     def test_parse_chinese_format(self):
         """测试中文格式"""
@@ -112,7 +112,7 @@ class TestParseResponse:
 
         result = LLMHtmlExtractCompareV2._parse_response_to_structured(response)
 
-        assert result.judgement == "A"
+        assert result.name == "A"
 
 
 class TestConvertResult:
@@ -120,7 +120,7 @@ class TestConvertResult:
 
     def test_convert_a_to_tool_one_better(self):
         """A -> TOOL_ONE_BETTER"""
-        structured = ResponseJudgementReason(judgement="A", reason="工具A更完整")
+        structured = ResponseNameReason(name="A", reason="工具A更完整")
         result = LLMHtmlExtractCompareV2._convert_to_model_result(structured)
 
         assert result.type == "TOOL_ONE_BETTER"
@@ -128,7 +128,7 @@ class TestConvertResult:
 
     def test_convert_b_to_equal(self):
         """B -> TOOL_EQUAL"""
-        structured = ResponseJudgementReason(judgement="B", reason="两者相同")
+        structured = ResponseNameReason(name="B", reason="两者相同")
         result = LLMHtmlExtractCompareV2._convert_to_model_result(structured)
 
         assert result.type == "TOOL_EQUAL"
@@ -136,7 +136,7 @@ class TestConvertResult:
 
     def test_convert_c_to_tool_two_better(self):
         """C -> TOOL_TWO_BETTER"""
-        structured = ResponseJudgementReason(judgement="C", reason="工具B更完整")
+        structured = ResponseNameReason(name="C", reason="工具B更完整")
         result = LLMHtmlExtractCompareV2._convert_to_model_result(structured)
 
         assert result.type == "TOOL_TWO_BETTER"
