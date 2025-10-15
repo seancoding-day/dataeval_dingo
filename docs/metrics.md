@@ -16,6 +16,8 @@ This document provides comprehensive information about all quality metrics used 
 
 | Type | Metric | Description | Paper Source | Evaluation Results |
 |------|--------|-------------|--------------|-------------------|
+| `Html_Extract_Compare` | PromptHtmlExtractCompare | Compares the effectiveness of two HTML extraction tools by evaluating element recognition rate and accuracy across di... | Internal Implementation | N/A |
+| `Html_Extract_Compare_V2` | PromptHtmlExtractCompareV2 | Compares HTML extraction results using diff-match-patch algorithm to identify unique and common content, then evaluat... | Internal Implementation | N/A |
 | `MathCompare` | PromptMathCompare | Compares the effectiveness of two tools in extracting mathematical formulas from HTML to Markdown format by evaluatin... | Internal Implementation | N/A |
 | `QUALITY_BAD_HALLUCINATION` | PromptHallucination | Evaluates whether the response contains factual contradictions or hallucinations against provided context information | [TruthfulQA: Measuring How Models Mimic Human Falsehoods](https://arxiv.org/abs/2109.07958) (Lin et al., 2021) | N/A |
 | `QUALITY_BAD_HALLUCINATION` | RuleHallucinationHHEM | Uses Vectara's HHEM-2.1-Open model for local hallucination detection by evaluating consistency between response and c... | [HHEM-2.1-Open](https://huggingface.co/vectara/hallucination_evaluation_model) (Forrest Bao, Miaoran Li, Rogger Luo, Ofer Mendelevitch) | N/A |
