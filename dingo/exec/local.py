@@ -263,14 +263,26 @@ class LocalExecutor(ExecProto):
                 else:
                     raise Exception('ModelRes.type and ModelRes.name are not str or List at the same time.')
                 good_reason_list.extend(tmp.reason)
-        if result_info.error_status:
-            result_info.type_list = list(set(bad_type_list))
-            result_info.name_list = bad_name_list
-            result_info.reason_list = bad_reason_list
+
+        if self.input_args.executor.result_save.all_labels:
+            # Always include both good and bad results when they exist
+            # The final error_status is True if ANY evaluation failed
+            all_type_list = list(set(bad_type_list + good_type_list))
+            all_name_list = bad_name_list + good_name_list
+            all_reason_list = bad_reason_list + good_reason_list
+
+            result_info.type_list = all_type_list
+            result_info.name_list = all_name_list
+            result_info.reason_list = all_reason_list
         else:
-            result_info.type_list = list(set(good_type_list))
-            result_info.name_list = good_name_list
-            result_info.reason_list = good_reason_list
+            if result_info.error_status:
+                result_info.type_list = list(set(bad_type_list))
+                result_info.name_list = bad_name_list
+                result_info.reason_list = bad_reason_list
+            else:
+                result_info.type_list = list(set(good_type_list))
+                result_info.name_list = good_name_list
+                result_info.reason_list = good_reason_list
         return result_info
 
     def evaluate_prompt(self, group: List[BasePrompt], d: Data) -> ResultInfo:
@@ -316,14 +328,26 @@ class LocalExecutor(ExecProto):
                 else:
                     raise Exception('ModelRes.type and ModelRes.name are not str or List at the same time.')
                 good_reason_list.extend(tmp.reason)
-        if result_info.error_status:
-            result_info.type_list = list(set(bad_type_list))
-            result_info.name_list = bad_name_list
-            result_info.reason_list = bad_reason_list
+
+        if self.input_args.executor.result_save.all_labels:
+            # Always include both good and bad results when they exist
+            # The final error_status is True if ANY evaluation failed
+            all_type_list = list(set(bad_type_list + good_type_list))
+            all_name_list = bad_name_list + good_name_list
+            all_reason_list = bad_reason_list + good_reason_list
+
+            result_info.type_list = all_type_list
+            result_info.name_list = all_name_list
+            result_info.reason_list = all_reason_list
         else:
-            result_info.type_list = list(set(good_type_list))
-            result_info.name_list = good_name_list
-            result_info.reason_list = good_reason_list
+            if result_info.error_status:
+                result_info.type_list = list(set(bad_type_list))
+                result_info.name_list = bad_name_list
+                result_info.reason_list = bad_reason_list
+            else:
+                result_info.type_list = list(set(good_type_list))
+                result_info.name_list = good_name_list
+                result_info.reason_list = good_reason_list
         return result_info
 
     def summarize(self, summary: SummaryModel) -> SummaryModel:

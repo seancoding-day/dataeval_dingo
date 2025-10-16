@@ -76,11 +76,12 @@ HuggingFace 特定配置：
 
 结果保存配置：
 
-| Parameter | Type | Default | Required | Description |
-|-----------|------|---------|----------|-------------|
-| bad | bool | false | No | 是否保存错误结果 |
-| good | bool | false | No | 是否保存正确结果 |
-| raw | bool | false | No | 是否保存原始数据 |
+| Parameter  | Type | Default | Required | Description |
+|------------|------|---------|----------|-------------|
+| bad        | bool | false   | No       | 是否保存错误结果    |
+| good       | bool | false   | No       | 是否保存正确结果    |
+| all_labels | bool | false   | No       | 是否保存所有标签    |
+| raw        | bool | false   | No       | 是否保存原始数据    |
 
 ### Evaluator 配置 (evaluator)
 
