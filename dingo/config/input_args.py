@@ -50,6 +50,7 @@ class EvaluatorRuleArgs(BaseModel):
     pattern: Optional[str] = None
     key_list: Optional[List[str]] = None
     refer_path: Optional[List[str]] = None
+    parameters: Optional[dict] = None
 
 
 class EvaluatorLLMArgs(BaseModel):
