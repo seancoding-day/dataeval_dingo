@@ -1,8 +1,7 @@
 import pytest
 
 from dingo.config import InputArgs
-from dingo.exec import Executor
-from dingo.exec import LocalExecutor
+from dingo.exec import Executor, LocalExecutor
 from dingo.io import ResultInfo
 
 
@@ -49,7 +48,7 @@ class TestLocal:
 
     def test_all_labels_config(self):
         input_data = {
-            "input_path": "../../data/test_local_jsonl.jsonl",
+            "input_path": "test/data//test_local_jsonl.jsonl",
             "dataset": {
                 "source": "local",
                 "format": "jsonl",
