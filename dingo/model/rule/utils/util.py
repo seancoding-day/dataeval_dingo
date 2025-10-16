@@ -173,10 +173,12 @@ def base_rps_frac_chars_in_dupe_ngrams(NGRAM_SIZE, content):
     This operates on the lower-cased, punctuation removed content. The function
     also ensures that characters in overlapping ngrams are only counted once.
     """
+    print("原始", content)
     normalized_content = normalize(content)
     normalized_words = split_words(normalized_content)
-
+    print("normalized_words", normalized_words)
     if len(normalized_words) < NGRAM_SIZE:
+        print(len(normalized_words))
         return 0
 
     # fetch the ngrams from the document if they exist, otherwise
@@ -185,8 +187,9 @@ def base_rps_frac_chars_in_dupe_ngrams(NGRAM_SIZE, content):
 
     # keep only ngrams which occur at least twice
     ngram_dupes = {ngram for ngram, count in Counter(doc_n_grams).items() if count > 1}
-
+    print(f"重复的n-grams: ", ngram_dupes)
     duplicated_grams = numpy.zeros(len(normalized_words), dtype=int)
+
     i = 0
     for ngram in doc_n_grams:
         if ngram in ngram_dupes:
@@ -200,7 +203,7 @@ def base_rps_frac_chars_in_dupe_ngrams(NGRAM_SIZE, content):
 
     if total_chars == 0:
         return 0
-
+    print(chars_duped)
     score = float(chars_duped / total_chars) * 100
     return score
 
