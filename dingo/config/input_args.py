@@ -30,6 +30,7 @@ class DatasetArgs(BaseModel):
 class ExecutorResultSaveArgs(BaseModel):
     bad: bool = False
     good: bool = False
+    all_labels: bool = False
     raw: bool = False
 
 
