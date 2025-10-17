@@ -6,17 +6,17 @@ from dingo.io import Data
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.model.modelres import ModelRes
-from dingo.model.prompt.prompt_math_compare import PromptMathCompare
+from dingo.model.prompt.prompt_code_compare import PromptCodeCompare
 from dingo.utils import log
 from dingo.utils.exception import ConvertJsonError
 
 
-@Model.llm_register('LLMMathCompare')
-class LLMMathCompare(BaseOpenAI):
+@Model.llm_register('LLMCodeCompare')
+class LLMCodeCompare(BaseOpenAI):
     """
-    专注于数学公式抽取效果的对比
+    专注于代码块抽取效果的对比
     """
-    prompt = PromptMathCompare
+    prompt = PromptCodeCompare
 
     @classmethod
     def build_messages(cls, input_data: Data) -> List:
@@ -49,9 +49,9 @@ class LLMMathCompare(BaseOpenAI):
         except json.JSONDecodeError:
             raise ConvertJsonError(f'Convert to JSON format failed: {response}')
 
-        # 处理特殊情况：没有数学公式
-        if response_json.get('no_formula'):
-            return cls._create_no_formula_result(response_json)
+        # 处理特殊情况：没有代码块
+        if response_json.get('no_code'):
+            return cls._create_no_code_result(response_json)
 
         # 处理正常情况
         return cls._create_normal_result(response_json)
@@ -78,11 +78,11 @@ class LLMMathCompare(BaseOpenAI):
         return response
 
     @staticmethod
-    def _create_no_formula_result(response_json: dict) -> ModelRes:
+    def _create_no_code_result(response_json: dict) -> ModelRes:
         result = ModelRes()
         result.error_status = False
-        result.type = 'NO_FORMULA'
-        result.name = 'math'
+        result.type = 'NO_CODE'
+        result.name = 'code'
         result.reason = [json.dumps(response_json, ensure_ascii=False)]
         return result
 
@@ -93,7 +93,7 @@ class LLMMathCompare(BaseOpenAI):
 
         result.error_status = score != 1
         result.type = {1: 'TOOL_ONE_BETTER', 2: 'TOOL_TWO_BETTER'}.get(score, 'TOOL_EQUAL')
-        result.name = 'math'
+        result.name = 'code'
         result.reason = [json.dumps(response_json, ensure_ascii=False)]
 
         return result
