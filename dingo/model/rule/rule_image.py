@@ -318,18 +318,165 @@ class RuleImageLabelOverlap(BaseRule):
         "category": "Rule-Based IMG Quality Metrics",
         "quality_dimension": "IMG_LABEL_OVERLAP",
         "metric_name": "RuleImageLabelOverlap",
-        "description": "",  # TODO: lindong input
+        "description": "Detects overlapping bounding boxes in image annotations, marks full/partial overlap and generates visualization images",
         "paper_title": "",
         "paper_url": "",
         "paper_authors": "",
         "evaluation_results": ""
     }
 
-    dynamic_config = EvaluatorRuleArgs()
+    dynamic_config = EvaluatorRuleArgs(
+        refer_path=['../../test/data/overlap_visual_image'],  # 用户保存图片路径
+    )
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
-        pass
+        import copy
+        import json
+        from pathlib import Path
+        from PIL import Image, ImageDraw, ImageFont
+        import logging
+
+        res = ModelRes()
+
+        try:
+            # 1. 阈值参数
+            iou_partial_threshold = 0.1
+            iou_full_threshold = 0.9
+
+            # 2. 解析输入数据
+            content = input_data.content
+            image_path = input_data.image[0] if (input_data.image and len(input_data.image) > 0) else None
+            data_id = input_data.data_id
+
+            # 3. 解析标注内容
+            if isinstance(content, str):
+                try:
+                    annotations = json.loads(content)
+                except json.JSONDecodeError as e:
+                    res.error_status = True
+                    res.reason = [f"content解析失败：{str(e)}，前50字符：{content[:50]}..."]
+                    return res
+            elif isinstance(content, dict):
+                annotations = content
+            else:
+                res.error_status = True
+                res.reason = [f"content类型错误：需dict/str，实际是{type(content).__name__}"]
+                return res
+
+            # 4. 验证数据有效性
+            if not annotations:
+                res.error_status = True
+                res.reason = [f"id:{data_id} - annotations为空"]
+                return res
+            if not image_path or not os.path.exists(image_path):
+                res.error_status = True
+                res.reason = [f"id:{data_id} - 图片路径无效：{image_path}"]
+                return res
+
+            # 5. 提取边界框并计算重叠
+            bboxes = [
+                obj for obj in annotations.get('step_1', {}).get('result', [])
+                if obj.get('valid', True) and all(k in obj for k in ['x', 'y', 'width', 'height'])
+            ]
+
+            has_overlap = False  # 是否符合阈值重叠（部分或完全）
+            full_overlap_pairs = []
+            partial_overlap_pairs = []
+
+            if bboxes:
+                n = len(bboxes)
+                for i in range(n):
+                    for j in range(i + 1, n):
+                        # 计算IOU
+                        box1 = bboxes[i]
+                        box2 = bboxes[j]
+                        x1 = max(box1["x"], box2["x"])
+                        y1 = max(box1["y"], box2["y"])
+                        x2 = min(box1["x"] + box1["width"], box2["x"] + box2["width"])
+                        y2 = min(box1["y"] + box1["height"], box2["y"] + box2["height"])
+                        intersection = max(0, x2 - x1) * max(0, y2 - y1)
+                        area1 = box1["width"] * box1["height"]
+                        area2 = box2["width"] * box2["height"]
+                        union = area1 + area2 - intersection
+                        iou = intersection / union if union != 0 else 0
+
+                        # 判断是否符合阈值重叠
+                        if iou >= iou_full_threshold:
+                            full_overlap_pairs.append((i, j))
+                            has_overlap = True
+                        elif iou >= iou_partial_threshold:
+                            partial_overlap_pairs.append((i, j))
+                            has_overlap = True
+
+                # 标记重叠边界框
+                full_overlap_ids = set(idx for pair in full_overlap_pairs for idx in pair)
+                partial_overlap_ids = set(idx for pair in partial_overlap_pairs for idx in pair) - full_overlap_ids
+                new_annotations = copy.deepcopy(annotations)
+                for idx, box in enumerate(new_annotations["step_1"]["result"]):
+                    if idx in full_overlap_ids:
+                        box["attribute"] = "full_overlap"
+                    elif idx in partial_overlap_ids:
+                        box["attribute"] = "partial_overlap"
+            else:
+                new_annotations = annotations
+
+            # 6. 动态设置 res.name 和 res.type
+            if has_overlap:
+                # 符合阈值重叠：使用原名称和类型
+                res.name = cls.__name__  # "RuleImageLabelOverlap"
+                res.type = cls._metric_info["quality_dimension"]  # "IMG_LABEL_OVERLAP"
+            else:
+                # 不符合阈值重叠
+                res.name = "GOOD_IMG_LABEL"  # 自定义非重叠名称
+                res.type = "NO_LABEL_OVERLAP"  # 自定义非重叠类型
+
+            # 7. 生成可视化标注狂框重叠图片
+            output_dir = Path(cls.dynamic_config.refer_path[0])
+            output_dir.mkdir(parents=True, exist_ok=True)
+            vis_path = str(output_dir / f"overlap_{data_id}.png")
+
+            try:
+                img = Image.open(image_path).convert("RGB")
+                draw = ImageDraw.Draw(img)
+                for idx, box in enumerate(bboxes):
+                    x, y, w, h = box["x"], box["y"], box["width"], box["height"]
+                    if idx in full_overlap_ids:
+                        color = (255, 0, 0)
+                    elif idx in partial_overlap_ids:
+                        color = (255, 255, 0)
+                    else:
+                        color = (0, 255, 0)
+                    draw.rectangle([(x, y), (x + w, y + h)], outline=color, width=3)
+                    draw.text((x, max(0, y - 15)), f"Box {idx}", fill=color, font=ImageFont.load_default())
+                img.save(vis_path)
+            except Exception as e:
+                logging.warning(f"可视化生成失败：{str(e)}")
+                vis_path = None
+
+            # 8. 整理结果
+            final_result = {
+                "id": data_id,
+                "has_overlap": has_overlap,
+                "overlap_stats": {
+                    "full_overlap_pairs": len(full_overlap_pairs),
+                    "partial_overlap_pairs": len(partial_overlap_pairs),
+                    "total_boxes": len(bboxes)
+                },
+                "visualization_path": vis_path
+            }
+
+            res.error_status = has_overlap  # 重叠图像标记为错误状态（可选）
+            res.reason = [json.dumps(final_result, ensure_ascii=False)]
+
+        except Exception as global_e:
+            res.error_status = False
+            res.reason = [f"全局处理错误：{str(global_e)}，id:{input_data.data_id}"]
+            # 异常情况仍使用原类型，便于排查
+            res.name = cls.__name__
+            res.type = cls._metric_info["quality_dimension"]
+
+        return res
 
 
 @Model.rule_register("QUALITY_BAD_IMG_LABEL_VISUALIZATION", [])
