@@ -1,10 +1,14 @@
+import copy
 import json
+import logging
 import os
+import random
 import time
+from pathlib import Path
 
 import numpy as np
 import requests
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 
 from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
@@ -331,12 +335,6 @@ class RuleImageLabelOverlap(BaseRule):
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
-        import copy
-        import json
-        import logging
-        from pathlib import Path
-
-        from PIL import Image, ImageDraw, ImageFont
 
         res = ModelRes()
 
@@ -432,7 +430,7 @@ class RuleImageLabelOverlap(BaseRule):
                 res.name = "GOOD_IMG_LABEL"  # 自定义非重叠名称
                 res.type = "NO_LABEL_OVERLAP"  # 自定义非重叠类型
 
-            # 7. 生成可视化标注狂框重叠图片
+            # 7. 生成可视化标注框重叠图片
             output_dir = Path(cls.dynamic_config.refer_path[0])
             output_dir.mkdir(parents=True, exist_ok=True)
             vis_path = str(output_dir / f"overlap_{data_id}.png")
@@ -486,18 +484,210 @@ class RuleImageLabelVisualization(BaseRule):
         "category": "Rule-Based IMG Quality Metrics",
         "quality_dimension": "IMG_LABEL_VISUALIZATION",
         "metric_name": "RuleImageLabelVisualization",
-        "description": "",  # TODO: lindong input
+        "description": "Generates visualization images with bounding boxes and category labels, helping manual check of annotation accuracy",
         "paper_title": "",
         "paper_url": "",
         "paper_authors": "",
         "evaluation_results": ""
     }
 
-    dynamic_config = EvaluatorRuleArgs()
+    dynamic_config = EvaluatorRuleArgs(
+        refer_path=['../../test/data/label_visual_image'] # 用户保存图片路径
+    )
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
-        pass
+
+        res = ModelRes()
+
+        try:
+            # --------------------------
+            # 1. 内部工具函数与配置
+            # --------------------------
+            # label字体大小
+            font_size = 50
+            # 用户自定义类别-颜色映射
+            color_map = {
+                'table': (255, 165, 0),  # 橙色
+                'figure': (0, 255, 0),  # 绿色
+                'text_block': (0, 0, 255),  # 蓝色
+                'text_span': (7, 104, 159),  # #07689f
+                'equation_inline': (89, 13, 130),  # #590d82
+                'equation_ignore': (118, 159, 205)  # #769fcd
+            }
+
+            font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+            def poly2bbox(poly):
+                """将多边形坐标转换为边界框 [左, 上, 右, 下]"""
+                L = poly[0]
+                U = poly[1]
+                R = poly[2]
+                D = poly[5]
+                return [min(L, R), min(U, D), max(L, R), max(U, D)]
+
+            def get_random_color():
+                """生成随机RGB颜色（用于未定义类别）"""
+                return (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+
+            def count_total_labels(elements):
+                """统计包含子元素的总标注数量"""
+                count = 0
+                for elem in elements:
+                    count += 1
+                    if elem.get('line_with_spans'):
+                        count += count_total_labels(elem['line_with_spans'])
+                return count
+
+            def draw_bboxes(draw_obj, elements, color_map, font_obj):
+                """绘制边界框和类别标签，递归处理子元素"""
+                for element in elements:
+                    # 跳过需忽略的标注（abandon/mask/含图片的table）
+                    category = element.get('category_type', '')
+                    if (category == 'abandon' or
+                            'mask' in category or
+                            (category == 'table' and element.get('attribute', {}).get('include_photo'))):
+                        continue
+
+                    # 处理边界框坐标
+                    poly = element.get('poly', [])
+                    if len(poly) < 6:
+                        continue
+                    bbox = poly2bbox(poly)
+
+                    # 确定颜色（未定义类别自动添加随机色）
+                    if category not in color_map:
+                        color_map[category] = get_random_color()
+                    border_color = color_map[category]
+
+                    # 绘制边界框
+                    draw_obj.rectangle(bbox, outline=border_color, width=3)
+
+                    # 绘制类别标签（左上角偏移2px避免贴边）
+                    text_pos = (bbox[0] + 2, bbox[1] + 2)
+                    draw_obj.text(text_pos, category, fill=border_color, font=font_obj)
+
+                    # 递归处理子元素（如line_with_spans）
+                    if element.get('line_with_spans'):
+                        draw_bboxes(draw_obj, element['line_with_spans'], color_map, font_obj)
+
+            # --------------------------
+            # 2. 解析输入数据
+            # --------------------------
+            # 提取核心数据
+            content = input_data.content  # 标注数据（str或dict）
+            image_path = input_data.image[0] if (input_data.image and len(input_data.image) > 0) else None
+            data_id = input_data.data_id
+
+            # 验证图片路径有效性
+            if not image_path or not os.path.exists(image_path):
+                res.error_status = True
+                res.reason = [f"id:{data_id} - 图片路径无效/不存在：{image_path}"]
+                res.name = "NO_IMG_DATA"
+                res.type = "NO_IMG_LABEL_VISUALIZATION"
+                return res
+
+            # 解析标注内容
+            if isinstance(content, str):
+                try:
+                    annotations = json.loads(content)
+                except json.JSONDecodeError as e:
+                    res.error_status = True
+                    res.reason = [f"id:{data_id} - 标注解析失败：{str(e)}，前50字符：{content[:50]}..."]
+                    res.name = "NO_LABEL_DATA"
+                    res.type = "NO_IMG_LABEL_VISUALIZATION"
+                    return res
+            elif isinstance(content, dict):
+                annotations = content
+            else:
+                res.error_status = True
+                res.reason = [f"id:{data_id} - 标注类型错误：需dict/str，实际{type(content).__name__}"]
+                res.name = "NO_LABEL_DATA"
+                res.type = "NO_IMG_LABEL_VISUALIZATION"
+                return res
+
+            # 提取布局标注（适配"layout_dets"字段）
+            layout_dets = annotations.get("layout_dets", [])
+            if not layout_dets:
+                # 无标注数据时的处理
+                res.name = "NO_LABEL_DATA"
+                res.type = "NO_IMG_LABEL_VISUALIZATION"
+                res.error_status = False
+                res.reason = [json.dumps({
+                    "id": data_id,
+                    "message": "无布局标注数据（layout_dets为空）",
+                    "visualization_path": None,
+                    "label_stats": {"total_labels": 0}
+                }, ensure_ascii=False)]
+                return res
+
+            # --------------------------
+            # 3. 初始化可视化依赖
+            # --------------------------
+            # 加载字体（失败时降级为默认字体）
+            try:
+                font = ImageFont.truetype(font_path, font_size)
+            except Exception as e:
+                font = ImageFont.load_default()
+
+            # --------------------------
+            # 4. 绘制标注并保存可视化图像
+            # --------------------------
+            # 打开原始图像
+            img = Image.open(image_path).convert("RGB")
+            draw = ImageDraw.Draw(img)
+
+            # 调用内部函数绘制标注
+            draw_bboxes(draw, layout_dets, color_map, font)
+
+            # 准备输出路径
+            output_dir = Path(cls.dynamic_config.refer_path[0])
+            output_dir.mkdir(parents=True, exist_ok=True)
+            # 生成带数据ID的文件名（避免重复）
+            img_basename = Path(image_path).name
+            vis_filename = f"visual_{data_id}_{img_basename}"
+            vis_path = str(output_dir / vis_filename)
+
+            # 保存图像
+            try:
+                img.save(vis_path)
+            except Exception as e:
+                res.error_status = True
+                res.reason = [f"id:{data_id} - 保存图像失败：{str(e)}"]
+                return res
+
+            # --------------------------
+            # 5. 整理结果与设置类型
+            # --------------------------
+            # 动态设置结果名称和类型（有标注时使用规则默认值）
+            res.name = cls.__name__
+            res.type = cls._metric_info["quality_dimension"]
+
+            # 统计标注数量
+            total_label_count = count_total_labels(layout_dets)
+
+            # 构造最终结果
+            final_result = {
+                "id": data_id,
+                "visualization_status": "success",
+                "original_image_path": image_path,
+                "visualization_path": vis_path,
+                "label_stats": {
+                    "total_labels": total_label_count,
+                    "top_level_labels": len(layout_dets)  # 顶层标注数（不含子元素）
+                }
+            }
+
+            res.error_status = False
+            res.reason = [json.dumps(final_result, ensure_ascii=False)]
+
+        except Exception as global_e:
+            # 全局异常处理
+            res.error_status = True
+            res.reason = [f"id:{data_id} - 可视化处理全局错误：{str(global_e)}"]
+            res.name = cls.__name__
+            res.type = "IMG_LABEL_VISUALIZATION_ERROR"
+
+        return res
 
 
 if __name__ == "__main__":
