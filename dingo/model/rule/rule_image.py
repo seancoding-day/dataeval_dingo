@@ -333,9 +333,10 @@ class RuleImageLabelOverlap(BaseRule):
     def eval(cls, input_data: Data) -> ModelRes:
         import copy
         import json
-        from pathlib import Path
-        from PIL import Image, ImageDraw, ImageFont
         import logging
+        from pathlib import Path
+
+        from PIL import Image, ImageDraw, ImageFont
 
         res = ModelRes()
 
