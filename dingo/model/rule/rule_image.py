@@ -143,7 +143,8 @@ class RuleImageRepeat(BaseRule):
         "metric_name": "RuleImageRepeat",
         "description": "Detects duplicate images using PHash and CNN methods to ensure data diversity",
         "paper_title": "ImageNet Classification with Deep Convolutional Neural Networks",
-        "paper_url": "https://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf",
+        "paper_url": "https://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks"
+                     ".pdf",
         "paper_authors": "Krizhevsky et al., 2012",
         "evaluation_results": ""
     }
@@ -322,7 +323,8 @@ class RuleImageLabelOverlap(BaseRule):
         "category": "Rule-Based IMG Quality Metrics",
         "quality_dimension": "IMG_LABEL_OVERLAP",
         "metric_name": "RuleImageLabelOverlap",
-        "description": "Detects overlapping bounding boxes in image annotations, marks full/partial overlap and generates visualization images",
+        "description": "Detects overlapping bounding boxes in image annotations, marks full/partial overlap and "
+                       "generates visualization images",
         "paper_title": "",
         "paper_url": "",
         "paper_authors": "",
@@ -484,7 +486,8 @@ class RuleImageLabelVisualization(BaseRule):
         "category": "Rule-Based IMG Quality Metrics",
         "quality_dimension": "IMG_LABEL_VISUALIZATION",
         "metric_name": "RuleImageLabelVisualization",
-        "description": "Generates visualization images with bounding boxes and category labels, helping manual check of annotation accuracy",
+        "description": "Generates visualization images with bounding boxes and category labels, helping manual check "
+                       "of annotation accuracy",
         "paper_title": "",
         "paper_url": "",
         "paper_authors": "",
@@ -492,7 +495,7 @@ class RuleImageLabelVisualization(BaseRule):
     }
 
     dynamic_config = EvaluatorRuleArgs(
-        refer_path=['../../test/data/label_visual_image'] # 用户保存图片路径
+        refer_path=['../../test/data/label_visual_image'],  # 用户保存图片路径
     )
 
     @classmethod
@@ -517,6 +520,7 @@ class RuleImageLabelVisualization(BaseRule):
             }
 
             font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+
             def poly2bbox(poly):
                 """将多边形坐标转换为边界框 [左, 上, 右, 下]"""
                 L = poly[0]
@@ -627,6 +631,10 @@ class RuleImageLabelVisualization(BaseRule):
             try:
                 font = ImageFont.truetype(font_path, font_size)
             except Exception as e:
+                logging.warning(
+                    f"加载指定字体失败（路径：{font_path}，字号：{font_size}），"
+                    f"错误原因：{str(e)}，将使用系统默认字体（可能不支持自定义字号）"
+                )
                 font = ImageFont.load_default()
 
             # --------------------------
@@ -693,7 +701,8 @@ class RuleImageLabelVisualization(BaseRule):
 if __name__ == "__main__":
     data = Data(
         data_id='1',
-        content="https://openxlab.oss-cn-shanghai.aliyuncs.com/artimuse/upload/ef39eef6-2b40-4ea3-8285-934684734298-stsupload-1753254621827-dog.jpg"
+        content="https://openxlab.oss-cn-shanghai.aliyuncs.com/artimuse/upload/ef39eef6-2b40-4ea3-8285-934684734298-"
+                "stsupload-1753254621827-dog.jpg"
     )
     res = RuleImageArtimuse.eval(data)
     print(res)
