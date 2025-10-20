@@ -95,7 +95,7 @@ This document provides comprehensive information about all quality metrics used 
 
 | Type | Metric | Description | Paper Source | Evaluation Results |
 |------|--------|-------------|--------------|-------------------|
-| `PromptMinerURecognizeQuality` | PromptMinerURecognizeQuality | Evaluate the quality of mineru recognize | Internal Implementation | [📊 See Results](error_category and error_label) |
+| `PromptMinerURecognizeQuality` | MinerURecognizeQuality | Evaluate the quality of mineru recognize | Internal Implementation | [📊 See Results](error_category and error_label) |
 
 ### Text Generation
 
