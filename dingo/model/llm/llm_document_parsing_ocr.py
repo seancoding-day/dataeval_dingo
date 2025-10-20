@@ -24,7 +24,7 @@ class VLMDocumentParsingQuality(BaseOpenAI):
                 "role": "user",
                 "content": [
                     {"type": "text", "text": f"Markdown:\n{gt_markdown}"},
-                    {"type": "text", "text": f"Pred:\n{pred_item["content"]}; Bbox ID: {pred_item["bbox_id"]}; bbox_type: {pred_item["type"]}"}
+                    {"type": "text", "text": f"Pred:\n{pred_item['content']}; Bbox ID: {pred_item['bbox_id']}; bbox_type: {pred_item['type']}"}
                 ]
             })
         return messages

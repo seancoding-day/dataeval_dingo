@@ -14,7 +14,7 @@ if __name__ == '__main__':
             }
         },
         "executor": {
-            "prompt_list": ["PromptMinerURecognizeQuality"],
+            "prompt_list": ["PromptMinerURecognize"],
             "result_save": {
                 "bad": True,
                 "good": True
