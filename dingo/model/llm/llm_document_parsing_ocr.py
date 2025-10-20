@@ -6,7 +6,7 @@ from dingo.io import Data
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.model.modelres import ModelRes
-from dingo.model.prompt.prompt_document_parsing import PromptDocumentParsingQuality
+from dingo.model.prompt.prompt_mineru_recognize import PromptMinerURecognizeQuality
 from dingo.utils import log
 from dingo.utils.exception import ConvertJsonError
 from dingo.model.response.response_class import ResponseScoreReason
@@ -14,6 +14,7 @@ from dingo.model.response.response_class import ResponseScoreReason
 
 @Model.llm_register("VLMDocumentParsingQuality")
 class VLMDocumentParsingQuality(BaseOpenAI):
+    prompt = PromptMinerURecognizeQuality
     @classmethod
     def build_messages(cls, input_data: Data) -> List:
         gt_markdown = input_data.prompt
@@ -22,8 +23,8 @@ class VLMDocumentParsingQuality(BaseOpenAI):
             {
                 "role": "user",
                 "content": [
-                    {"type": "text", "text": f"Markdown:\n{gt_markdown}"},
-                    {"type": "text", "text": f"Pred:\n{pred_json['content']}; bbox_id: {pred_json['bbox_id']}; bbox_type: {pred_json['type']}"}
+                    {"text": f"Markdown:\n{gt_markdown}"},
+                    {"text": f"Pred:\n{pred_json['content']}; bbox_id: {pred_json['bbox_id']}; bbox_type: {pred_json['type']}"}
                 ]
             }]
         return messages

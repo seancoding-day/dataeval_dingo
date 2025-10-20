@@ -3,13 +3,13 @@ from dingo.model.prompt.base import BasePrompt
 
 
 @Model.prompt_register("PromptMinerURecognizeQuality", [], ['VLMDocumentParsingQuality'])
-class PromptMinerURecognize(BasePrompt):
+class PromptMinerURecognizeQuality(BasePrompt):
     # Metadata for documentation generation
     _metric_info = {
-        "category": "Document Parsing",
-        "metric_name": "PromptDocumentParsingQuality",
-        "description": "Evaluate the quality of general document parsing",
-        "evaluation_results": "",
+        "category": "Mineru Recognize",
+        "metric_name": "PromptMinerURecognizeQuality",
+        "description": "Evaluate the quality of mineru recognize",
+        "evaluation_results": "error_category and error_label",
     }
     content = r"""
 你是一位熟悉文档解析领域的质量专家，你的核心任务是根据正确的markdown，以及对应bbox工具预测结果，获取工具预测结果的错误类型。
