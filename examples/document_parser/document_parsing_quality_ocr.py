@@ -22,7 +22,7 @@ if __name__ == '__main__':
         },
         "evaluator": {
             "llm_config": {
-                "VLMDocumentParsingQuality": {
+                "LLMMinerURecognizeQuality": {
                     "key": "",
                     "api_url": "",
                 }

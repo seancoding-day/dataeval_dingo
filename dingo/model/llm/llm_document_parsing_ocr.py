@@ -12,8 +12,8 @@ from dingo.utils.exception import ConvertJsonError
 from dingo.model.response.response_class import ResponseScoreReason
 
 
-@Model.llm_register("MinerURecognizeQuality")
-class MinerURecognizeQuality(BaseOpenAI):
+@Model.llm_register("LLMMinerURecognizeQuality")
+class LLMMinerURecognizeQuality(BaseOpenAI):
     prompt = PromptMinerURecognizeQuality
     @classmethod
     def build_messages(cls, input_data: Data) -> List:

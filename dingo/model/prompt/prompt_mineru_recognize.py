@@ -2,7 +2,7 @@ from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
 
-@Model.prompt_register("PromptMinerURecognizeQuality", [], ['VLMDocumentParsingQuality'])
+@Model.prompt_register("PromptMinerURecognizeQuality")
 class PromptMinerURecognizeQuality(BasePrompt):
     """
     Metadata for documentation generation
