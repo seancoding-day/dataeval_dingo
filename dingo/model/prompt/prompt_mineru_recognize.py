@@ -4,10 +4,12 @@ from dingo.model.prompt.base import BasePrompt
 
 @Model.prompt_register("PromptMinerURecognizeQuality", [], ['VLMDocumentParsingQuality'])
 class PromptMinerURecognizeQuality(BasePrompt):
-    # Metadata for documentation generation
+    """
+    Metadata for documentation generation
+    """
     _metric_info = {
         "category": "Mineru Recognize",
-        "metric_name": "PromptMinerURecognizeQuality",
+        "metric_name": "MinerURecognizeQuality",
         "description": "Evaluate the quality of mineru recognize",
         "evaluation_results": "error_category and error_label",
     }

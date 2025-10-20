@@ -3,7 +3,7 @@ from dingo.exec import Executor
 
 if __name__ == '__main__':
     input_data = {
-        "input_path": "../../test/data/test_document_recognize.jsonl",
+        "input_path": "../../test/data/test_document_OCR_recognize.jsonl",
         "dataset": {
             "source": "local",
             "format": "jsonl",
@@ -14,7 +14,7 @@ if __name__ == '__main__':
             }
         },
         "executor": {
-            "prompt_list": ["PromptMinerURecognize"],
+            "prompt_list": ["PromptMinerURecognizeQuality"],
             "result_save": {
                 "bad": True,
                 "good": True
