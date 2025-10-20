@@ -12,7 +12,7 @@ input_data = {
         }
     },
     'executor': {
-        'prompt_list': ['PromptMathCompare'],
+        'prompt_list': ['PromptCodeCompare'],
         'batch_size': 10,
         'max_workers': 10,
         'result_save': {
@@ -23,9 +23,9 @@ input_data = {
     },
     'evaluator': {
         'llm_config': {
-            'LLMMathCompare': {
-                'key': '',
-                'api_url': '',
+            'LLMCodeCompare': {
+                "key": "",
+                "api_url": "",
                 'temperature': 0
             }
         }

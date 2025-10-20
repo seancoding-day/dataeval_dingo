@@ -2,17 +2,17 @@ from dingo.config import InputArgs
 from dingo.exec import Executor
 
 input_data = {
-    'input_path': '../../test/data/compare/WebMainBench_test_1011_dataset_with_results_clean.jsonl',
+    'input_path': '../../test/data/compare/WebMainBench_test_1011_dataset_with_results_clean_llm_webkit_html.jsonl',
     'dataset': {
         'source': 'local',
         'format': 'jsonl',
         'field': {
             'id': 'id',
-            'content': 'clean_html'
+            'content': 'clean_llm_webkit_html'
         }
     },
     'executor': {
-        'prompt_list': ['PromptMathCompare'],
+        'prompt_list': ['PromptTableCompare'],
         'batch_size': 10,
         'max_workers': 10,
         'result_save': {
@@ -23,9 +23,9 @@ input_data = {
     },
     'evaluator': {
         'llm_config': {
-            'LLMMathCompare': {
-                'key': '',
-                'api_url': '',
+            'LLMTableCompare': {
+                "key": "",
+                "api_url": "",
                 'temperature': 0
             }
         }
