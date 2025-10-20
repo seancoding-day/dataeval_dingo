@@ -16,8 +16,8 @@ from dingo.model.response.response_class import ResponseScoreReason
 class VLMDocumentParsingQuality(BaseOpenAI):
     @classmethod
     def build_messages(cls, input_data: Data) -> List:
-        gt_markdown = input_data.gt_markdown
-        pred_json = json.loads(input_data.pred)
+        gt_markdown = input_data.prompt
+        pred_json = json.loads(input_data.content)
         messages = []
         for pred_item in pred_json:
             messages.append({
