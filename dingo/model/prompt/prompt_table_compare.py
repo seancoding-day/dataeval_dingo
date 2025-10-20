@@ -5,7 +5,7 @@ from dingo.model.prompt.base import BasePrompt
 @Model.prompt_register('TableCompare', [], ['LLMTableCompare'])
 class PromptTableCompare(BasePrompt):
     _metric_info = {
-        'category': 'SFT Data Assessment Metrics',
+        'category': 'Pretrain Text Quality Assessment Metrics',
         'metric_name': 'PromptTableCompare',
         'description': 'Compares the effectiveness of two tools in extracting tables from HTML to Markdown format by evaluating recognition rate and accuracy to determine which tool performs better',
         'paper_title': '',
