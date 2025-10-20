@@ -2,7 +2,7 @@ from dingo.config import InputArgs
 from dingo.exec import Executor
 
 
-def image_label_overlap():
+def image():
     input_data = {
         "input_path": "../../test/data/test_local_img.jsonl",
         "dataset": {
@@ -28,4 +28,4 @@ def image_label_overlap():
 
 
 if __name__ == '__main__':
-    image_label_overlap()
+    image()
