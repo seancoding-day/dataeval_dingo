@@ -197,7 +197,7 @@ Dingo provides comprehensive data quality assessment through both rule-based and
 📊 **[View Complete Metrics Documentation →](docs/metrics.md)**
 
 Our evaluation system includes:
-- **Text Quality Assessment Metrics**: Pre-training data quality evaluation using DataMan methodology and enhanced multi-dimensional assessment
+- **Pretrain Text Quality Assessment Metrics**: Pre-training data quality evaluation using DataMan methodology and enhanced multi-dimensional assessment
 - **SFT Data Assessment Metrics**: Honest, Helpful, Harmless evaluation for supervised fine-tuning data
 - **Classification Metrics**: Topic categorization and content classification
 - **Multimodality Assessment Metrics**: Image classification and relevance evaluation
