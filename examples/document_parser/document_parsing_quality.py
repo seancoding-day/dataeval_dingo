@@ -6,11 +6,11 @@ if __name__ == '__main__':
         "input_path": "../../test/data/test_document_recognize.jsonl",
         "dataset": {
             "source": "local",
-            "format": "image",
+            "format": "jsonl",
             "field": {
                 "id": "id",
-                "content": "content",
-                "image": "img"
+                "content": "pred",
+                "gt_markdown": "gt_markdown",
             }
         },
         "executor": {

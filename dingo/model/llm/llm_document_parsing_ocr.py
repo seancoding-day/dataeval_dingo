@@ -1,0 +1,63 @@
+import base64
+import json
+from typing import List
+
+from dingo.io import Data
+from dingo.model import Model
+from dingo.model.llm.base_openai import BaseOpenAI
+from dingo.model.modelres import ModelRes
+from dingo.model.prompt.prompt_document_parsing import PromptDocumentParsingQuality
+from dingo.utils import log
+from dingo.utils.exception import ConvertJsonError
+from dingo.model.response.response_class import ResponseScoreReason
+
+
+@Model.llm_register("VLMDocumentParsingQuality")
+class VLMDocumentParsingQuality(BaseOpenAI):
+    @classmethod
+    def build_messages(cls, input_data: Data) -> List:
+        gt_markdown = input_data.gt_markdown
+        pred_json = json.loads(input_data.pred)
+        messages = []
+        for pred_item in pred_json:
+            messages.append({
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": f"Markdown:\n{gt_markdown}"},
+                    {"type": "text", "text": f"Pred:\n{pred_item["content"]}; Bbox ID: {pred_item["bbox_id"]}; bbox_type: {pred_item["type"]}"}
+                ]
+            })
+        return messages
+
+    @classmethod
+    def process_response(cls, response: str) -> ModelRes:
+        log.info(response)
+
+        response = response.replace("```json", "")
+        response = response.replace("```", "")
+
+        types = []
+        names = []
+
+        if response:
+            try:
+                result_data = json.loads(response)
+                errors = result_data.get("errors", [])
+
+                for error in errors:
+                    error_category = error.get("error_category", "")
+                    error_label = error.get("error_label", "")
+
+                    if error_category and error_label:
+                        types.append(error_category)
+                        names.append(error_label)
+            except json.JSONDecodeError as e:
+                log.error(f"JSON解析错误: {e}")
+
+        result = ModelRes()
+        result.error_status = False
+        result.type = types
+        result.name = names
+        result.reason = [response]
+
+        return result
