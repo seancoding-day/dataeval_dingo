@@ -17,16 +17,15 @@ class VLMDocumentParsingQuality(BaseOpenAI):
     @classmethod
     def build_messages(cls, input_data: Data) -> List:
         gt_markdown = input_data.prompt
-        pred_json = json.loads(input_data.content)
-        messages = []
-        for pred_item in pred_json:
-            messages.append({
+        pred_json = json.loads(input_data.content)[0]
+        messages = [
+            {
                 "role": "user",
                 "content": [
                     {"type": "text", "text": f"Markdown:\n{gt_markdown}"},
-                    {"type": "text", "text": f"Pred:\n{pred_item['content']}; Bbox ID: {pred_item['bbox_id']}; bbox_type: {pred_item['type']}"}
+                    {"type": "text", "text": f"Pred:\n{pred_json['content']}; bbox_id: {pred_json['bbox_id']}; bbox_type: {pred_json['type']}"}
                 ]
-            })
+            }]
         return messages
 
     @classmethod
