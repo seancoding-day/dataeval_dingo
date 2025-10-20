@@ -10,7 +10,7 @@ if __name__ == '__main__':
             "field": {
                 "id": "id",
                 "content": "pred",
-                "gt_markdown": "gt_markdown",
+                "prompt": "gt_markdown",
             }
         },
         "executor": {
