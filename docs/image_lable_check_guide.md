@@ -112,7 +112,7 @@ from dingo.exec import Executor
 
 def image_label_overlap():
     input_data = {
-        "input_path": "../../test/data/img_label/test_img_label_overlap.jsonl", 
+        "input_path": "../../test/data/img_label/test_img_label_overlap.jsonl",
         "dataset": {
             "source": "local",
             "format": "image",
