@@ -22,12 +22,9 @@ class LLMMinerURecognizeQuality(BaseOpenAI):
         messages = [
             {
                 "role": "user",
-                "content": [
-                    {"text": f"Markdown:\n{gt_markdown}"},
-                    {"text": f"Pred:\n{pred_json['content']}; bbox_id: {pred_json['bbox_id']}; bbox_type: {pred_json['type']}"}
-                ]
+                "content": cls.prompt.content + f"ground_truth:{gt_markdown}\n\nPred_content:{pred_json['content']}"
             }]
-        return messages
+        return messages 
 
     @classmethod
     def process_response(cls, response: str) -> ModelRes:
@@ -38,7 +35,7 @@ class LLMMinerURecognizeQuality(BaseOpenAI):
 
         types = []
         names = []
-
+        reasons = []
         if response:
             try:
                 result_data = json.loads(response)
@@ -47,8 +44,9 @@ class LLMMinerURecognizeQuality(BaseOpenAI):
                 for error in errors:
                     error_category = error.get("error_category", "")
                     error_label = error.get("error_label", "")
-
-                    if error_category and error_label:
+                    bbox_type = error.get("bbox_type", "")
+                    bbox_id = error.get("bbox_id", "")
+                    if error_category and error_label :
                         types.append(error_category)
                         names.append(error_label)
             except json.JSONDecodeError as e:

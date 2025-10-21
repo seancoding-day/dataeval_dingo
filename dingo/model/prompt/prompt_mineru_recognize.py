@@ -2,7 +2,7 @@ from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
 
-@Model.prompt_register("PromptMinerURecognizeQuality")
+@Model.prompt_register("PromptMinerURecognizeQuality", [], [])
 class PromptMinerURecognizeQuality(BasePrompt):
     """
     Metadata for documentation generation
@@ -14,7 +14,7 @@ class PromptMinerURecognizeQuality(BasePrompt):
         "evaluation_results": "error_category and error_label",
     }
     content = r"""
-你是一位熟悉文档解析领域的质量专家，你的核心任务是根据正确的markdown，以及对应bbox工具预测结果，获取工具预测结果的错误类型。
+你是一位熟悉文档解析领域的质量专家，你的核心任务是根据正确的markdown"工具标准结果Markdown"，以及对应OCR工具预测结果"Pred的内容"，获取工具预测结果的错误类型。
 *错误类别和标签*
 以下是你可以使用的错误类别和对应的标签。在输出的JSON中，"error_category"字段应填写问题大类（如:公式识别相关问题），"error_label"字段应填写问题子类（如：公式中字符识别错误）。
 **1.公式识别相关问题**
@@ -34,7 +34,7 @@ class PromptMinerURecognizeQuality(BasePrompt):
     -标题格式丢失: 原图中的标题，在OCR结果中被识别为普通文本，丢失了标题应有的Markdown格式（如#）。
     -标题分级错误: 原图中的标题被识别，但其层级（如H1, H2）与原图不符，包括层级识别错误（如一级标题识别为二级）。
 **5.OCR识别问题**
-    - 字符识别错误：文本、标题、列表、代码块等类型文本内容的字符识别错误。
+    - 字符识别错误：文本、标题、列表类型等文本内容识别错误。
 **6.其他**
     -其他问题: 此分类用于标记不属于上述任何具体类别的其他OCR质量问题。经过仔细判断后确认无法归入其他既有标签的OCR质量问题。
 
@@ -45,11 +45,13 @@ class PromptMinerURecognizeQuality(BasePrompt):
     "errors": [
         {
         "bbox_id": "1", //原图中的bbox序号
+        "bbox_type": "equation", //图中的bbox类型
         "error_category": "公式识别相关问题", // 错误的大类
         "error_label": "公式中字符识别错误", // 从上面的《错误类别和标签》列表中选取的一个具体的二级标签
         },
         {
         "bbox_id": "2",
+        "bbox_type": "table", //图中的bbox类型
         "error_category": "表格识别相关问题",
         "error_label": "表格输出格式错误"
         },
@@ -60,12 +62,18 @@ class PromptMinerURecognizeQuality(BasePrompt):
     ]
     }
     ```
+     *工作流程:*
+    1.  接收并理解 **工具标准结果Markdown** 和 **Pred的内容**。
+    2.  仔细比对两者，识别所有内容和格式上的差异。
+    3.  根据 **错误类别和标签** 对每个差异进行分类。
+    4.  记录每个错误的信息（错误类别、错误标签）。如果同一位置存在多个独立的错误，请在 errors 列表内分别列出，不要再堆叠。
+    5.  按照指定的 **输出格式** 生成 JSON 报告
+    ```
     *输入:*
-    *   **原始图像的工具标准结果：** 
-    *   **bbox的工具预测结果：**
+    *   **工具标准结果Markdown：** 
+    *   **Pred的内容：**
     *输出:*
     ```json
     [请在此处提供你的JSON分析结果]
     ```
     """
- 
