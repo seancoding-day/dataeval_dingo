@@ -70,7 +70,7 @@ class PromptMinerURecognizeQuality(BasePrompt):
     5.  按照指定的 **输出格式** 生成 JSON 报告
     ```
     *输入:*
-    *   **工具标准结果Markdown：** 
+    *   **工具标准结果Markdown：**
     *   **Pred的内容：**
     *输出:*
     ```json

@@ -1,20 +1,25 @@
 import base64
 import json
-from typing import List
 import re
+from typing import List
+
 from dingo.io import Data
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.model.modelres import ModelRes
 from dingo.model.prompt.prompt_mineru_recognize import PromptMinerURecognizeQuality
+from dingo.model.response.response_class import ResponseScoreReason
 from dingo.utils import log
 from dingo.utils.exception import ConvertJsonError
-from dingo.model.response.response_class import ResponseScoreReason
 
 
 @Model.llm_register("LLMMinerURecognizeQuality")
 class LLMMinerURecognizeQuality(BaseOpenAI):
+    """
+    LLM for document parsing quality ocr
+    """
     prompt = PromptMinerURecognizeQuality
+
     @classmethod
     def build_messages(cls, input_data: Data) -> List:
         gt_markdown = input_data.prompt
@@ -24,7 +29,7 @@ class LLMMinerURecognizeQuality(BaseOpenAI):
                 "role": "user",
                 "content": cls.prompt.content + f"ground_truth:{gt_markdown}\n\nPred_content:{pred_content}"
             }]
-        return messages 
+        return messages
 
     @classmethod
     def process_response(cls, response: str) -> ModelRes:
@@ -32,7 +37,7 @@ class LLMMinerURecognizeQuality(BaseOpenAI):
         json_match = re.search(r'\{[\s\S]*"errors"[\s\S]*\}', response)
         types = []
         names = []
-    
+
         if json_match:
             try:
                 json_str = json_match.group()

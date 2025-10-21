@@ -1,11 +1,14 @@
 import re
 import string
 from typing import Tuple
+
 from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
 from dingo.model.model import Model
 from dingo.model.modelres import ModelRes
 from dingo.model.rule.base import BaseRule
+
+
 @Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["qa_standard_v1"])
 class RuleAbnormalChar(BaseRule):
     # consist of [RuleSpecialCharacter, RuleInvisibleChar]
@@ -20,6 +23,7 @@ class RuleAbnormalChar(BaseRule):
         "paper_authors": "Together Computer, 2023",
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -31,6 +35,8 @@ class RuleAbnormalChar(BaseRule):
                 res.name = cls.__name__
                 res.reason.extend(tmp_res.reason)
         return res
+
+
 @Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["qa_standard_v1"])
 class RuleAbnormalHtml(BaseRule):
     # consist of [RuleHtmlEntity, RuleHtmlTag]
@@ -44,6 +50,7 @@ class RuleAbnormalHtml(BaseRule):
         "paper_authors": "Together Computer, 2023",
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -55,6 +62,8 @@ class RuleAbnormalHtml(BaseRule):
                 res.name = cls.__name__
                 res.reason.extend(tmp_res.reason)
         return res
+
+
 @Model.rule_register("QUALITY_BAD_FLUENCY", ["pdf_all"])
 class RuleAbnormalNumber(BaseRule):
     """check pdf content abnormal book page or index number."""
@@ -69,6 +78,7 @@ class RuleAbnormalNumber(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(pattern=r"\n{4}\d+\n{4}")
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -80,6 +90,8 @@ class RuleAbnormalNumber(BaseRule):
             res.name = cls.__name__
             res.reason = [match.group(0).strip("\n")]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pretrain"])
 class RuleAlphaWords(BaseRule):
     """check whether the ratio of words that contain at least one alphabetic character > 0.6"""
@@ -95,6 +107,7 @@ class RuleAlphaWords(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(threshold=0.6)
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from nltk.tokenize import word_tokenize
@@ -175,7 +188,9 @@ class RuleCapitalWords(BaseRule):
         "paper_authors": "Together Computer, 2023",
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
+
     dynamic_config = EvaluatorRuleArgs(threshold=0.2)
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from nltk.tokenize import WordPunctTokenizer
@@ -193,6 +208,8 @@ class RuleCapitalWords(BaseRule):
             res.name = cls.__name__
             res.reason = ["ratio: " + str(ratio)]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pretrain"])
 class RuleCharNumber(BaseRule):
     """check whether the number of char > 100"""
@@ -208,6 +225,7 @@ class RuleCharNumber(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(threshold=100)
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -223,6 +241,8 @@ class RuleCharNumber(BaseRule):
             res.name = cls.__name__
             res.reason = ["The number of char is: " + str(num_char)]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_FLUENCY", ["pdf_all"])
 class RuleCharSplit(BaseRule):
     """check pdf content char split."""
@@ -240,6 +260,7 @@ class RuleCharSplit(BaseRule):
     dynamic_config = EvaluatorRuleArgs(
         pattern=r"(?:(?:[a-zA-Z]\s){5}[a-zA-Z])", threshold=3
     )
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -252,6 +273,8 @@ class RuleCharSplit(BaseRule):
             res.name = cls.__name__
             res.reason = matches
         return res
+
+
 @Model.rule_register(
     "QUALITY_BAD_EFFECTIVENESS",
     ["default", "sft", "pretrain", "benchmark", "llm_base", "text_base_all"],
@@ -270,6 +293,7 @@ class RuleColonEnd(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs()
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -282,6 +306,8 @@ class RuleColonEnd(BaseRule):
             res.name = cls.__name__
             res.reason = [content[-100:]]
         return res
+
+
 @Model.rule_register(
     "QUALITY_BAD_EFFECTIVENESS",
     [
@@ -317,6 +343,7 @@ class RuleContentNull(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs()
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -327,6 +354,8 @@ class RuleContentNull(BaseRule):
             res.name = cls.__name__
             res.reason = ["Content is empty."]
         return res
+
+
 @Model.rule_register(
     "QUALITY_BAD_EFFECTIVENESS", ["text_base_all", "qa_standard_v1", "pdf"]
 )
@@ -344,6 +373,7 @@ class RuleContentShort(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(threshold=20)
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -354,6 +384,8 @@ class RuleContentShort(BaseRule):
             res.name = cls.__name__
             res.reason = ["Content is too short."]
         return res
+
+
 @Model.rule_register(
     "QUALITY_BAD_EFFECTIVENESS",
     [
@@ -381,6 +413,7 @@ class RuleContentShortMultiLan(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(threshold=20)
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from nltk.tokenize import WordPunctTokenizer
@@ -394,6 +427,8 @@ class RuleContentShortMultiLan(BaseRule):
             res.name = cls.__name__
             res.reason = ["Content is too short."]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_UNDERSTANDABILITY", [])
 class RuleCurlyBracket(BaseRule):
     """check whether the ratio of the number of {,} and the number of characters < 0.025"""
@@ -409,6 +444,7 @@ class RuleCurlyBracket(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(threshold=0.025)
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -425,6 +461,8 @@ class RuleCurlyBracket(BaseRule):
                 "The ratio of curly bracket and characters is : " + str(ratio)
             ]
         return res
+
+
 @Model.rule_register(
     "QUALITY_BAD_SIMILARITY",
     [
@@ -459,6 +497,7 @@ class RuleDocRepeat(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(threshold=80)
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import base_rps_frac_chars_in_dupe_ngrams
@@ -473,6 +512,7 @@ class RuleDocRepeat(BaseRule):
                 "Repeatability of text is too high, with ratio： " + str(repeat_score)
             ]
         return res
+
 
 @Model.rule_register(
     "QUALITY_BAD_SIMILARITY",
@@ -511,7 +551,7 @@ class RuleDocFormulaRepeat(BaseRule):
             formulas.append(formula.strip())
         if not formulas:
             return res
-        formula_content = "\n".join(formulas)        
+        formula_content = "\n".join(formulas)
         repeat_analysis = cls.analyze_repeats(formula_content)
         # 如果总连续重复长度超过阈值，则标记为错误
         if repeat_analysis['total_repeat_length'] >= cls.dynamic_config.threshold:
@@ -549,12 +589,13 @@ class RuleDocFormulaRepeat(BaseRule):
                 'pattern': pattern,
                 'length': repeat_length,
                 'type': 'single_char' if len(pattern) == 1 else 'multi_char'
-            })        
+            })
         return {
             'total_repeat_length': total_repeat_length,
             'repeats': repeats_info,
             'multi_char_count': len(multi_char_repeats)
         }
+
 
 @Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["qa_standard_v1"])
 class RuleEnterAndSpace(BaseRule):
@@ -570,6 +611,7 @@ class RuleEnterAndSpace(BaseRule):
         "paper_authors": "Together Computer, 2023",
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -581,6 +623,8 @@ class RuleEnterAndSpace(BaseRule):
                 res.name = cls.__name__
                 res.reason.extend(tmp_res.reason)
         return res
+
+
 @Model.rule_register(
     "QUALITY_BAD_EFFECTIVENESS",
     [
@@ -611,6 +655,7 @@ class RuleEnterMore(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(key_list=[r"\n{8,}", r"\r\n{8,}"])
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -625,6 +670,8 @@ class RuleEnterMore(BaseRule):
                 res.reason = ["Content has 8 consecutive carriage returns."]
                 return res
         return res
+
+
 @Model.rule_register(
     "QUALITY_BAD_EFFECTIVENESS",
     [
@@ -655,6 +702,7 @@ class RuleEnterRatioMore(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs()
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -668,6 +716,8 @@ class RuleEnterRatioMore(BaseRule):
             res.name = cls.__name__
             res.reason = ["The number of enter / the number of content > 25%."]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_ar"])
 class RuleHeadWordAr(BaseRule):
     """check whether ar content contains irrelevance tail source info."""
@@ -683,6 +733,7 @@ class RuleHeadWordAr(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs()
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.multi_lan_util import get_xyz_head_word
@@ -696,6 +747,8 @@ class RuleHeadWordAr(BaseRule):
             res.name = cls.__name__
             res.reason = ["Content has irrelevance tail source info."]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_cs"])
 class RuleHeadWordCs(BaseRule):
     """check whether cs content contains irrelevance tail source info."""
@@ -711,6 +764,7 @@ class RuleHeadWordCs(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs()
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.multi_lan_util import get_xyz_head_word
@@ -724,6 +778,8 @@ class RuleHeadWordCs(BaseRule):
             res.name = cls.__name__
             res.reason = ["Content has irrelevance tail source info."]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_hu"])
 class RuleHeadWordHu(BaseRule):
     """check whether hu content contains irrelevance tail source info."""
@@ -739,6 +795,7 @@ class RuleHeadWordHu(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs()
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.multi_lan_util import get_xyz_head_word
@@ -752,6 +809,8 @@ class RuleHeadWordHu(BaseRule):
             res.name = cls.__name__
             res.reason = ["Content has irrelevance tail source info."]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_ko"])
 class RuleHeadWordKo(BaseRule):
     """check whether ko content contains irrelevance tail source info."""
@@ -767,6 +826,7 @@ class RuleHeadWordKo(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs()
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.multi_lan_util import get_xyz_head_word
@@ -780,6 +840,8 @@ class RuleHeadWordKo(BaseRule):
             res.name = cls.__name__
             res.reason = ["Content has irrelevance tail source info."]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_ru"])
 class RuleHeadWordRu(BaseRule):
     """check whether ru content contains irrelevance tail source info."""
@@ -795,6 +857,7 @@ class RuleHeadWordRu(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs()
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.multi_lan_util import get_xyz_head_word
@@ -808,6 +871,8 @@ class RuleHeadWordRu(BaseRule):
             res.name = cls.__name__
             res.reason = ["Content has irrelevance tail source info."]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_sr"])
 class RuleHeadWordSr(BaseRule):
     """check whether sr content contains irrelevance tail source info."""
@@ -823,6 +888,7 @@ class RuleHeadWordSr(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs()
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.multi_lan_util import get_xyz_head_word
@@ -836,6 +902,8 @@ class RuleHeadWordSr(BaseRule):
             res.name = cls.__name__
             res.reason = ["Content has irrelevance tail source info."]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_th"])
 class RuleHeadWordTh(BaseRule):
     """check whether th content contains irrelevance tail source info."""
@@ -851,6 +919,7 @@ class RuleHeadWordTh(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs()
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.multi_lan_util import get_xyz_head_word
@@ -864,6 +933,8 @@ class RuleHeadWordTh(BaseRule):
             res.name = cls.__name__
             res.reason = ["Content has irrelevance tail source info."]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_RELEVANCE", ["multi_lan_vi"])
 class RuleHeadWordVi(BaseRule):
     """check whether vi content contains irrelevance tail source info."""
@@ -879,6 +950,7 @@ class RuleHeadWordVi(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs()
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.multi_lan_util import get_xyz_head_word
@@ -892,6 +964,8 @@ class RuleHeadWordVi(BaseRule):
             res.name = cls.__name__
             res.reason = ["Content has irrelevance tail source info."]
         return res
+
+
 @Model.rule_register(
     "QUALITY_BAD_EFFECTIVENESS",
     [
@@ -941,6 +1015,7 @@ class RuleHtmlEntity(BaseRule):
             "rdquo",
         ]
     )
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -974,6 +1049,8 @@ class RuleHtmlEntity(BaseRule):
             res.name = cls.__name__
             res.reason = [list(set(error_entity))]
         return res
+
+
 @Model.rule_register(
     "QUALITY_BAD_EFFECTIVENESS",
     [
@@ -1005,6 +1082,7 @@ class RuleHtmlTag(BaseRule):
     dynamic_config = EvaluatorRuleArgs(
         key_list=["<img", "<p>", "</p>", "<o:p", "</o:p>"]
     )
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -1019,6 +1097,8 @@ class RuleHtmlTag(BaseRule):
             res.name = cls.__name__
             res.reason = list(set(matches))
         return res
+
+
 @Model.rule_register("QUALITY_BAD_SECURITY", ["default", "pretrain", "benchmark"])
 class RuleIDCard(BaseRule):
     """check if the content contains ID card."""
@@ -1036,6 +1116,7 @@ class RuleIDCard(BaseRule):
     dynamic_config = EvaluatorRuleArgs(
         pattern=r"(身\s{0,10}份|id\s{0,10}number\s{0,10}|identification|identity|\s{0,10}ID\s{0,10}No\s{0,10}|id\s{0,10}card\s{0,10}|NRIC\s{0,10}number\s{0,10}|IC\s{0,10}number\s{0,10}|resident\s{0,10}registration\s{0,10}|I.D.\s{0,10}Number\s{0,10})"
     )
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import Extractor
@@ -1049,6 +1130,8 @@ class RuleIDCard(BaseRule):
                 res.name = cls.__name__
                 res.reason = [str(person_id)]
         return res
+
+
 @Model.rule_register(
     "QUALITY_BAD_EFFECTIVENESS",
     [
@@ -1079,6 +1162,7 @@ class RuleInvisibleChar(BaseRule):
     dynamic_config = EvaluatorRuleArgs(
         pattern=r"[\u2000-\u200F\u202F\u205F\u3000\uFEFF\u00A0\u2060-\u206F\uFEFF\xa0]"
     )
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -1152,6 +1236,7 @@ class RuleLatexSpecialChar(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(pattern=r"\$\$(.*?\!\!.*?)\$\$")
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -1163,6 +1248,8 @@ class RuleLatexSpecialChar(BaseRule):
             res.name = cls.__name__
             res.reason = [match.group(0).strip("\n")]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_COMPLETENESS", ["pretrain", "benchmark"])
 class RuleLineEndWithEllipsis(BaseRule):
     """check whether the ratio of line ends with ellipsis < 0.3"""
@@ -1178,6 +1265,7 @@ class RuleLineEndWithEllipsis(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(threshold=0.3, key_list=["...", "…"])
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import TextSlice, split_paragraphs
@@ -1202,6 +1290,8 @@ class RuleLineEndWithEllipsis(BaseRule):
             res.name = cls.__name__
             res.reason = ["The ratio of lines end with ellipsis is: " + str(ratio)]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_COMPLETENESS", ["pretrain"])
 class RuleLineEndWithTerminal(BaseRule):
     """check whether the ratio of line ends with terminal punctuation mark > 0.6"""
@@ -1219,6 +1309,7 @@ class RuleLineEndWithTerminal(BaseRule):
     dynamic_config = EvaluatorRuleArgs(
         threshold=0.6, key_list=[".", "!", "?", '"', '"']
     )
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import TextSlice, split_paragraphs
@@ -1248,6 +1339,8 @@ class RuleLineEndWithTerminal(BaseRule):
             res.name = cls.__name__
             res.reason = list(set(terminal_marks))
         return res
+
+
 @Model.rule_register("QUALITY_BAD_UNDERSTANDABILITY", ["sft", "pretrain", "benchmark"])
 class RuleLineStartWithBulletpoint(BaseRule):
     """check whether the ratio of line starts with bullet points < 0.9"""
@@ -1277,6 +1370,7 @@ class RuleLineStartWithBulletpoint(BaseRule):
             "\u2013",  # en dash
         ],
     )
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import TextSlice, split_paragraphs
@@ -1301,6 +1395,8 @@ class RuleLineStartWithBulletpoint(BaseRule):
             res.name = cls.__name__
             res.reason = ["The ratio of lines start with bulletpoint is: " + str(ratio)]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pretrain", "benchmark"])
 class RuleLineJavascriptCount(BaseRule):
     """check whether line with the word Javascript."""
@@ -1316,6 +1412,7 @@ class RuleLineJavascriptCount(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(threshold=3)
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import TextSlice, normalize, split_paragraphs
@@ -1337,6 +1434,8 @@ class RuleLineJavascriptCount(BaseRule):
                 "The lines with the word Javascript is: " + str(num_occurrences)
             ]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pretrain", "benchmark"])
 class RuleLoremIpsum(BaseRule):
     """check whether the ratio of lorem ipsum < 3e-08"""
@@ -1352,6 +1451,7 @@ class RuleLoremIpsum(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(threshold=3e-08)
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import normalize
@@ -1369,6 +1469,8 @@ class RuleLoremIpsum(BaseRule):
             res.name = cls.__name__
             res.reason = ["The ratio of lorem ipsum is: " + str(ratio)]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pretrain"])
 class RuleMeanWordLength(BaseRule):
     """check whether the mean length of word in [3, 10]"""
@@ -1384,6 +1486,7 @@ class RuleMeanWordLength(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(key_list=["3", "10"])
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import normalize
@@ -1480,11 +1583,11 @@ class RuleNoPunc(BaseRule):
         "paper_title": "RedPajama: an Open Dataset for Training Large Language Models",
         "paper_url": "https://github.com/togethercomputer/RedPajama-Data",
         "paper_authors": "Together Computer, 2023",
-        "evaluation_results": ""
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
 
     dynamic_config = EvaluatorRuleArgs(threshold=112)
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -1508,6 +1611,8 @@ class RuleNoPunc(BaseRule):
             res.name = cls.__name__
             res.reason = [longest_sentence]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_RELEVANCE", [])
 class RulePatternSearch(BaseRule):
     """let user input pattern to search"""
@@ -1523,6 +1628,7 @@ class RulePatternSearch(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(pattern="your pattern")
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -1533,6 +1639,8 @@ class RulePatternSearch(BaseRule):
             res.name = cls.__name__
             res.reason = matches
         return res
+
+
 @Model.rule_register("QUALITY_BAD_COMPLETENESS", ["pretrain"])
 class RuleSentenceNumber(BaseRule):
     """check whether the number of sentence in [3, 7500]"""
@@ -1548,6 +1656,7 @@ class RuleSentenceNumber(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(key_list=["3", "7500"])
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -1636,6 +1745,7 @@ class RuleSpaceMore(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(pattern=" {500,}")
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -1648,6 +1758,8 @@ class RuleSpaceMore(BaseRule):
             res.name = cls.__name__
             res.reason = ["Content has 500 spaces."]
         return res
+
+
 @Model.rule_register(
     "QUALITY_BAD_EFFECTIVENESS",
     [
@@ -1691,6 +1803,7 @@ class RuleSpecialCharacter(BaseRule):
             r"<\|.*?\|>",
         ]
     )
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -1709,6 +1822,8 @@ class RuleSpecialCharacter(BaseRule):
             res.name = cls.__name__
             res.reason = list(set(matches))
         return res
+
+
 @Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pretrain"])
 class RuleStopWord(BaseRule):
     """check whether the ratio of stop word > 0.06"""
@@ -1724,9 +1839,11 @@ class RuleStopWord(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(threshold=0.06)
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from nltk.tokenize import WordPunctTokenizer
+
         from dingo.model.rule.utils.util import get_stop_words
         res = ModelRes()
         raw_content = input_data.content
@@ -1744,6 +1861,8 @@ class RuleStopWord(BaseRule):
             res.name = cls.__name__
             res.reason = ["The ratio of stop words is: " + str(ratio)]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_EFFECTIVENESS", ["pretrain", "benchmark"])
 class RuleSymbolWordRatio(BaseRule):
     """check whether the ratio of symbol and word is > 0.4"""
@@ -1759,6 +1878,7 @@ class RuleSymbolWordRatio(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(threshold=0.4, key_list=["#", "...", "…"])
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from nltk.tokenize import WordPunctTokenizer
@@ -1779,6 +1899,8 @@ class RuleSymbolWordRatio(BaseRule):
             res.name = cls.__name__
             res.reason = ["The ratio of symbol / word is: " + str(ratio)]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_UNDERSTANDABILITY", ["pretrain"])
 class RuleUniqueWords(BaseRule):
     """check whether the ratio of unique words > 0.1"""
@@ -1794,6 +1916,7 @@ class RuleUniqueWords(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(threshold=0.1)
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import normalize
@@ -1814,6 +1937,8 @@ class RuleUniqueWords(BaseRule):
             res.name = cls.__name__
             res.reason = ["The ratio of unique words is: " + str(ratio)]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_SECURITY", [])
 class RuleUnsafeWords(BaseRule):
     """check whether content contains unsafe words."""
@@ -1829,9 +1954,11 @@ class RuleUnsafeWords(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(refer_path=[])
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         import ahocorasick
+
         from dingo.model.rule.utils.util import get_unsafe_words
         res = ModelRes()
         content = input_data.content
@@ -1869,7 +1996,6 @@ class RuleUnsafeWords(BaseRule):
 )
 class RuleVedioDataFormat(BaseRule):
     """check whether the vedio data format is right"""
-
     # Metadata for documentation generation
     _metric_info = {
         "category": "Rule-Based TEXT Quality Metrics",
@@ -1878,13 +2004,11 @@ class RuleVedioDataFormat(BaseRule):
         "description": "Check whether the vedio data format is right",
         "evaluation_results": ""
     }
-
     dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
-
         raw_data = input_data.raw_data
         key_list = ["id", "video", "text"]
         if all(key in raw_data for key in key_list):
@@ -1929,6 +2053,7 @@ class RuleOnlyUrl(BaseRule):
     dynamic_config = EvaluatorRuleArgs(
         pattern=r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
     )
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -1943,6 +2068,8 @@ class RuleOnlyUrl(BaseRule):
             res.name = cls.__name__
             res.reason = ["Content is only an url link."]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_RELEVANCE", [])
 class RuleWatermark(BaseRule):
     """check whether content has watermarks."""
@@ -1958,6 +2085,7 @@ class RuleWatermark(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(key_list=[])
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -1968,6 +2096,8 @@ class RuleWatermark(BaseRule):
             res.name = cls.__name__
             res.reason = matches
         return res
+
+
 @Model.rule_register("QUALITY_BAD_COMPLETENESS", ["pretrain"])
 class RuleWordNumber(BaseRule):
     """check whether the number of word in [20, 100000]"""
@@ -1983,6 +2113,7 @@ class RuleWordNumber(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(key_list=["20", "100000"])
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         from dingo.model.rule.utils.util import normalize
@@ -2000,6 +2131,8 @@ class RuleWordNumber(BaseRule):
             res.name = cls.__name__
             res.reason = ["The number of word is: " + str(num_normalized_words)]
         return res
+
+
 @Model.rule_register("QUALITY_BAD_FLUENCY", ["pdf_all"])
 class RuleWordSplit(BaseRule):
     """check pdf word abnormal split such as "ca- se"."""
@@ -2015,6 +2148,7 @@ class RuleWordSplit(BaseRule):
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
     dynamic_config = EvaluatorRuleArgs(pattern=r"[A-Za-z]+-\s*$")
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
@@ -2026,6 +2160,8 @@ class RuleWordSplit(BaseRule):
             res.name = cls.__name__
             res.reason = match
         return res
+
+
 @Model.rule_register(
     "QUALITY_BAD_FLUENCY",
     [
@@ -2063,9 +2199,11 @@ class RuleWordStuck(BaseRule):
             r"[01]+|[0-7]+|0x[0-9a-fA-F]+",
         ]
     )
+
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         import wordninja
+
         from dingo.model.rule.utils.detect_lang import decide_language_by_str
         from dingo.model.rule.utils.util import is_sha256
         res = ModelRes()
@@ -2089,6 +2227,8 @@ class RuleWordStuck(BaseRule):
                     res.reason = [str(longest_string)]
                     return res
         return res
+
+
 if __name__ == "__main__":
     data = Data(data_id="", prompt="", content="\n \n \n \n hello \n \n ")
     tmp = RuleEnterAndSpace().eval(data)
