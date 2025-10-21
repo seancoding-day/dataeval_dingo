@@ -24,6 +24,7 @@ def image_relevant():
         },
         "evaluator": {
             "llm_config": {
+                # IMPORTANT: VLMImageRelevant requires a vision-language model (VLM)
                 "VLMImageRelevant": {
                     "key": "",
                     "api_url": "",
