@@ -123,10 +123,10 @@ if __name__ == '__main__':
     }
     input_args = InputArgs(**input_data)
     executor = Executor.exec_map["local"](input_args)
-    
+
     # 执行评估
     result = executor.execute()
-    
+
     # 查看结果
     print(result)
 ```
