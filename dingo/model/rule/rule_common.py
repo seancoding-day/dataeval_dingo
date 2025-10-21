@@ -465,7 +465,6 @@ class RuleDocRepeat(BaseRule):
 
         res = ModelRes()
         repeat_score = base_rps_frac_chars_in_dupe_ngrams(6, input_data.content)
-        repeat_score = base_rps_frac_chars_in_dupe_ngrams(2, input_data.content)
         if repeat_score >= cls.dynamic_config.threshold:
             res.error_status = True
             res.type = cls.metric_type
@@ -2093,4 +2092,3 @@ class RuleWordStuck(BaseRule):
 if __name__ == "__main__":
     data = Data(data_id="", prompt="", content="\n \n \n \n hello \n \n ")
     tmp = RuleEnterAndSpace().eval(data)
-    print(tmp)
