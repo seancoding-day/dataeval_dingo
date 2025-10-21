@@ -342,7 +342,7 @@ class RuleImageLabelOverlap(BaseRule):
 
         try:
             # 1. 阈值参数
-            iou_partial_threshold = 0.1
+            iou_partial_threshold = 0.1  # iou小于0.1不属于标注框重叠
             iou_full_threshold = 0.9
 
             # 2. 解析输入数据
