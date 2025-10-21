@@ -5,7 +5,7 @@ from dingo.model.prompt.base import BasePrompt
 @Model.prompt_register("Html_Extract_Compare", [], ['LLMHtmlExtractCompare'])
 class PromptHtmlExtractCompare(BasePrompt):
     _metric_info = {
-        'category': 'SFT Data Assessment Metrics',
+        'category': 'Pretrain Text Quality Assessment Metrics',
         'metric_name': 'PromptHtmlExtractCompare',
         'description': 'Compares the effectiveness of two HTML extraction tools by evaluating element recognition rate and accuracy across different content types',
         'paper_title': '',

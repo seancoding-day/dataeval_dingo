@@ -32,7 +32,7 @@ class LLMFactCheckPublic(BaseOpenAI):
     """公开事实性评估器 - 基于 GPT-5 System Card 的两阶段评估"""
 
     _metric_info = {
-        "category": "Factuality Assessment",
+        "category": "SFT Data Assessment Metrics",
         "quality_dimension": "FACTUAL_CORRECTNESS",
         "metric_name": "LLMFactCheckPublic",
         "description": "Two-stage factuality evaluation pipeline from GPT-5",

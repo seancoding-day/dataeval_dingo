@@ -6,7 +6,7 @@ from dingo.model.prompt.base import BasePrompt
 class PromptDocumentParsingQuality(BasePrompt):
     # Metadata for documentation generation
     _metric_info = {
-        "category": "Document Parsing",
+        "category": "OCR Eval Metric",
         "metric_name": "PromptDocumentParsingQuality",
         "description": "Evaluate the quality of general document parsing",
         "evaluation_results": "",

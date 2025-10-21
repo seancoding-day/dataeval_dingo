@@ -4,13 +4,18 @@ This document provides comprehensive information about all quality metrics used 
 
 **Note**: All metrics are backed by academic sources to ensure objectivity and scientific rigor.
 
-### Text Quality Assessment Metrics
+### Pretrain Text Quality Assessment Metrics
 
 | Type | Metric | Description | Paper Source | Evaluation Results |
 |------|--------|-------------|--------------|-------------------|
+| `CodeCompare` | PromptCodeCompare | Compares the effectiveness of two tools in extracting code blocks from HTML to Markdown format by evaluating recognit... | Internal Implementation | N/A |
 | `DATAMAN_ASSESSMENT` | PromptDataManAssessment | Evaluates pre-training data quality using the DataMan methodology (14 standards, 15 domains). Assigns a score (0/1), ... | [DataMan: Data Manager for Pre-training Large Language Models](https://arxiv.org/abs/2502.19363) (Peng et al., 2025) | N/A |
+| `Html_Extract_Compare` | PromptHtmlExtractCompare | Compares the effectiveness of two HTML extraction tools by evaluating element recognition rate and accuracy across di... | Internal Implementation | N/A |
+| `Html_Extract_Compare_V2` | PromptHtmlExtractCompareV2 | Compares HTML extraction results using diff-match-patch algorithm to identify unique and common content, then evaluat... | Internal Implementation | N/A |
+| `MathCompare` | PromptMathCompare | Compares the effectiveness of two tools in extracting mathematical formulas from HTML to Markdown format by evaluatin... | Internal Implementation | N/A |
 | `QUALITY_BAD_SECURITY` | PromptPolitics | Evaluates whether the text contains politics-related content | Internal Implementation | N/A |
 | `TEXT_QUALITY_V4` | PromptTextQualityV4 | Enhanced text quality evaluation covering completeness (formulas, tables, code), effectiveness (garbled text, spacing... | [WanJuanSiLu: A High-Quality Open-Source Webtext Dataset for Low-Resource Languages](https://arxiv.org/abs/2501.14506) (Yu et al., 2025) | [📊 See Results](eval/prompt/redpajama_data_evaluated_by_prompt.md) |
+| `TableCompare` | PromptTableCompare | Compares the effectiveness of two tools in extracting tables from HTML to Markdown format by evaluating recognition r... | Internal Implementation | N/A |
 
 ### SFT Data Assessment Metrics
 
@@ -58,8 +63,8 @@ This document provides comprehensive information about all quality metrics used 
 |------|--------|-------------|--------------|-------------------|
 | `QUALITY_BAD_IMG_ARTIMUSE` | RuleImageArtimuse | Evaluates image quality in the field of aesthetics using artimuse | Internal Implementation | N/A |
 | `QUALITY_BAD_IMG_EFFECTIVENESS` | RuleImageValid, RuleImageSizeValid, RuleImageQuality | Checks whether image is not all white or black, ensuring visual content validity; Checks whether image ratio of width... | Internal Implementation | N/A |
-| `QUALITY_BAD_IMG_LABEL_OVERLAP` | RuleImageLabelOverlap |  | Internal Implementation | N/A |
-| `QUALITY_BAD_IMG_LABEL_VISUALIZATION` | RuleImageLabelVisualization |  | Internal Implementation | N/A |
+| `QUALITY_BAD_IMG_LABEL_OVERLAP` | RuleImageLabelOverlap | Detects overlapping bounding boxes in image annotations, marks full/partial overlap and generates visualization images | Internal Implementation | N/A |
+| `QUALITY_BAD_IMG_LABEL_VISUALIZATION` | RuleImageLabelVisualization | Generates visualization images with bounding boxes and category labels, helping manual check of annotation accuracy | Internal Implementation | N/A |
 | `QUALITY_BAD_IMG_RELEVANCE` | RuleImageTextSimilarity | Evaluates semantic similarity between image and text content using CLIP model | [Learning Transferable Visual Representations with Natural Language Supervision](https://arxiv.org/abs/2103.00020) (Radford et al., 2021) | N/A |
 | `QUALITY_BAD_IMG_SIMILARITY` | RuleImageRepeat | Detects duplicate images using PHash and CNN methods to ensure data diversity | [ImageNet Classification with Deep Convolutional Neural Networks](https://papers.nips.cc/paper/4824-imagenet-classification-with-deep-convolutional-neural-networks.pdf) (Krizhevsky et al., 2012) | N/A |
 
@@ -69,18 +74,6 @@ This document provides comprehensive information about all quality metrics used 
 |------|--------|-------------|--------------|-------------------|
 | `QUALITY_BAD_EFFECTIVENESS` | RuleAudioDuration | Check whether the audio duration meets the standard | Internal Implementation | N/A |
 | `QUALITY_BAD_EFFECTIVENESS` | RuleAudioSnrQuality | Check whether the audio signal-to-noise ratio meets the standard | Internal Implementation | N/A |
-
-### Document Parsing
-
-| Type | Metric | Description | Paper Source | Evaluation Results |
-|------|--------|-------------|--------------|-------------------|
-| `PromptDocumentParsingQuality` | PromptDocumentParsingQuality | Evaluate the quality of general document parsing | Internal Implementation | N/A |
-
-### Factuality Assessment
-
-| Type | Metric | Description | Paper Source | Evaluation Results |
-|------|--------|-------------|--------------|-------------------|
-| `QUALITY_BAD_FACTUALITY` | LLMFactCheckPublic | Two-stage factuality evaluation pipeline from GPT-5 | [GPT-5 System Card](https://cdn.openai.com/pdf/8124a3ce-ab78-4f06-96eb-49ea29ffb52f/gpt5-system-card-aug7.pdf) (OpenAI) | N/A |
 
 ### Meta Rater Evaluation Metrics
 
