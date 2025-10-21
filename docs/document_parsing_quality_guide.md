@@ -28,11 +28,10 @@ dingo/
   │── examples/
   │   └── document_parser/
   │       └── vlm_document_parser_quality.py  # 单条评估示例
-  ├── test/                  # 测试输入输出目录
+  └── test/                  # 测试输入输出目录
       └── data/                 # 图像相关数据
-        ├── image_label/        # 图片标注输入示例(含图片和标注数据json)
-        ├── overlap_visual_image/      # 重叠可视化输出示例
-        └──label_visual_image/             # 标签可视化输出示例
+        ├── test_img_md.jsonl      # 输入的jsonl示例
+        └── c6be64e4-1dd4-4bd4-b923-55a63a6de397_page_1.jpg     # 输入的示例图片
 ```
 
 ##### 评估提示词
