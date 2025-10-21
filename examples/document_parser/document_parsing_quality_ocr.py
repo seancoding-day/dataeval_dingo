@@ -9,7 +9,7 @@ if __name__ == '__main__':
             "format": "jsonl",
             "field": {
                 "id": "id",
-                "content": "pred",
+                "content": "pred_content",
                 "prompt": "gt_markdown",
             }
         },

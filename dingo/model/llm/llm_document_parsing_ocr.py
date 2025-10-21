@@ -1,7 +1,7 @@
 import base64
 import json
 from typing import List
-
+import re
 from dingo.io import Data
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
@@ -18,44 +18,43 @@ class LLMMinerURecognizeQuality(BaseOpenAI):
     @classmethod
     def build_messages(cls, input_data: Data) -> List:
         gt_markdown = input_data.prompt
-        pred_json = json.loads(input_data.content)[0]
+        pred_content = input_data.content
         messages = [
             {
                 "role": "user",
-                "content": cls.prompt.content + f"ground_truth:{gt_markdown}\n\nPred_content:{pred_json['content']}"
+                "content": cls.prompt.content + f"ground_truth:{gt_markdown}\n\nPred_content:{pred_content}"
             }]
         return messages 
 
     @classmethod
     def process_response(cls, response: str) -> ModelRes:
         log.info(response)
-
-        response = response.replace("```json", "")
-        response = response.replace("```", "")
-
+        json_match = re.search(r'\{[\s\S]*"errors"[\s\S]*\}', response)
         types = []
         names = []
-        reasons = []
-        if response:
+    
+        if json_match:
             try:
-                result_data = json.loads(response)
+                json_str = json_match.group()
+                result_data = json.loads(json_str)
                 errors = result_data.get("errors", [])
 
                 for error in errors:
                     error_category = error.get("error_category", "")
                     error_label = error.get("error_label", "")
-                    bbox_type = error.get("bbox_type", "")
-                    bbox_id = error.get("bbox_id", "")
-                    if error_category and error_label :
+                    # 只提取 error_category 和 error_label
+                    if error_category and error_label:
                         types.append(error_category)
                         names.append(error_label)
             except json.JSONDecodeError as e:
                 log.error(f"JSON解析错误: {e}")
+        else:
+            log.error("未找到JSON内容")
 
         result = ModelRes()
         result.error_status = False
         result.type = types
         result.name = names
-        result.reason = [response]
+        result.reason = [json_str] if 'json_str' in locals() else [response]
 
         return result
