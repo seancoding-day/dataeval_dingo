@@ -21,16 +21,12 @@ This document provides comprehensive information about all quality metrics used 
 
 | Type | Metric | Description | Paper Source | Evaluation Results |
 |------|--------|-------------|--------------|-------------------|
-| `CodeCompare` | PromptCodeCompare | Compares the effectiveness of two tools in extracting code blocks from HTML to Markdown format by evaluating recognit... | Internal Implementation | N/A |
-| `Html_Extract_Compare` | PromptHtmlExtractCompare | Compares the effectiveness of two HTML extraction tools by evaluating element recognition rate and accuracy across di... | Internal Implementation | N/A |
-| `Html_Extract_Compare_V2` | PromptHtmlExtractCompareV2 | Compares HTML extraction results using diff-match-patch algorithm to identify unique and common content, then evaluat... | Internal Implementation | N/A |
-| `MathCompare` | PromptMathCompare | Compares the effectiveness of two tools in extracting mathematical formulas from HTML to Markdown format by evaluatin... | Internal Implementation | N/A |
+| `QUALITY_BAD_FACTUALITY` | LLMFactCheckPublic | Two-stage factuality evaluation pipeline from GPT-5 | [GPT-5 System Card](https://cdn.openai.com/pdf/8124a3ce-ab78-4f06-96eb-49ea29ffb52f/gpt5-system-card-aug7.pdf) (OpenAI) | N/A |
 | `QUALITY_BAD_HALLUCINATION` | PromptHallucination | Evaluates whether the response contains factual contradictions or hallucinations against provided context information | [TruthfulQA: Measuring How Models Mimic Human Falsehoods](https://arxiv.org/abs/2109.07958) (Lin et al., 2021) | N/A |
 | `QUALITY_BAD_HALLUCINATION` | RuleHallucinationHHEM | Uses Vectara's HHEM-2.1-Open model for local hallucination detection by evaluating consistency between response and c... | [HHEM-2.1-Open](https://huggingface.co/vectara/hallucination_evaluation_model) (Forrest Bao, Miaoran Li, Rogger Luo, Ofer Mendelevitch) | N/A |
 | `QUALITY_HARMLESS` | PromptTextHarmless | Checks if responses avoid harmful content, discriminatory language, and dangerous assistance | [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/pdf/2204.05862) (Bai et al., 2022) | [📊 See Results](eval/prompt/qa_data_evaluated_by_3h.md) |
 | `QUALITY_HELPFUL` | PromptTextHelpful | Assesses if responses address questions directly and follow instructions appropriately | [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/pdf/2204.05862) (Bai et al., 2022) | [📊 See Results](eval/prompt/qa_data_evaluated_by_3h.md) |
 | `QUALITY_HONEST` | PromptTextHonest | Evaluates if responses provide accurate information without fabrication or deception | [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/pdf/2204.05862) (Bai et al., 2022) | [📊 See Results](eval/prompt/qa_data_evaluated_by_3h.md) |
-| `TableCompare` | PromptTableCompare | Compares the effectiveness of two tools in extracting tables from HTML to Markdown format by evaluating recognition r... | Internal Implementation | N/A |
 
 ### Classification Metrics
 
@@ -89,6 +85,12 @@ This document provides comprehensive information about all quality metrics used 
 | Type | Metric | Description | Paper Source | Evaluation Results |
 |------|--------|-------------|--------------|-------------------|
 | `PromptMinerURecognizeQuality` | MinerURecognizeQuality | Evaluate the quality of mineru recognize | Internal Implementation | [📊 See Results](error_category and error_label) |
+
+### OCR Eval Metric
+
+| Type | Metric | Description | Paper Source | Evaluation Results |
+|------|--------|-------------|--------------|-------------------|
+| `PromptDocumentParsingQuality` | PromptDocumentParsingQuality | Evaluate the quality of general document parsing | Internal Implementation | N/A |
 
 ### Text Generation
 
