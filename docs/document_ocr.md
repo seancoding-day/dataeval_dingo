@@ -129,7 +129,7 @@ if __name__ == '__main__':
 ### JSONL数据格式
 
 ```jsonl
-
+示例请查看test/data/test_document_OCR_recognize.jsonl
 ```
 
 
