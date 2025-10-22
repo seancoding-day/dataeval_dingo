@@ -80,17 +80,12 @@ This document provides comprehensive information about all quality metrics used 
 | `META_RATER_READABILITY` | PromptMetaRaterReadability | Evaluates the clarity and coherence of text using appropriate vocabulary and sentence structures on a 5-point scale | [Meta-rater: A Multi-dimensional Data Selection Method for Pre-training Language Models](https://arxiv.org/pdf/2504.14194) (Zhuang et al., 2025) | N/A |
 | `META_RATER_REASONING` | PromptMetaRaterReasoning | Evaluates the reasoning complexity and logical depth of text content, from simple logical judgments to complex multid... | [Meta-rater: A Multi-dimensional Data Selection Method for Pre-training Language Models](https://arxiv.org/pdf/2504.14194) (Zhuang et al., 2025) | N/A |
 
-### Mineru Recognize
-
-| Type | Metric | Description | Paper Source | Evaluation Results |
-|------|--------|-------------|--------------|-------------------|
-| `PromptMinerURecognizeQuality` | OCR Eval Metric | Evaluate the quality of mineru recognize | Internal Implementation | [📊 See Results](error_category and error_label) |
-
 ### OCR Eval Metric
 
 | Type | Metric | Description | Paper Source | Evaluation Results |
 |------|--------|-------------|--------------|-------------------|
 | `PromptDocumentParsingQuality` | PromptDocumentParsingQuality | Evaluate the quality of general document parsing | Internal Implementation | N/A |
+| `PromptMinerURecognizeQuality` | MinerURecognizeQuality | Evaluate the quality of mineru recognize | Internal Implementation | [📊 See Results](error_category and error_label) |
 
 ### Text Generation
 
