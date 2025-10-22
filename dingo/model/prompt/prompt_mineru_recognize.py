@@ -8,7 +8,7 @@ class PromptMinerURecognizeQuality(BasePrompt):
     Metadata for documentation generation
     """
     _metric_info = {
-        "category": "Mineru Recognize",
+        "category": "OCR Eval Metric",
         "metric_name": "MinerURecognizeQuality",
         "description": "Evaluate the quality of mineru recognize",
         "evaluation_results": "error_category and error_label",
