@@ -6,8 +6,8 @@ from dingo.model.model import Model
 from dingo.model.modelres import ModelRes
 from dingo.model.rule.base import BaseRule
 
-
 # ========== Privacy Issues ==========
+
 
 @Model.rule_register("RESUME_QUALITY_BAD_PRIVACY", ["default", "resume"])
 class RuleResumeIDCard(BaseRule):
@@ -72,6 +72,7 @@ class RuleResumeDetailedAddress(BaseRule):
 
 
 # ========== Contact Information Issues ==========
+
 
 @Model.rule_register("RESUME_QUALITY_BAD_CONTACT", ["default", "resume"])
 class RuleResumeEmailMissing(BaseRule):
@@ -169,6 +170,7 @@ class RuleResumePhoneFormat(BaseRule):
 
 # ========== Format Issues ==========
 
+
 @Model.rule_register("RESUME_QUALITY_BAD_FORMAT", ["default", "resume"])
 class RuleResumeExcessiveWhitespace(BaseRule):
     """Check if resume contains excessive whitespace."""
@@ -233,6 +235,7 @@ class RuleResumeMarkdown(BaseRule):
 
 # ========== Structure Issues ==========
 
+
 @Model.rule_register("RESUME_QUALITY_BAD_STRUCTURE", ["default", "resume"])
 class RuleResumeNameMissing(BaseRule):
     """Check if resume is missing name in the first section."""
@@ -249,13 +252,13 @@ class RuleResumeNameMissing(BaseRule):
         "evaluation_results": ""
     }
 
-    dynamic_config = EvaluatorRuleArgs(pattern=r'^.{0,200}', threshold=200)
+    dynamic_config = EvaluatorRuleArgs()
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
         res = ModelRes()
         content = input_data.content
-        first_section = content[:cls.dynamic_config.threshold]
+        first_section = content[:200]
         # Check if first section contains Chinese name pattern or heading
         if not re.search(r'(^#\s*.+|^.{2,4}$)', first_section, re.MULTILINE):
             res.error_status = True
@@ -297,6 +300,7 @@ class RuleResumeSectionMissing(BaseRule):
 
 
 # ========== Professionalism Issues ==========
+
 
 @Model.rule_register("RESUME_QUALITY_BAD_PROFESSIONALISM", ["default", "resume"])
 class RuleResumeEmoji(BaseRule):
@@ -362,6 +366,7 @@ class RuleResumeInformal(BaseRule):
 
 # ========== Date Issues ==========
 
+
 @Model.rule_register("RESUME_QUALITY_BAD_DATE", ["default", "resume"])
 class RuleResumeDateFormat(BaseRule):
     """Check if resume has inconsistent date formats."""
@@ -396,6 +401,7 @@ class RuleResumeDateFormat(BaseRule):
 
 
 # ========== Completeness Issues ==========
+
 
 @Model.rule_register("RESUME_QUALITY_BAD_COMPLETENESS", ["default", "resume"])
 class RuleResumeEducationMissing(BaseRule):
@@ -457,4 +463,3 @@ class RuleResumeExperienceMissing(BaseRule):
             res.name = cls.__name__
             res.reason = ["Work experience section not found in resume"]
         return res
-

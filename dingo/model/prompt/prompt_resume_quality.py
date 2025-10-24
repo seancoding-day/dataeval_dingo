@@ -2,7 +2,7 @@ from dingo.model.model import Model
 from dingo.model.prompt.base import BasePrompt
 
 
-@Model.prompt_register("RESUME_QUALITY_ZH", [], ['LLMResumeQualityBase'])
+@Model.prompt_register("RESUME_QUALITY_ZH", [], ['LLMResumeQuality'])
 class PromptResumeQualityZh(BasePrompt):
     """Chinese prompt for resume quality evaluation."""
 
@@ -83,7 +83,7 @@ Please remember to output only a JSON format data, without any additional conten
 """
 
 
-@Model.prompt_register("RESUME_QUALITY_EN", [], ['LLMResumeQualityBase'])
+@Model.prompt_register("RESUME_QUALITY_EN", [], ['LLMResumeQuality'])
 class PromptResumeQualityEn(BasePrompt):
     """English prompt for resume quality evaluation."""
 
@@ -162,4 +162,3 @@ Please remember to output only a JSON format data, without any additional conten
 
 # Input content
 """
-
