@@ -1957,28 +1957,50 @@ class RuleUnsafeWords(BaseRule):
 
     @classmethod
     def eval(cls, input_data: Data) -> ModelRes:
+        import re
+
         import ahocorasick
 
         from dingo.model.rule.utils.util import get_unsafe_words
+
         res = ModelRes()
         content = input_data.content
         key_list = cls.dynamic_config.key_list
         if key_list is None:
             key_list = get_unsafe_words(cls.dynamic_config.refer_path)
+
         A = ahocorasick.Automaton()
         for index, key in enumerate(key_list):
             A.add_word(key, (index, key))
         A.make_automaton()
-        matches = [
-            (end_index - len(value[1]) + 1, value[1])
-            for end_index, value in A.iter(content)
-        ]
+
+        matches = []
+        for end_index, (index, keyword) in A.iter(content):
+            start_index = end_index - len(keyword) + 1
+
+            # 检查单词边界
+            if cls._is_whole_word(content, start_index, end_index):
+                matches.append((start_index, keyword))
+
         if matches:
             res.error_status = True
             res.type = cls.metric_type
             res.name = cls.__name__
             res.reason = [value for index, value in matches]
         return res
+
+    @classmethod
+    def _is_whole_word(cls, text: str, start: int, end: int) -> bool:
+        """检查匹配是否是一个完整的单词"""
+        # 检查左侧边界
+        if start > 0 and text[start - 1].isalnum():
+            return False
+
+        # 检查右侧边界
+        if end < len(text) - 1 and text[end + 1].isalnum():
+            return False
+
+        return True
 
 
 @Model.rule_register(
