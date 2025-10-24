@@ -4,7 +4,7 @@ from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.model.modelres import ModelRes
 from dingo.model.prompt.prompt_resume_quality import PromptResumeQualityZh
-from dingo.model.response.response_resume import ResponseResumeQuality
+from dingo.model.response.response_class import ResponseScoreTypeNameReason
 from dingo.utils import log
 from dingo.utils.exception import ConvertJsonError
 
@@ -33,7 +33,7 @@ class LLMResumeQuality(BaseOpenAI):
             raise ConvertJsonError(f"Convert to JSON format failed: {response}")
 
         # Validate response using Pydantic model
-        response_model = ResponseResumeQuality(**response_json)
+        response_model = ResponseScoreTypeNameReason(**response_json)
 
         result = ModelRes()
 
