@@ -11,4 +11,3 @@ class ResponseResumeQuality(BaseModel):
     class Config:
         extra = "forbid"
         validate_assignment = True
-

@@ -63,4 +63,3 @@ class LLMResumeQuality(BaseOpenAI):
             result.reason = [response_model.reason]
 
         return result
-
