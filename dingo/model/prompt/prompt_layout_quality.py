@@ -66,7 +66,7 @@ class PromptLayoutQuality(BasePrompt):
     请严格按照以下JSON格式输出你的审核报告。报告的主体是一个名为`error_analysis`的列表，其中每个对象代表一个已识别的错误。
 
     **请特别注意以下两条规则：**
-    *   **聚合相似错误**: 如果页面上有多个元素犯了**完全相同性质的错误**，请将它们**合并到同一个错误条目**中。将所有相关的`element_ids`都列出，并在`description`中进行概括性描述。
+    *   **聚合相似错误**: 如果页面上有多个元素犯了**完全相同性质的错误**，请将它们**合并到同一个错误条目**中,并在`description`中进行概括性描述。
     *   **允许单个元素的多重错误**: 如果**同一个元素**（例如 `id=1`）同时存在多种类型的错误（例如，既有`Boundary Error`，又有`Classification Error`），你需要为它**创建多个独立的错误条目**，每个条目对应一种错误类型。
     *   对于“检测遗漏错误”，也应遵循此原则。例如，如果页面同时遗漏了页眉和页脚，你应该只创建一个检测遗漏错误条目，并在description中同时描述这两个被遗漏的元素，而不是创建两个独立的错误条目。
 
@@ -82,7 +82,7 @@ class PromptLayoutQuality(BasePrompt):
                 "suggestion": "应调整边界框，确保其紧密包裹整个文本区域。"
             },
             {
-                "error_ids": 2,
+                "error_id": 2,
                 "error_type": "元素类别错误",
                 "error_location": "元素1在图片上显示为大号、加粗、居中的文本'第一章：系统概述'，这是一个典型的章节标题，但被错误地标记为'text'。",
                 "suggestion": "应将label修正为'title'"
@@ -103,7 +103,7 @@ class PromptLayoutQuality(BasePrompt):
     }
     ```
 
-    *   `error_ids`: (Int)错误问题的编号，从1开始计数，以此类推。
+    *   `error_id`: (Int)错误问题的编号，从1开始计数，以此类推。
     *   `error_type`: (String) 从上述【错误类型定义】中选择一个。
     *   `error_location`: (String) 对错误位置的详细、客观的文字描述，**请结合图片上的视觉特征进行说明**。
     *   `suggestion`: (String) 针对该错误提出的具体、可操作的修改建议。
