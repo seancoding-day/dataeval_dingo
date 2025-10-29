@@ -2,12 +2,12 @@ from dingo.config import InputArgs
 from dingo.exec import Executor
 
 input_data = {
-    'input_path': '../../test/data/compare/test_math_compare.jsonl',
+    'input_path': '../../test/data/compare/WebMainBench_test_1011_dataset_with_results_clean.jsonl',
     'dataset': {
         'source': 'local',
         'format': 'jsonl',
         'field': {
-            'id': 'track_id',
+            'id': 'id',
             'content': 'clean_html'
         }
     },

@@ -177,7 +177,7 @@ class PromptMetaRaterReadability(BasePrompt):
     # Metadata for documentation generation
     _metric_info = {
         "category": "Meta Rater Evaluation Metrics",
-        "metric_name": "PromptMetaRaterProfessionalism",
+        "metric_name": "PromptMetaRaterReadability",
         "description": "Evaluates the clarity and coherence of text using appropriate vocabulary and sentence structures on a 5-point scale",
         "paper_title": "Meta-rater: A Multi-dimensional Data Selection Method for Pre-training Language Models",
         "paper_url": "https://arxiv.org/pdf/2504.14194",
@@ -200,7 +200,7 @@ class PromptMetaRaterReasoning(BasePrompt):
     # Metadata for documentation generation
     _metric_info = {
         "category": "Meta Rater Evaluation Metrics",
-        "metric_name": "PromptMetaRaterProfessionalism",
+        "metric_name": "PromptMetaRaterReasoning",
         "description": "Evaluates the reasoning complexity and logical depth of text content, from simple logical judgments to complex multidimensional analysis on a 5-point scale",
         "paper_title": "Meta-rater: A Multi-dimensional Data Selection Method for Pre-training Language Models",
         "paper_url": "https://arxiv.org/pdf/2504.14194",

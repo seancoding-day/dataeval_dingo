@@ -25,8 +25,8 @@ class LLMMathCompare(BaseOpenAI):
                 'role': 'user',
                 'content': cls.prompt.content.format(
                     input_data.content,
-                    input_data.raw_data.get('webkit_extract_md', ''),
-                    input_data.raw_data.get('megamath_md', ''),
+                    input_data.raw_data.get('llm-webkit_content', ''),
+                    input_data.raw_data.get('trafilatura_content', ''),
                 ),
             }
         ]
