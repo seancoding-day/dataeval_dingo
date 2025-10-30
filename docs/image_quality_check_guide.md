@@ -489,11 +489,7 @@ ModelRes(
 - **图像路径无效**：检查 `image` 字段是否正确指向图像文件，确保路径不存在拼写错误、文件未被移动或删除。
 - **模型加载失败**：对于RuleImageQuality和RuleImageTextSimilarity，确保已安装相关依赖（pyiqa、similarities等），并检查网络连接是否正常。
 - **CUDA内存不足**：对于RuleImageQuality，可设置使用CPU进行评估，通过修改代码中的device设置。
-- **目录权限问题**：对于RuleImageRepeat，确‘
-- 
-- 保对图像目录有读取权限，且目录不为空。
-
-
+- **目录权限问题**：对于RuleImageRepeat，确保对图像目录有读取权限，且目录不为空。
 
 ## 12. 参考资料
 
