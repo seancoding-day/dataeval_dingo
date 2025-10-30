@@ -494,5 +494,4 @@ ModelRes(
 ## 12. 参考资料
 
 1. [Dingo 文档](https://deepwiki.com/MigoXLab/dingo) - 完整的 API 文档和更多示例
-2. [NIMA: Neural Image Assessment](https://arxiv.org/abs/1709.05424) - 图像质量评估的神经网络方法
-3. [Learning Transferable Visual Representations with Natural Language Supervision](https://arxiv.org/abs/2103.00020) - CLIP模型论文
+
