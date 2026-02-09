@@ -1,0 +1,1210 @@
+"""
+ArticleFactChecker: Agent-based article fact-checking with claims extraction.
+
+This module implements a comprehensive article fact-checking agent using the
+Agent-First architecture pattern with LangChain Agent Executor for autonomous
+decision-making.
+
+Implementation Pattern: Agent-First (LangChain 1.0)
+===================================================
+
+This agent uses `use_agent_executor = True` to enable LangChain's create_agent
+with ReAct pattern, giving the agent full autonomy over:
+- Tool selection (claims_extractor, arxiv_search, tavily_search)
+- Execution order (adaptive based on claim types)
+- Multi-step reasoning and evidence tracking
+- Error handling and fallback strategies
+
+The agent autonomously:
+1. Extracts verifiable claims from article using claims_extractor
+2. Analyzes each claim type and selects appropriate verification tool
+3. Performs multi-step reasoning to build evidence chains
+4. Generates structured verification report with comparison tables
+
+Key Characteristics:
+- Autonomous decision-making
+- Intelligent tool selection
+- Multi-step reasoning
+- Adaptive verification strategy
+
+When to Use This Pattern:
+- Article-level fact-checking (vs. single claim)
+- Need comprehensive verification report
+- Benefit from agent's adaptive reasoning
+- Want transparent evidence chains
+
+See Also:
+- AgentFactCheck: Single-claim hallucination detection
+- docs/agent_development_guide.md: Agent development patterns
+"""
+
+import json
+import os
+import re
+import threading
+import time
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from dingo.io import Data
+from dingo.io.input.required_field import RequiredField
+from dingo.io.output.eval_detail import EvalDetail, QualityLabel
+from dingo.model import Model
+from dingo.model.llm.agent.base_agent import BaseAgent
+from dingo.utils import log
+
+
+class PromptTemplates:
+    """
+    Modular prompt templates for ArticleFactChecker.
+
+    This class provides reusable prompt components that can be assembled
+    based on article type and verification needs. This approach:
+    - Reduces context window usage for long articles
+    - Allows dynamic prompt customization
+    - Makes prompts easier to maintain and test
+    """
+
+    CORE_ROLE = """You are an expert article fact-checker with autonomous tool selection capabilities.
+
+Your Task: Systematically verify ALL factual claims in the provided article."""
+
+    TOOLS_DESCRIPTION = """
+Available Tools:
+================
+1. claims_extractor: Extract verifiable claims from long-form text
+   - Use this FIRST to identify all checkable statements
+   - Supports 8 claim types: factual, statistical, attribution, institutional,
+     temporal, comparative, monetary, technical
+   - Returns list of structured claims with types
+
+2. arxiv_search: Search academic papers and verify metadata
+   - Use for claims about research papers, academic publications
+   - Provides paper metadata: title, authors, abstract, publication date
+   - LIMITATION: Does NOT provide structured institutional affiliations
+   - Best for: paper titles, author names, publication dates
+
+3. tavily_search: General web search for fact verification
+   - Use for general factual claims, current events, companies, products
+   - Use for institutional/organizational affiliations verification
+   - Use for news, product specs, financial figures, comparative claims
+   - Provides current web information with sources"""
+
+    WORKFLOW_STEPS = """
+Workflow (Autonomous Decision-Making):
+======================================
+STEP 0: Analyze Article Type
+   First, identify the article type to guide your verification strategy.
+
+Step 1: Extract Claims
+   - Call claims_extractor with the full article text
+   - Review the extracted claims carefully
+   - Claims are categorized by type for targeted verification
+
+Step 2: Verify Each Claim (Autonomous Tool Selection)
+   For each claim, analyze its type and context, then SELECT THE BEST TOOL:
+
+   Tool Selection Principles:
+   1. arxiv_search - For academic paper verification (paper title, author, arXiv ID)
+   2. tavily_search - For general web verification (current events, companies, products, institutions)
+
+   Adaptive Strategies:
+   - COMBINE tools for comprehensive verification
+   - FALLBACK: If primary tool fails, try alternatives
+   - MULTI-SOURCE: Cross-verify important claims with multiple sources
+
+Step 3: Synthesize Results
+   After verifying ALL claims, generate a comprehensive report."""
+
+    OUTPUT_FORMAT = """
+Output Format:
+==============
+You MUST return JSON in this exact format:
+
+```json
+{
+  "article_verification_summary": {
+    "article_type": "academic|news|product|blog|policy|opinion",
+    "total_claims": <number>,
+    "verified_claims": <number>,
+    "false_claims": <number>,
+    "unverifiable_claims": <number>,
+    "accuracy_score": <0.0-1.0>
+  },
+  "detailed_findings": [
+    {
+      "claim_id": "claim_001",
+      "original_claim": "...",
+      "claim_type": "institutional|factual|temporal|comparative|etc",
+      "verification_result": "FALSE|TRUE|UNVERIFIABLE",
+      "evidence": "...",
+      "sources": ["url1", "url2"],
+      "verification_method": "arxiv_search|tavily_search|combined",
+      "search_queries_used": ["query1", "query2"],
+      "reasoning": "Step-by-step reasoning for the verification conclusion"
+    }
+  ],
+  "false_claims_comparison": [
+    {
+      "article_claimed": "Example: OpenAI released o1 in November 2024",
+      "actual_truth": "OpenAI released o1 on December 5, 2024",
+      "error_type": "temporal_error",
+      "severity": "medium",
+      "evidence": "Verified via official OpenAI announcement"
+    }
+  ]
+}
+```"""
+
+    CRITICAL_GUIDELINES = """
+Critical Guidelines:
+====================
+- ALWAYS extract claims first before verification
+- AUTONOMOUS tool selection based on claim type and article context
+- VERIFY each claim independently
+- USE multiple sources when possible (especially for critical claims)
+- CITE specific evidence and URLs
+- IDENTIFY severity of false claims (high/medium/low)
+- BE THOROUGH: Don't skip claims
+- ADAPTIVE: If a tool fails, try alternatives intelligently
+- CONTEXT-AWARE: Consider article type when selecting verification approach
+
+Remember: You are an autonomous agent with full decision-making power.
+Analyze the article type, choose tools intelligently based on claim context,
+adapt to intermediate results, and ensure comprehensive verification."""
+
+    # Article type specific guidance
+    ARTICLE_TYPE_GUIDANCE = {
+        "academic": """
+Article Type Guidance (Academic):
+- Focus on arxiv_search for paper verification
+- Use tavily_search for institutional affiliations
+- Verify: paper titles, authors, publication dates, citations
+- Example: "OmniDocBench paper" → arxiv_search; "by Tsinghua" → tavily_search""",
+
+        "news": """
+Article Type Guidance (News):
+- Focus on tavily_search for current events
+- Verify dates, quotes, and attributions carefully
+- Cross-reference multiple news sources
+- Example: "released on December 5" → tavily_search with date context""",
+
+        "product": """
+Article Type Guidance (Product Review):
+- Use tavily_search for official specifications
+- Verify technical specs against manufacturer data
+- Check benchmark claims against third-party reviews
+- Example: "A17 Pro chip" → tavily_search for official Apple specs""",
+
+        "blog": """
+Article Type Guidance (Technical Blog):
+- Use tavily_search for documentation verification
+- Verify version numbers and feature claims
+- Check performance claims against benchmarks
+- Example: "React 18 features" → tavily_search for React docs""",
+
+        "policy": """
+Article Type Guidance (Policy Document):
+- Use tavily_search for government sources
+- Verify dates, regulations, and official statements
+- Cross-reference with official government websites""",
+
+        "opinion": """
+Article Type Guidance (Opinion Piece):
+- Focus only on attributed factual claims
+- Verify quotes and statistics cited
+- Distinguish opinions from verifiable facts"""
+    }
+
+    @classmethod
+    def build(cls, article_type: Optional[str] = None) -> str:
+        """
+        Build complete system prompt from modular components.
+
+        Args:
+            article_type: Optional article type for targeted guidance
+                         ("academic", "news", "product", "blog", "policy", "opinion")
+
+        Returns:
+            Complete system prompt string
+        """
+        parts = [
+            cls.CORE_ROLE,
+            cls.TOOLS_DESCRIPTION,
+            cls.WORKFLOW_STEPS
+        ]
+
+        # Add article-type specific guidance if provided
+        if article_type and article_type.lower() in cls.ARTICLE_TYPE_GUIDANCE:
+            parts.append(cls.ARTICLE_TYPE_GUIDANCE[article_type.lower()])
+
+        parts.extend([
+            cls.OUTPUT_FORMAT,
+            cls.CRITICAL_GUIDELINES
+        ])
+
+        return "\n".join(parts)
+
+    @classmethod
+    def get_article_types(cls) -> List[str]:
+        """Return list of supported article types."""
+        return list(cls.ARTICLE_TYPE_GUIDANCE.keys())
+
+
+@Model.llm_register("ArticleFactChecker")
+class ArticleFactChecker(BaseAgent):
+    """
+    Article-level fact-checking agent with autonomous claims extraction and verification.
+
+    Implementation Pattern: Agent-First (LangChain ReAct)
+    =====================================================
+
+    This agent demonstrates the Agent-First architectural pattern, where the
+    LangChain agent has full autonomy over:
+    - When to extract claims (always first step)
+    - Which verification tool to use for each claim type
+    - How to handle verification failures (fallback strategies)
+    - When the verification process is complete
+
+    Agent Workflow (Autonomous):
+    ===========================
+    1. Extract Claims: Agent calls claims_extractor on full article
+    2. Analyze & Route: For each claim, agent determines best verification tool:
+       - Institutional claims → arxiv_search (with verify_institutions)
+       - Academic/paper claims → arxiv_search (standard search)
+       - General facts → tavily_search
+    3. Build Evidence: Agent collects verification results from tools
+    4. Generate Report: Agent synthesizes findings into structured report
+
+    Tool Selection Logic (Agent decides autonomously):
+    =================================================
+    - IF claim mentions institution affiliations (e.g., "released by University X"):
+      → FIRST try arxiv_search (if paper mentioned)
+      → FALLBACK to tavily_search if not academic
+    - IF claim is about academic paper details:
+      → Use arxiv_search
+    - IF claim is general factual statement:
+      → Use tavily_search
+    - Agent can use MULTIPLE tools for comprehensive verification
+
+    Configuration Example:
+    {
+        "name": "ArticleFactChecker",
+        "config": {
+            "key": "your-openai-api-key",
+            "model": "gpt-4o-mini",
+            "parameters": {
+                "agent_config": {
+                    "max_iterations": 10,
+                    "tools": {
+                        "claims_extractor": {
+                            "api_key": "your-openai-api-key",
+                            "max_claims": 50,
+                            "claim_types": ["factual", "institutional", "statistical", "attribution"]
+                        },
+                        "tavily_search": {
+                            "api_key": "your-tavily-api-key",
+                            "max_results": 5
+                        },
+                        "arxiv_search": {
+                            "max_results": 5
+                        }
+                    }
+                }
+            }
+        }
+    }
+    """
+
+    use_agent_executor = True  # Enable Agent-First mode
+    available_tools = [
+        "claims_extractor",  # Extract verifiable claims from article
+        "arxiv_search",      # Verify academic papers and institutions
+        "tavily_search"      # General web search verification
+    ]
+    max_iterations = 10  # Allow more iterations for comprehensive checking
+
+    _required_fields = [RequiredField.CONTENT]  # Article text
+
+    _metric_info = {
+        "metric_name": "ArticleFactChecker",
+        "description": "Article-level fact checking with autonomous claims extraction and verification"
+    }
+
+    # Thread-local context for passing state between eval() and aggregate_results()
+    # Using threading.local() ensures concurrent evaluations don't interfere
+    _thread_local = threading.local()
+
+    # ============================================================
+    # Output Path and File Saving Methods
+    # ============================================================
+
+    @classmethod
+    def _get_output_dir(cls) -> Optional[str]:
+        """
+        Get output directory from agent config or return None.
+
+        Checks parameters.agent_config.output_path for an explicit override.
+        If set, creates the directory and returns the path.
+
+        Returns:
+            Output directory path, or None if not configured
+        """
+        params = cls.dynamic_config.parameters or {}
+        output_path = params.get('agent_config', {}).get('output_path')
+        if output_path:
+            os.makedirs(output_path, exist_ok=True)
+        return output_path
+
+    @classmethod
+    def _save_article_content(cls, output_dir: str, content: str) -> Optional[str]:
+        """
+        Save original article content to output directory.
+
+        Args:
+            output_dir: Output directory path
+            content: Article markdown content
+
+        Returns:
+            Path to saved file, or None on failure
+        """
+        file_path = os.path.join(output_dir, "article_content.md")
+        try:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            log.info(f"Saved article content to {file_path}")
+            return file_path
+        except (IOError, OSError) as e:
+            log.error(f"Failed to save article content: {e}")
+            return None
+
+    @classmethod
+    def _save_claims(cls, output_dir: str, claims: List[Dict]) -> Optional[str]:
+        """
+        Save extracted claims to JSONL file.
+
+        Args:
+            output_dir: Output directory path
+            claims: List of claim dictionaries
+
+        Returns:
+            Path to saved file, or None on failure
+        """
+        file_path = os.path.join(output_dir, "claims_extracted.jsonl")
+        try:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                for claim in claims:
+                    f.write(json.dumps(claim, ensure_ascii=False) + '\n')
+            log.info(f"Saved {len(claims)} claims to {file_path}")
+            return file_path
+        except (IOError, OSError) as e:
+            log.error(f"Failed to save claims: {e}")
+            return None
+
+    @classmethod
+    def _save_verification_details(cls, output_dir: str, enriched_claims: List[Dict]) -> Optional[str]:
+        """
+        Save per-claim verification details to JSONL file.
+
+        Args:
+            output_dir: Output directory path
+            enriched_claims: List of enriched claim verification records
+
+        Returns:
+            Path to saved file, or None on failure
+        """
+        file_path = os.path.join(output_dir, "claims_verification.jsonl")
+        try:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                for claim in enriched_claims:
+                    f.write(json.dumps(claim, ensure_ascii=False) + '\n')
+            log.info(f"Saved {len(enriched_claims)} verification details to {file_path}")
+            return file_path
+        except (IOError, OSError) as e:
+            log.error(f"Failed to save verification details: {e}")
+            return None
+
+    @classmethod
+    def _save_full_report(cls, output_dir: str, report_data: Dict) -> Optional[str]:
+        """
+        Save full structured verification report to JSON file.
+
+        Args:
+            output_dir: Output directory path
+            report_data: Complete report dictionary
+
+        Returns:
+            Path to saved file, or None on failure
+        """
+        file_path = os.path.join(output_dir, "verification_report.json")
+        try:
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(report_data, f, ensure_ascii=False, indent=2)
+            log.info(f"Saved verification report to {file_path}")
+            return file_path
+        except (IOError, OSError) as e:
+            log.error(f"Failed to save verification report: {e}")
+            return None
+
+    # ============================================================
+    # Data Processing Methods
+    # ============================================================
+
+    @classmethod
+    def _extract_claims_from_tool_calls(cls, tool_calls: List[Dict]) -> List[Dict]:
+        """
+        Extract claims list from tool_calls observation data.
+
+        The claims_extractor tool returns its results in the observation field
+        of the tool_calls list (via langchain_adapter).
+
+        Args:
+            tool_calls: List of tool call dicts from AgentWrapper
+
+        Returns:
+            List of claim dictionaries extracted from claims_extractor output
+        """
+        for tc in tool_calls:
+            if tc.get('tool') == 'claims_extractor':
+                observation = tc.get('observation', '')
+                if not observation:
+                    continue
+                try:
+                    obs_data = json.loads(observation)
+                    if obs_data.get('success'):
+                        # Claims may be in data.claims (langchain_adapter wrapping)
+                        # or directly in obs_data.claims
+                        data_section = obs_data.get('data', obs_data)
+                        claims = data_section.get('claims', [])
+                        if claims:
+                            return claims
+                except (json.JSONDecodeError, TypeError) as e:
+                    log.warning(f"Failed to parse claims_extractor observation: {e}")
+        return []
+
+    @classmethod
+    def _build_per_claim_verification(
+        cls,
+        verification_data: Dict[str, Any],
+        extracted_claims: List[Dict],
+        tool_calls: List[Dict]
+    ) -> List[Dict]:
+        """
+        Merge verification_data, extracted_claims, and tool_calls into
+        per-claim verification records.
+
+        Data sources:
+        - detailed_findings: verification result, evidence, sources, reasoning
+        - extracted_claims: claim_type, confidence, verifiable, context
+        - tool_calls: search queries and tool usage details
+
+        Args:
+            verification_data: Agent's parsed JSON output
+            extracted_claims: Claims from claims_extractor tool
+            tool_calls: Complete tool call list from agent
+
+        Returns:
+            List of enriched per-claim verification records
+        """
+        detailed_findings = verification_data.get("detailed_findings", [])
+
+        # Build lookup from extracted claims by claim_id
+        claims_by_id: Dict[str, Dict] = {}
+        for claim in extracted_claims:
+            cid = claim.get('claim_id', '')
+            if cid:
+                claims_by_id[cid] = claim
+
+        enriched_claims: List[Dict] = []
+        for finding in detailed_findings:
+            claim_id = finding.get('claim_id', '')
+            extracted = claims_by_id.get(claim_id, {})
+
+            enriched = {
+                "claim_id": claim_id,
+                "original_claim": finding.get('original_claim', extracted.get('claim', '')),
+                "claim_type": finding.get('claim_type', extracted.get('claim_type', 'unknown')),
+                "confidence": extracted.get('confidence'),
+                "verification_result": finding.get('verification_result', 'UNVERIFIABLE'),
+                "evidence": finding.get('evidence', ''),
+                "sources": finding.get('sources', []),
+                "verification_method": finding.get('verification_method', ''),
+                "search_queries_used": finding.get('search_queries_used', []),
+                "reasoning": finding.get('reasoning', ''),
+                "error_type": None,
+                "severity": None
+            }
+
+            # If this is a FALSE claim, try to get error details from false_claims_comparison
+            if enriched["verification_result"] == "FALSE":
+                for fc in verification_data.get("false_claims_comparison", []):
+                    # Match by claim text similarity
+                    if (enriched["original_claim"] and
+                            enriched["original_claim"][:40] in fc.get('article_claimed', '')):
+                        enriched["error_type"] = fc.get('error_type')
+                        enriched["severity"] = fc.get('severity')
+                        break
+
+            enriched_claims.append(enriched)
+
+        # If no detailed_findings but we have extracted claims, create placeholder records
+        if not enriched_claims and extracted_claims:
+            for claim in extracted_claims:
+                enriched_claims.append({
+                    "claim_id": claim.get('claim_id', ''),
+                    "original_claim": claim.get('claim', ''),
+                    "claim_type": claim.get('claim_type', 'unknown'),
+                    "confidence": claim.get('confidence'),
+                    "verification_result": "UNVERIFIABLE",
+                    "evidence": "",
+                    "sources": [],
+                    "verification_method": "",
+                    "search_queries_used": [],
+                    "reasoning": "No verification data available from agent",
+                    "error_type": None,
+                    "severity": None
+                })
+
+        return enriched_claims
+
+    @classmethod
+    def _build_structured_report(
+        cls,
+        verification_data: Dict[str, Any],
+        extracted_claims: List[Dict],
+        enriched_claims: List[Dict],
+        tool_calls: List[Dict],
+        reasoning_steps: int,
+        content_length: int,
+        execution_time: float
+    ) -> Dict[str, Any]:
+        """
+        Build a complete structured verification report.
+
+        Args:
+            verification_data: Agent's parsed JSON output
+            extracted_claims: Claims from claims_extractor
+            enriched_claims: Merged per-claim verification records
+            tool_calls: Complete tool call list
+            reasoning_steps: Number of reasoning steps
+            content_length: Length of original article content
+            execution_time: Total execution time in seconds
+
+        Returns:
+            Complete structured report dictionary
+        """
+        summary = verification_data.get("article_verification_summary", {})
+
+        # Claims extraction stats
+        claim_types_dist: Dict[str, int] = {}
+        verifiable_count = 0
+        for claim in extracted_claims:
+            ct = claim.get('claim_type', 'unknown')
+            claim_types_dist[ct] = claim_types_dist.get(ct, 0) + 1
+            if claim.get('verifiable', True):
+                verifiable_count += 1
+
+        report = {
+            "report_version": "2.0",
+            "generated_at": datetime.now().isoformat(timespec='seconds'),
+            "article_info": {
+                "content_source": "markdown",
+                "content_length": content_length
+            },
+            "claims_extraction": {
+                "total_extracted": len(extracted_claims),
+                "verifiable": verifiable_count,
+                "claim_types_distribution": claim_types_dist
+            },
+            "verification_summary": {
+                "total_verified": summary.get("verified_claims", 0),
+                "verified_true": summary.get("verified_claims", 0) - summary.get("false_claims", 0),
+                "verified_false": summary.get("false_claims", 0),
+                "unverifiable": summary.get("unverifiable_claims", 0),
+                "accuracy_score": summary.get("accuracy_score", 0.0)
+            },
+            "detailed_findings": enriched_claims,
+            "false_claims_comparison": verification_data.get("false_claims_comparison", []),
+            "agent_metadata": {
+                "model": getattr(cls.dynamic_config, 'model', 'unknown'),
+                "tool_calls_count": len(tool_calls),
+                "reasoning_steps": reasoning_steps,
+                "execution_time_seconds": round(execution_time, 2)
+            }
+        }
+
+        return report
+
+    # ============================================================
+    # Overridden Core Methods
+    # ============================================================
+
+    @classmethod
+    def eval(cls, input_data: Data) -> EvalDetail:
+        """
+        Override BaseAgent.eval() to add context tracking and file saving.
+
+        Saves original article content to output directory before running
+        the LangChain agent, and sets up context for aggregate_results().
+
+        Args:
+            input_data: Data object with article content
+
+        Returns:
+            EvalDetail with comprehensive verification report
+        """
+        start_time = time.time()
+        output_dir = cls._get_output_dir()
+
+        # Save original article content
+        if output_dir and input_data.content:
+            cls._save_article_content(output_dir, input_data.content)
+
+        # Set up thread-local context for aggregate_results()
+        cls._thread_local.context = {
+            'start_time': start_time,
+            'output_dir': output_dir,
+            'content_length': len(input_data.content or ''),
+        }
+
+        # Delegate to parent's eval which routes to _eval_with_langchain_agent
+        return cls._eval_with_langchain_agent(input_data)
+
+    @classmethod
+    def _format_agent_input(cls, input_data: Data) -> str:
+        """
+        Format article content for agent.
+
+        Args:
+            input_data: Data object with content (article text)
+
+        Returns:
+            Formatted input string with task instructions
+        """
+        article_text = input_data.content
+
+        return f"""Please fact-check the following article comprehensively:
+
+===== ARTICLE START =====
+{article_text}
+===== ARTICLE END =====
+
+Your Task:
+0. First, analyze the article type (academic/news/product/blog/policy) to guide your verification strategy
+1. Extract ALL verifiable claims from this article using claims_extractor tool
+2. Verify each claim using autonomous tool selection based on claim type and article context
+3. Generate a comprehensive verification report
+
+Begin your systematic fact-checking process now.
+"""
+
+    @classmethod
+    def _get_system_prompt(cls, input_data: Data) -> str:
+        """
+        Build system prompt for article fact-checking agent.
+
+        This method uses modular PromptTemplates to construct the system prompt,
+        which can be customized based on article type if specified in the input data.
+
+        The modular approach:
+        - Reduces context window usage for long articles
+        - Allows dynamic prompt customization based on article type
+        - Makes prompts easier to maintain and test
+
+        Args:
+            input_data: Input data, may contain article_type hint
+
+        Returns:
+            System prompt with agent instructions
+        """
+        # Check if article_type is specified in input_data
+        article_type = None
+        if hasattr(input_data, 'article_type'):
+            article_type = getattr(input_data, 'article_type', None)
+
+        # Build prompt using modular templates
+        return PromptTemplates.build(article_type=article_type)
+
+    @classmethod
+    def aggregate_results(cls, input_data: Data, results: List[Any]) -> EvalDetail:
+        """
+        Parse agent output into structured EvalDetail report with full artifact saving.
+
+        This method:
+        1. Parses the agent's JSON output
+        2. Extracts claims from tool_calls
+        3. Builds per-claim verification records
+        4. Generates structured report
+        5. Saves all artifacts to output directory
+        6. Returns EvalDetail with dual-layer reason (text + structured data)
+
+        Args:
+            input_data: Original article data
+            results: List containing agent execution result dictionary
+
+        Returns:
+            EvalDetail with comprehensive verification report
+        """
+        if not results:
+            return cls._create_error_result("No results from agent")
+
+        agent_result = results[0]
+
+        # Check for execution errors
+        if not agent_result.get('success', True):
+            error_msg = agent_result.get('error', 'Unknown error')
+
+            # For recursion limit errors, create custom EvalDetail
+            if "recursion limit" in error_msg.lower():
+                limit_match = re.search(r'recursion limit of (\d+)', error_msg.lower())
+                limit = int(limit_match.group(1)) if limit_match else 25
+
+                result = EvalDetail(metric=cls.__name__)
+                result.status = True  # True indicates an issue/error
+                result.label = [f"{QualityLabel.QUALITY_BAD_PREFIX}AGENT_RECURSION_LIMIT"]
+                result.reason = [
+                    "Article Fact-Checking Failed: Recursion Limit Exceeded",
+                    "=" * 70,
+                    f"Agent reached maximum iteration limit ({limit} iterations).",
+                    "",
+                    "The article may be too long or contain too many claims to verify.",
+                    "",
+                    "Recommendations:",
+                    f"  1. Increase max_iterations to {limit + 20} in agent_config",
+                    "  2. Reduce max_claims from 50 to 20-30 in claims_extractor",
+                    "  3. Use a shorter article or split into sections",
+                    "",
+                    "See detailed execution trace in ERROR logs above."
+                ]
+                return result
+
+            # For other timeout errors, create custom EvalDetail
+            elif "timed out" in error_msg.lower() or "timeout" in error_msg.lower():
+                result = EvalDetail(metric=cls.__name__)
+                result.status = True
+                result.label = [f"{QualityLabel.QUALITY_BAD_PREFIX}AGENT_TIMEOUT"]
+                result.reason = [
+                    "Article Fact-Checking Failed: Request Timeout",
+                    "=" * 70,
+                    "Request timed out during fact-checking.",
+                    "",
+                    "Possible causes:",
+                    "  - LLM API is responding slowly",
+                    "  - Article is too long to process",
+                    "  - Network connectivity issues",
+                    "",
+                    "Recommendations:",
+                    "  1. Switch to faster model (e.g., gpt-4o-mini instead of deepseek-chat)",
+                    "  2. Reduce article length (try shorter articles first)",
+                    "  3. Reduce max_claims in claims_extractor (from 50 to 20-30)",
+                    "  4. Check API response time and network connection",
+                    "",
+                    "See detailed execution trace in ERROR logs above (if available)."
+                ]
+                return result
+
+            # For other errors, use default error template
+            return cls._create_error_result(error_msg)
+
+        # Extract agent output
+        output = agent_result.get('output', '')
+        tool_calls = agent_result.get('tool_calls', [])
+        reasoning_steps = agent_result.get('reasoning_steps', 0)
+
+        # Validate output exists
+        if not output or not output.strip():
+            return cls._create_error_result(
+                "Agent returned empty output. "
+                "This may indicate the agent reached max_iterations without completing."
+            )
+
+        # Parse agent output (JSON format)
+        try:
+            verification_data = cls._parse_verification_output(output)
+        except Exception as e:
+            return cls._create_error_result(
+                f"Failed to parse agent output: {str(e)}\nOutput: {output[:300]}..."
+            )
+
+        # --- New: Extract claims and build enriched verification records ---
+        extracted_claims = cls._extract_claims_from_tool_calls(tool_calls)
+        enriched_claims = cls._build_per_claim_verification(
+            verification_data, extracted_claims, tool_calls
+        )
+
+        # Calculate execution time from thread-local context
+        ctx = getattr(cls._thread_local, 'context', {})
+        execution_time = time.time() - ctx.get('start_time', time.time())
+        content_length = ctx.get('content_length', 0)
+        output_dir = ctx.get('output_dir')
+
+        # Build structured report
+        report = cls._build_structured_report(
+            verification_data=verification_data,
+            extracted_claims=extracted_claims,
+            enriched_claims=enriched_claims,
+            tool_calls=tool_calls,
+            reasoning_steps=reasoning_steps,
+            content_length=content_length,
+            execution_time=execution_time
+        )
+
+        # --- Save artifacts to output directory ---
+        if output_dir:
+            try:
+                if extracted_claims:
+                    cls._save_claims(output_dir, extracted_claims)
+                if enriched_claims:
+                    cls._save_verification_details(output_dir, enriched_claims)
+                cls._save_full_report(output_dir, report)
+            except Exception as e:
+                log.warning(f"Failed to save some output artifacts: {e}")
+
+        # Build EvalDetail from verification data (with enriched report)
+        return cls._build_eval_detail_from_verification(
+            verification_data,
+            tool_calls,
+            reasoning_steps,
+            report=report
+        )
+
+    @classmethod
+    def _parse_verification_output(cls, output: str) -> Dict[str, Any]:
+        """
+        Parse agent output to extract verification data.
+
+        Supports multiple formats with enhanced fallback parsing:
+        1. JSON in code block (```json ... ```)
+        2. JSON in generic code block (``` ... ```)
+        3. Raw JSON object
+        4. Partial JSON extraction
+        5. Text analysis fallback with pattern matching
+
+        Args:
+            output: Agent's text output
+
+        Returns:
+            Parsed verification data dictionary
+
+        Note:
+            Never raises - always returns a valid structure with raw_output for debugging
+        """
+        # Strategy 1: Extract JSON from ```json code block
+        json_match = re.search(
+            r'```json\s*(\{.*?\})\s*```',
+            output,
+            re.DOTALL | re.IGNORECASE
+        )
+
+        if json_match:
+            try:
+                return json.loads(json_match.group(1))
+            except json.JSONDecodeError as e:
+                log.debug(f"Failed to parse ```json block: {e}")
+
+        # Strategy 2: Extract JSON from generic ``` code block
+        generic_block_match = re.search(
+            r'```\s*(\{.*?\})\s*```',
+            output,
+            re.DOTALL
+        )
+
+        if generic_block_match:
+            try:
+                return json.loads(generic_block_match.group(1))
+            except json.JSONDecodeError as e:
+                log.debug(f"Failed to parse generic code block: {e}")
+
+        # Strategy 3: Try direct JSON parsing (entire output is JSON)
+        try:
+            return json.loads(output.strip())
+        except json.JSONDecodeError:
+            pass
+
+        # Strategy 4: Find and extract JSON object anywhere in text
+        # Look for { ... } pattern that could be valid JSON
+        json_object_match = re.search(
+            r'(\{[^{}]*"article_verification_summary"[^{}]*\{[^{}]*\}[^{}]*\})',
+            output,
+            re.DOTALL
+        )
+
+        if json_object_match:
+            try:
+                return json.loads(json_object_match.group(1))
+            except json.JSONDecodeError:
+                pass
+
+        # Strategy 5: Try to find any valid JSON object
+        # Find the largest balanced { } block
+        brace_positions = []
+        depth = 0
+        start_pos = None
+
+        for i, char in enumerate(output):
+            if char == '{':
+                if depth == 0:
+                    start_pos = i
+                depth += 1
+            elif char == '}':
+                depth -= 1
+                if depth == 0 and start_pos is not None:
+                    brace_positions.append((start_pos, i + 1))
+                    start_pos = None
+
+        # Try each JSON candidate from largest to smallest
+        for start, end in sorted(brace_positions, key=lambda x: x[1] - x[0], reverse=True):
+            try:
+                candidate = output[start:end]
+                parsed = json.loads(candidate)
+                if isinstance(parsed, dict) and ("article_verification_summary" in parsed or "total_claims" in parsed):
+                    return parsed
+            except json.JSONDecodeError:
+                continue
+
+        # Strategy 6: Enhanced text analysis fallback
+        log.warning("Failed to parse as JSON, creating fallback structure from text analysis")
+
+        # Extract summary numbers using multiple patterns
+        patterns = {
+            'total': [
+                r'total[_\s]*claims?[:\s]*(\d+)',
+                r'"total_claims"[:\s]*(\d+)',
+                r'(\d+)\s*(?:total\s+)?claims?\s+(?:analyzed|extracted|found)',
+            ],
+            'false': [
+                r'false[_\s]*claims?[:\s]*(\d+)',
+                r'"false_claims"[:\s]*(\d+)',
+                r'(\d+)\s*(?:false|incorrect|inaccurate)\s+claims?',
+            ],
+            'verified': [
+                r'verified[_\s]*claims?[:\s]*(\d+)',
+                r'"verified_claims"[:\s]*(\d+)',
+                r'(\d+)\s*(?:verified|true|accurate)\s+claims?',
+            ],
+            'unverifiable': [
+                r'unverifiable[_\s]*claims?[:\s]*(\d+)',
+                r'"unverifiable_claims"[:\s]*(\d+)',
+                r'(\d+)\s*(?:unverifiable|unknown|unclear)\s+claims?',
+            ],
+            'accuracy': [
+                r'accuracy[_\s]*(?:score)?[:\s]*([\d.]+)',
+                r'"accuracy_score"[:\s]*([\d.]+)',
+                r'overall\s+accuracy[:\s]*([\d.]+)',
+            ],
+            'article_type': [
+                r'"article_type"[:\s]*"(\w+)"',
+                r'article\s+type[:\s]*(\w+)',
+            ]
+        }
+
+        def extract_first_match(pattern_list: List[str], default=None):
+            for pattern in pattern_list:
+                match = re.search(pattern, output, re.IGNORECASE)
+                if match:
+                    return match.group(1)
+            return default
+
+        total = int(extract_first_match(patterns['total'], '0'))
+        false = int(extract_first_match(patterns['false'], '0'))
+        verified = int(extract_first_match(patterns['verified'], '0') or (total - false))
+        unverifiable = int(extract_first_match(patterns['unverifiable'], '0'))
+        accuracy_str = extract_first_match(patterns['accuracy'], '0')
+        article_type = extract_first_match(patterns['article_type'], 'unknown')
+
+        # Parse accuracy (handle both 0.95 and 95% formats)
+        try:
+            accuracy = float(accuracy_str)
+            if accuracy > 1.0:  # Likely percentage format
+                accuracy = accuracy / 100.0
+        except (ValueError, TypeError):
+            accuracy = verified / total if total > 0 else 0.0
+
+        # Extract false claims details if present
+        false_claims_comparison = []
+        claim_pattern = r'(?:claim|error|false)[:\s]*["\']?([^"\']+)["\']?\s*(?:→|->|:)\s*["\']?([^"\']+)["\']?'
+        claim_matches = re.findall(claim_pattern, output, re.IGNORECASE)
+        for claimed, truth in claim_matches[:5]:  # Limit to 5 claims
+            false_claims_comparison.append({
+                "article_claimed": claimed.strip(),
+                "actual_truth": truth.strip(),
+                "error_type": "extracted_from_text",
+                "severity": "unknown"
+            })
+
+        return {
+            "article_verification_summary": {
+                "article_type": article_type,
+                "total_claims": total,
+                "verified_claims": verified,
+                "false_claims": false,
+                "unverifiable_claims": unverifiable,
+                "accuracy_score": accuracy
+            },
+            "false_claims_comparison": false_claims_comparison if false_claims_comparison else [],
+            "raw_output": output,  # Include raw output for debugging
+            "parse_method": "text_analysis_fallback"
+        }
+
+    @classmethod
+    def _build_eval_detail_from_verification(
+        cls,
+        verification_data: Dict[str, Any],
+        tool_calls: List,
+        reasoning_steps: int,
+        report: Optional[Dict[str, Any]] = None
+    ) -> EvalDetail:
+        """
+        Build EvalDetail from parsed verification data with dual-layer reason.
+
+        reason[0] is a human-readable text summary string.
+        reason[1] is the full structured report dict (JSON-serializable).
+
+        Args:
+            verification_data: Parsed verification results
+            tool_calls: List of tool calls made by agent
+            reasoning_steps: Number of reasoning steps taken
+            report: Optional structured report dict from _build_structured_report
+
+        Returns:
+            EvalDetail with comprehensive report
+        """
+        summary = verification_data.get("article_verification_summary", {})
+        total = summary.get("total_claims", 0)
+        false_count = summary.get("false_claims", 0)
+        verified = summary.get("verified_claims", 0)
+        accuracy = summary.get("accuracy_score", 0.0)
+
+        # Determine status (True = issue detected, False = all good)
+        result = EvalDetail(metric=cls.__name__)
+        result.status = false_count > 0
+        result.score = accuracy
+        result.label = [
+            f"{QualityLabel.QUALITY_BAD_PREFIX}ARTICLE_INACCURACY_{int((1-accuracy)*100)}"
+            if false_count > 0
+            else QualityLabel.QUALITY_GOOD
+        ]
+
+        # Build human-readable text summary
+        lines = [
+            "Article Fact-Checking Report",
+            "=" * 70,
+            f"Total Claims Analyzed: {total}",
+            f"Verified Claims: {verified}",
+            f"False Claims: {false_count}",
+            f"Unverifiable Claims: {summary.get('unverifiable_claims', 0)}",
+            f"Overall Accuracy: {accuracy:.1%}",
+            "",
+            "Agent Performance:",
+            f"   Tool Calls: {len(tool_calls)}",
+            f"   Reasoning Steps: {reasoning_steps}",
+            ""
+        ]
+
+        # Add false claims comparison table
+        false_claims = verification_data.get("false_claims_comparison", [])
+        if false_claims:
+            lines.append("FALSE CLAIMS DETAILED COMPARISON:")
+            lines.append("=" * 70)
+
+            for i, fc in enumerate(false_claims, 1):
+                lines.extend([
+                    f"\n#{i} {fc.get('error_type', 'ERROR').upper()} "
+                    f"[Severity: {fc.get('severity', 'unknown')}]",
+                    "   Article Claimed:",
+                    f"      {fc.get('article_claimed', 'N/A')}",
+                    "   Actual Truth:",
+                    f"      {fc.get('actual_truth', 'N/A')}",
+                    "   Evidence:",
+                    f"      {fc.get('evidence', 'N/A')}",
+                ])
+
+        # Add detailed findings summary
+        detailed = verification_data.get("detailed_findings", [])
+        if detailed:
+            lines.append("\n\nALL CLAIMS VERIFICATION SUMMARY:")
+            lines.append("=" * 70)
+
+            # Count by verification result
+            result_counts: Dict[str, int] = {}
+            for finding in detailed:
+                vr = finding.get("verification_result", "UNKNOWN")
+                result_counts[vr] = result_counts.get(vr, 0) + 1
+
+            for result_type, count in result_counts.items():
+                lines.append(f"   {result_type}: {count} claims")
+
+            # Show sample false claims
+            false_findings = [f for f in detailed if f.get("verification_result") == "FALSE"]
+            if false_findings and len(false_findings) <= 5:
+                lines.append("\n   False Claims Details:")
+                for finding in false_findings[:5]:
+                    lines.append(
+                        f"   - {finding.get('claim_id')}: {finding.get('original_claim', '')[:80]}..."
+                    )
+
+        # Add raw output if available (for debugging)
+        if "raw_output" in verification_data:
+            lines.extend([
+                "",
+                "DEBUG: Raw Agent Output (first 500 chars):",
+                verification_data["raw_output"][:500] + "..."
+            ])
+
+        # Dual-layer reason: [text_summary, structured_report]
+        text_summary = "\n".join(lines)
+        result.reason = [text_summary]
+
+        if report:
+            result.reason.append(report)
+
+        return result
+
+    @classmethod
+    def _create_error_result(cls, error_message: str) -> EvalDetail:
+        """
+        Create error result for agent failures.
+
+        Args:
+            error_message: Description of the error
+
+        Returns:
+            EvalDetail with error status
+        """
+        result = EvalDetail(metric=cls.__name__)
+        result.status = True  # True indicates an issue/error
+        result.label = [f"{QualityLabel.QUALITY_BAD_PREFIX}AGENT_ERROR"]
+        result.reason = [
+            "Article Fact-Checking Failed",
+            "=" * 70,
+            f"Error: {error_message}",
+            "",
+            "Possible causes:",
+            "- Agent exceeded max_iterations without completing",
+            "- LLM failed to follow output format instructions",
+            "- Tool execution errors (API failures, rate limits)",
+            "- Invalid or empty article content",
+            "",
+            "Troubleshooting:",
+            "1. Check agent configuration (API keys, max_iterations)",
+            "2. Verify article content is valid and non-empty",
+            "3. Check tool configurations (claims_extractor, arxiv_search, tavily_search)",
+            "4. Review agent logs for detailed error messages"
+        ]
+        return result
+
+    @classmethod
+    def plan_execution(cls, input_data: Data) -> List[Dict[str, Any]]:
+        """
+        Not used when use_agent_executor=True.
+
+        The LangChain agent autonomously plans its execution using ReAct pattern.
+        This method is only called for legacy agent path (use_agent_executor=False).
+
+        Args:
+            input_data: Input data (unused)
+
+        Returns:
+            Empty list (no manual planning needed)
+        """
+        return []
