@@ -9,6 +9,9 @@ Tests the end-to-end article fact-checking workflow including:
 - Per-claim verification merging
 - Structured report generation
 - File saving methods
+- Verdict normalization and summary recalculation
+- Claims fallback extraction from detailed_findings
+- Prompt enhancements (VERDICT_CRITERIA, SELF_VERIFICATION_STEP)
 """
 
 import json
@@ -21,6 +24,7 @@ import pytest
 from dingo.io.input import Data
 from dingo.model import Model
 from dingo.model.llm.agent import ArticleFactChecker
+from dingo.model.llm.agent.agent_article_fact_checker import PromptTemplates
 
 
 class TestArticleFactCheckerBasic:
@@ -74,8 +78,6 @@ class TestArticleFactCheckerBasic:
 
     def test_get_system_prompt_with_article_type(self):
         """Test system prompt generation with specific article type"""
-        from dingo.model.llm.agent.agent_article_fact_checker import PromptTemplates
-
         # Test default prompt
         default_prompt = PromptTemplates.build()
         assert "expert article fact-checker" in default_prompt
@@ -100,8 +102,6 @@ class TestArticleFactCheckerBasic:
 
     def test_output_format_prompt_contains_new_fields(self):
         """Test that OUTPUT_FORMAT prompt requires verification_method, search_queries_used, reasoning"""
-        from dingo.model.llm.agent.agent_article_fact_checker import PromptTemplates
-
         output_fmt = PromptTemplates.OUTPUT_FORMAT
         assert "verification_method" in output_fmt
         assert "search_queries_used" in output_fmt
@@ -441,6 +441,45 @@ class TestStructuredReport:
         assert report["agent_metadata"]["execution_time_seconds"] == 30.5
         assert report["agent_metadata"]["model"] == "test-model"
 
+    def test_report_verified_true_math_after_recalculation(self):
+        """Test that verified_true equals true_count, not true_count - false_count.
+
+        Regression test: _recalculate_summary sets verified_claims=true_count.
+        _build_structured_report must use verified_claims directly for verified_true,
+        and verified_claims + false_claims for total_verified.
+        """
+        # Simulate recalculated summary: 3 TRUE, 1 FALSE, 1 UNVERIFIABLE
+        verification_data = {
+            "article_verification_summary": {
+                "total_claims": 5,
+                "verified_claims": 3,
+                "false_claims": 1,
+                "unverifiable_claims": 1,
+                "accuracy_score": 0.6
+            },
+            "false_claims_comparison": []
+        }
+        enriched = [
+            {"claim_id": f"c{i}", "verification_result": v, "claim_type": "factual"}
+            for i, v in enumerate(["TRUE", "TRUE", "TRUE", "FALSE", "UNVERIFIABLE"])
+        ]
+
+        report = ArticleFactChecker._build_structured_report(
+            verification_data=verification_data,
+            extracted_claims=enriched,
+            enriched_claims=enriched,
+            tool_calls=[],
+            reasoning_steps=5,
+            content_length=500,
+            execution_time=10.0
+        )
+
+        summary = report["verification_summary"]
+        assert summary["verified_true"] == 3, "verified_true should equal true_count"
+        assert summary["verified_false"] == 1
+        assert summary["unverifiable"] == 1
+        assert summary["total_verified"] == 4, "total_verified should be true + false"
+
 
 class TestFileSaving:
     """Test file saving methods"""
@@ -508,11 +547,25 @@ class TestFileSaving:
             loaded = json.load(f)
         assert loaded["report_version"] == "2.0"
 
-    def test_get_output_dir_returns_none_when_not_configured(self):
-        """Test _get_output_dir returns None when no output_path in config"""
+    def test_get_output_dir_auto_generates_path_when_not_configured(self, tmp_path):
+        """Test _get_output_dir auto-generates timestamped path when no output_path configured"""
         from dingo.config.input_args import EvaluatorLLMArgs
         ArticleFactChecker.dynamic_config = EvaluatorLLMArgs(
-            key="test", api_url="https://api.example.com", model="test"
+            key="test", api_url="https://api.example.com", model="test",
+            parameters={"agent_config": {"base_output_path": str(tmp_path)}}
+        )
+        result = ArticleFactChecker._get_output_dir()
+        assert result is not None
+        assert os.path.isdir(result)
+        assert "article_factcheck_" in os.path.basename(result)
+        assert result.startswith(str(tmp_path))
+
+    def test_get_output_dir_returns_none_when_save_artifacts_disabled(self):
+        """Test _get_output_dir returns None when save_artifacts=False"""
+        from dingo.config.input_args import EvaluatorLLMArgs
+        ArticleFactChecker.dynamic_config = EvaluatorLLMArgs(
+            key="test", api_url="https://api.example.com", model="test",
+            parameters={"agent_config": {"save_artifacts": False}}
         )
         result = ArticleFactChecker._get_output_dir()
         assert result is None
@@ -746,3 +799,685 @@ PaddleOCR-VL is an OCR model. It scored 92.6 on OmniDocBench.
         assert result.metric == "ArticleFactChecker"
         assert isinstance(result.status, bool)
         assert result.reason is not None
+
+
+class TestVerdictNormalization:
+    """Test _normalize_verdict method"""
+
+    def test_standard_values_unchanged(self):
+        """Test that standard verdicts pass through unchanged"""
+        assert ArticleFactChecker._normalize_verdict("TRUE") == "TRUE"
+        assert ArticleFactChecker._normalize_verdict("FALSE") == "FALSE"
+        assert ArticleFactChecker._normalize_verdict("UNVERIFIABLE") == "UNVERIFIABLE"
+
+    def test_case_insensitive(self):
+        """Test case insensitivity"""
+        assert ArticleFactChecker._normalize_verdict("true") == "TRUE"
+        assert ArticleFactChecker._normalize_verdict("False") == "FALSE"
+        assert ArticleFactChecker._normalize_verdict("unverifiable") == "UNVERIFIABLE"
+
+    def test_variant_mappings_true(self):
+        """Test TRUE variant mappings"""
+        assert ArticleFactChecker._normalize_verdict("CONFIRMED") == "TRUE"
+        assert ArticleFactChecker._normalize_verdict("ACCURATE") == "TRUE"
+        assert ArticleFactChecker._normalize_verdict("CORRECT") == "TRUE"
+        assert ArticleFactChecker._normalize_verdict("VERIFIED") == "TRUE"
+
+    def test_variant_mappings_false(self):
+        """Test FALSE variant mappings"""
+        assert ArticleFactChecker._normalize_verdict("INACCURATE") == "FALSE"
+        assert ArticleFactChecker._normalize_verdict("INCORRECT") == "FALSE"
+        assert ArticleFactChecker._normalize_verdict("WRONG") == "FALSE"
+        assert ArticleFactChecker._normalize_verdict("DISPROVEN") == "FALSE"
+        assert ArticleFactChecker._normalize_verdict("REFUTED") == "FALSE"
+
+    def test_unknown_defaults_to_unverifiable(self):
+        """Test that unknown values default to UNVERIFIABLE"""
+        assert ArticleFactChecker._normalize_verdict("MAYBE") == "UNVERIFIABLE"
+        assert ArticleFactChecker._normalize_verdict("PARTIAL") == "UNVERIFIABLE"
+        assert ArticleFactChecker._normalize_verdict("UNKNOWN") == "UNVERIFIABLE"
+
+    def test_empty_and_none_values(self):
+        """Test empty and None values"""
+        assert ArticleFactChecker._normalize_verdict("") == "UNVERIFIABLE"
+        assert ArticleFactChecker._normalize_verdict(None) == "UNVERIFIABLE"
+
+    def test_non_string_input_returns_unverifiable(self):
+        """Test that non-string types (int, bool, list) return UNVERIFIABLE"""
+        assert ArticleFactChecker._normalize_verdict(0) == "UNVERIFIABLE"
+        assert ArticleFactChecker._normalize_verdict(42) == "UNVERIFIABLE"
+        assert ArticleFactChecker._normalize_verdict(True) == "UNVERIFIABLE"
+        assert ArticleFactChecker._normalize_verdict(False) == "UNVERIFIABLE"
+        assert ArticleFactChecker._normalize_verdict(["TRUE"]) == "UNVERIFIABLE"
+
+    def test_whitespace_handling(self):
+        """Test that whitespace is stripped"""
+        assert ArticleFactChecker._normalize_verdict("  TRUE  ") == "TRUE"
+        assert ArticleFactChecker._normalize_verdict(" false ") == "FALSE"
+
+
+class TestRecalculateSummary:
+    """Test _recalculate_summary method"""
+
+    def test_basic_counts(self):
+        """Test basic counting of verdict types"""
+        claims = [
+            {"verification_result": "TRUE"},
+            {"verification_result": "TRUE"},
+            {"verification_result": "FALSE"},
+            {"verification_result": "UNVERIFIABLE"},
+        ]
+        result = ArticleFactChecker._recalculate_summary(claims)
+
+        assert result["total_claims"] == 4
+        assert result["verified_claims"] == 2
+        assert result["false_claims"] == 1
+        assert result["unverifiable_claims"] == 1
+        assert result["accuracy_score"] == 0.5
+
+    def test_empty_list(self):
+        """Test with empty claims list"""
+        result = ArticleFactChecker._recalculate_summary([])
+
+        assert result["total_claims"] == 0
+        assert result["verified_claims"] == 0
+        assert result["false_claims"] == 0
+        assert result["unverifiable_claims"] == 0
+        assert result["accuracy_score"] == 0.0
+
+    def test_all_true(self):
+        """Test when all claims are TRUE"""
+        claims = [
+            {"verification_result": "TRUE"},
+            {"verification_result": "TRUE"},
+            {"verification_result": "TRUE"},
+        ]
+        result = ArticleFactChecker._recalculate_summary(claims)
+
+        assert result["total_claims"] == 3
+        assert result["verified_claims"] == 3
+        assert result["accuracy_score"] == 1.0
+
+    def test_all_unverifiable(self):
+        """Test when all claims are UNVERIFIABLE"""
+        claims = [
+            {"verification_result": "UNVERIFIABLE"},
+            {"verification_result": "UNVERIFIABLE"},
+        ]
+        result = ArticleFactChecker._recalculate_summary(claims)
+
+        assert result["total_claims"] == 2
+        assert result["verified_claims"] == 0
+        assert result["accuracy_score"] == 0.0
+
+    def test_accuracy_rounding(self):
+        """Test accuracy score rounding to 4 decimal places"""
+        claims = [
+            {"verification_result": "TRUE"},
+            {"verification_result": "FALSE"},
+            {"verification_result": "UNVERIFIABLE"},
+        ]
+        result = ArticleFactChecker._recalculate_summary(claims)
+        assert result["accuracy_score"] == 0.3333
+
+
+class TestClaimsFallbackExtraction:
+    """Test _extract_claims_from_detailed_findings method"""
+
+    def test_extract_from_detailed_findings(self):
+        """Test extracting claims from agent's detailed_findings"""
+        verification_data = {
+            "detailed_findings": [
+                {
+                    "claim_id": "claim_001",
+                    "original_claim": "The model achieved 95% accuracy",
+                    "claim_type": "statistical",
+                    "verification_result": "TRUE"
+                },
+                {
+                    "claim_id": "claim_002",
+                    "original_claim": "Released by Google in 2024",
+                    "claim_type": "temporal",
+                    "verification_result": "FALSE"
+                }
+            ]
+        }
+
+        claims = ArticleFactChecker._extract_claims_from_detailed_findings(verification_data)
+
+        assert len(claims) == 2
+        assert claims[0]["claim_id"] == "claim_001"
+        assert claims[0]["claim"] == "The model achieved 95% accuracy"
+        assert claims[0]["claim_type"] == "statistical"
+        assert claims[0]["source"] == "agent_reasoning"
+        assert claims[0]["confidence"] is None
+        assert claims[0]["verifiable"] is True
+
+    def test_empty_findings(self):
+        """Test with empty detailed_findings"""
+        claims = ArticleFactChecker._extract_claims_from_detailed_findings({"detailed_findings": []})
+        assert claims == []
+
+    def test_missing_findings_key(self):
+        """Test with missing detailed_findings key"""
+        claims = ArticleFactChecker._extract_claims_from_detailed_findings({})
+        assert claims == []
+
+    def test_source_marker(self):
+        """Test that all extracted claims have source='agent_reasoning'"""
+        verification_data = {
+            "detailed_findings": [
+                {"claim_id": "c1", "original_claim": "Test", "claim_type": "factual"},
+                {"claim_id": "c2", "original_claim": "Test2"},
+            ]
+        }
+        claims = ArticleFactChecker._extract_claims_from_detailed_findings(verification_data)
+        for claim in claims:
+            assert claim["source"] == "agent_reasoning"
+
+    def test_missing_fields_use_defaults(self):
+        """Test that missing fields use appropriate defaults"""
+        verification_data = {
+            "detailed_findings": [
+                {"verification_result": "TRUE"}  # Minimal finding, missing most fields
+            ]
+        }
+        claims = ArticleFactChecker._extract_claims_from_detailed_findings(verification_data)
+
+        assert len(claims) == 1
+        assert claims[0]["claim_id"] == ""
+        assert claims[0]["claim"] == ""
+        assert claims[0]["claim_type"] == "unknown"
+
+
+class TestPromptEnhancements:
+    """Test prompt template enhancements for verdict consistency"""
+
+    def test_verdict_criteria_exists(self):
+        """Test that VERDICT_CRITERIA is defined and substantive"""
+        assert hasattr(PromptTemplates, 'VERDICT_CRITERIA')
+        criteria = PromptTemplates.VERDICT_CRITERIA
+        assert "TRUE" in criteria
+        assert "FALSE" in criteria
+        assert "UNVERIFIABLE" in criteria
+        assert "CRITICAL RULE" in criteria
+        assert "Absence of contradictory evidence" in criteria
+
+    def test_self_verification_step_exists(self):
+        """Test that SELF_VERIFICATION_STEP is defined and substantive"""
+        assert hasattr(PromptTemplates, 'SELF_VERIFICATION_STEP')
+        step = PromptTemplates.SELF_VERIFICATION_STEP
+        assert "Self-Verify" in step
+        assert "MANDATORY" in step
+        assert "consistency" in step.lower()
+
+    def test_build_includes_new_components(self):
+        """Test that build() includes VERDICT_CRITERIA and SELF_VERIFICATION_STEP"""
+        prompt = PromptTemplates.build()
+        assert "Verdict Decision Criteria" in prompt
+        assert "Self-Verify Verdict-Reasoning Consistency" in prompt
+
+    def test_build_assembly_order(self):
+        """Test that prompt components are in correct order"""
+        prompt = PromptTemplates.build()
+        # SELF_VERIFICATION_STEP should come after WORKFLOW_STEPS
+        workflow_pos = prompt.index("Workflow (Autonomous Decision-Making)")
+        self_verify_pos = prompt.index("Self-Verify Verdict-Reasoning Consistency")
+        assert self_verify_pos > workflow_pos
+
+        # VERDICT_CRITERIA should come before OUTPUT_FORMAT
+        verdict_pos = prompt.index("Verdict Decision Criteria")
+        output_pos = prompt.index("Output Format:")
+        assert verdict_pos < output_pos
+
+    def test_workflow_step1_mandatory_language(self):
+        """Test that Step 1 uses mandatory language for claims_extractor"""
+        prompt = PromptTemplates.build()
+        assert "REQUIRED - Do NOT skip this step" in prompt
+        assert "You MUST call the claims_extractor tool" in prompt
+
+    def test_build_with_article_type_includes_all_components(self):
+        """Test that article-type prompt still includes all new components"""
+        prompt = PromptTemplates.build(article_type="academic")
+        assert "Verdict Decision Criteria" in prompt
+        assert "Self-Verify Verdict-Reasoning Consistency" in prompt
+        assert "Article Type Guidance (Academic)" in prompt
+
+    def test_institutional_claim_tool_guidance_in_workflow(self):
+        """Test that WORKFLOW_STEPS includes institutional claim-specific tool guidance.
+
+        Institutional claims must use arxiv_search + tavily_search combination
+        regardless of article type. This guidance must be in WORKFLOW_STEPS (not
+        just ARTICLE_TYPE_GUIDANCE) to apply to all article types.
+        """
+        prompt = PromptTemplates.build()
+        assert "INSTITUTIONAL/ATTRIBUTION claims" in prompt
+        assert "arxiv_search FIRST" in prompt
+        assert "Do NOT rely on" in prompt
+
+
+class TestAggregateResultsNormalization:
+    """Test verdict normalization and summary recalculation in aggregate_results"""
+
+    def setup_method(self):
+        """Set up dynamic_config and thread-local context"""
+        from dingo.config.input_args import EvaluatorLLMArgs
+        self._original_dynamic_config = getattr(ArticleFactChecker, 'dynamic_config', None)
+        ArticleFactChecker.dynamic_config = EvaluatorLLMArgs(
+            key="test-key", api_url="https://api.example.com", model="test-model"
+        )
+        ArticleFactChecker._thread_local.context = {
+            'start_time': 0,
+            'output_dir': None,
+            'content_length': 100,
+        }
+
+    def teardown_method(self):
+        """Restore original dynamic_config"""
+        if self._original_dynamic_config is not None:
+            ArticleFactChecker.dynamic_config = self._original_dynamic_config
+
+    def test_nonstandard_verdicts_are_normalized(self):
+        """Test that non-standard verdicts are normalized in aggregate_results output"""
+        data = Data(content="test article")
+        agent_output = json.dumps({
+            "article_verification_summary": {
+                "article_type": "blog",
+                "total_claims": 3,
+                "verified_claims": 2,
+                "false_claims": 1,
+                "unverifiable_claims": 0,
+                "accuracy_score": 0.67
+            },
+            "detailed_findings": [
+                {"claim_id": "c1", "original_claim": "Claim 1", "verification_result": "CONFIRMED"},
+                {"claim_id": "c2", "original_claim": "Claim 2", "verification_result": "INCORRECT"},
+                {"claim_id": "c3", "original_claim": "Claim 3", "verification_result": "MAYBE"},
+            ],
+            "false_claims_comparison": []
+        })
+        agent_result = {
+            'success': True,
+            'output': agent_output,
+            'tool_calls': [],
+            'reasoning_steps': 5
+        }
+
+        result = ArticleFactChecker.aggregate_results(data, [agent_result])
+
+        # After normalization: CONFIRMED->TRUE, INCORRECT->FALSE, MAYBE->UNVERIFIABLE
+        # Recalculated: 1 TRUE, 1 FALSE, 1 UNVERIFIABLE -> accuracy = 1/3 ≈ 0.3333
+        assert result is not None
+        assert result.score == pytest.approx(0.3333, abs=0.001)
+        # Binary alignment: FALSE + UNVERIFIABLE → status=True (issue detected)
+        assert result.status is True
+        assert any("FACTUAL_ERROR" in label for label in result.label)
+
+    def test_summary_recalculated_from_actual_data(self):
+        """Test that agent's self-reported summary is overridden by recalculated data"""
+        data = Data(content="test article")
+        # Agent reports 3 verified, 0 false - but detailed_findings show 1 FALSE
+        agent_output = json.dumps({
+            "article_verification_summary": {
+                "article_type": "news",
+                "total_claims": 3,
+                "verified_claims": 3,
+                "false_claims": 0,
+                "unverifiable_claims": 0,
+                "accuracy_score": 1.0
+            },
+            "detailed_findings": [
+                {"claim_id": "c1", "original_claim": "Claim 1", "verification_result": "TRUE"},
+                {"claim_id": "c2", "original_claim": "Claim 2", "verification_result": "FALSE"},
+                {"claim_id": "c3", "original_claim": "Claim 3", "verification_result": "TRUE"},
+            ],
+            "false_claims_comparison": []
+        })
+        agent_result = {
+            'success': True,
+            'output': agent_output,
+            'tool_calls': [],
+            'reasoning_steps': 3
+        }
+
+        result = ArticleFactChecker.aggregate_results(data, [agent_result])
+
+        # Recalculated: 2 TRUE, 1 FALSE -> accuracy = 2/3 ≈ 0.6667
+        assert result.status is True  # Has false claims
+        assert result.score == pytest.approx(0.6667, abs=0.001)
+
+    def test_claims_source_in_report(self):
+        """Test that claims_source appears in structured report"""
+        data = Data(content="test article")
+        agent_output = json.dumps({
+            "article_verification_summary": {
+                "article_type": "blog",
+                "total_claims": 1,
+                "verified_claims": 1,
+                "false_claims": 0,
+                "unverifiable_claims": 0,
+                "accuracy_score": 1.0
+            },
+            "detailed_findings": [
+                {"claim_id": "c1", "original_claim": "Test claim", "verification_result": "TRUE"},
+            ],
+            "false_claims_comparison": []
+        })
+        agent_result = {
+            'success': True,
+            'output': agent_output,
+            'tool_calls': [],  # No claims_extractor tool call
+            'reasoning_steps': 3
+        }
+
+        result = ArticleFactChecker.aggregate_results(data, [agent_result])
+
+        # Should have report in reason[1]
+        assert len(result.reason) >= 2
+        report = result.reason[1]
+        assert isinstance(report, dict)
+        assert report["claims_extraction"]["claims_source"] == "agent_reasoning"
+
+
+class TestReasoningVerdictConsistency:
+    """Test code-level reasoning-verdict consistency check.
+
+    This tests the hedging language detector that downgrades TRUE verdicts
+    to UNVERIFIABLE when the reasoning contains language indicating
+    insufficient evidence. This is a systemic safety net, not claim-type specific.
+    """
+
+    def test_hedging_downgrades_true_to_unverifiable(self):
+        """Test that hedging language in reasoning downgrades TRUE → UNVERIFIABLE"""
+        claims = [
+            {
+                "claim_id": "c1",
+                "verification_result": "TRUE",
+                "reasoning": "The exact tripartite collaboration isn't explicitly stated in the README"
+            }
+        ]
+        downgraded = ArticleFactChecker._check_reasoning_verdict_consistency(claims)
+        assert downgraded == 1
+        assert claims[0]["verification_result"] == "UNVERIFIABLE"
+
+    def test_run3_exact_scenario(self):
+        """Test Run 3's exact institutional claim failure case.
+
+        Run 3 had: reasoning="While the exact tripartite collaboration isn't
+        explicitly stated in the GitHub README, multiple sources reference..."
+        verdict=TRUE → should be downgraded to UNVERIFIABLE.
+        """
+        claims = [
+            {
+                "claim_id": "claim_010",
+                "claim_type": "institutional",
+                "verification_result": "TRUE",
+                "reasoning": (
+                    "The OmniDocBench GitHub repository shows it's maintained by "
+                    "OpenDataLab with institutional affiliations. While the exact "
+                    "tripartite collaboration isn't explicitly stated in the GitHub "
+                    "README, multiple sources reference Tsinghua and Alibaba DAMO's "
+                    "involvement in OmniDocBench development."
+                )
+            }
+        ]
+        downgraded = ArticleFactChecker._check_reasoning_verdict_consistency(claims)
+        assert downgraded == 1
+        assert claims[0]["verification_result"] == "UNVERIFIABLE"
+
+    def test_false_verdicts_never_changed(self):
+        """Test that FALSE verdicts are never affected by hedging detection"""
+        claims = [
+            {
+                "claim_id": "c1",
+                "verification_result": "FALSE",
+                "reasoning": "The paper does not explicitly list these institutions"
+            }
+        ]
+        downgraded = ArticleFactChecker._check_reasoning_verdict_consistency(claims)
+        assert downgraded == 0
+        assert claims[0]["verification_result"] == "FALSE"
+
+    def test_unverifiable_verdicts_not_affected(self):
+        """Test that UNVERIFIABLE verdicts are not affected"""
+        claims = [
+            {
+                "claim_id": "c1",
+                "verification_result": "UNVERIFIABLE",
+                "reasoning": "Could not find evidence"
+            }
+        ]
+        downgraded = ArticleFactChecker._check_reasoning_verdict_consistency(claims)
+        assert downgraded == 0
+        assert claims[0]["verification_result"] == "UNVERIFIABLE"
+
+    def test_clear_reasoning_passes_through(self):
+        """Test that clear, definitive reasoning does not trigger downgrade"""
+        claims = [
+            {
+                "claim_id": "c1",
+                "verification_result": "TRUE",
+                "reasoning": (
+                    "The arXiv paper 2412.07626 confirms the model was released by "
+                    "Baidu with 0.9B parameters. Multiple independent sources verify "
+                    "this information."
+                )
+            }
+        ]
+        downgraded = ArticleFactChecker._check_reasoning_verdict_consistency(claims)
+        assert downgraded == 0
+        assert claims[0]["verification_result"] == "TRUE"
+
+    def test_multiple_claims_selective_downgrade(self):
+        """Test that only hedging TRUE claims are downgraded in a batch"""
+        claims = [
+            {
+                "claim_id": "c1",
+                "verification_result": "TRUE",
+                "reasoning": "Confirmed by arXiv paper with specific evidence"
+            },
+            {
+                "claim_id": "c2",
+                "verification_result": "TRUE",
+                "reasoning": "The specific numbers cannot be fully verified from available sources"
+            },
+            {
+                "claim_id": "c3",
+                "verification_result": "FALSE",
+                "reasoning": "Contradicts the paper's author list"
+            },
+            {
+                "claim_id": "c4",
+                "verification_result": "TRUE",
+                "reasoning": "Not directly confirmed by the search results found"
+            },
+        ]
+        downgraded = ArticleFactChecker._check_reasoning_verdict_consistency(claims)
+        assert downgraded == 2
+        assert claims[0]["verification_result"] == "TRUE"
+        assert claims[1]["verification_result"] == "UNVERIFIABLE"
+        assert claims[2]["verification_result"] == "FALSE"
+        assert claims[3]["verification_result"] == "UNVERIFIABLE"
+
+    @pytest.mark.parametrize("hedging_phrase", [
+        "not explicitly stated in the documentation",
+        "cannot be verified from available sources",
+        "could not find direct evidence",
+        "isn't explicitly mentioned in the results",
+        "is not explicitly listed in the paper",
+        "no direct evidence found for this claim",
+        "not directly confirmed by search results",
+        "the exact details cannot be fully verified",
+        "unable to verify the institutional affiliation",
+        "unable to confirm the claimed partnership",
+        "insufficient evidence to support this claim",
+    ])
+    def test_hedging_patterns_comprehensive(self, hedging_phrase):
+        """Test various hedging patterns all trigger downgrade"""
+        claims = [
+            {
+                "claim_id": "c1",
+                "verification_result": "TRUE",
+                "reasoning": f"Some context. {hedging_phrase}. More context."
+            }
+        ]
+        downgraded = ArticleFactChecker._check_reasoning_verdict_consistency(claims)
+        assert downgraded == 1, f"Pattern not detected: '{hedging_phrase}'"
+        assert claims[0]["verification_result"] == "UNVERIFIABLE"
+
+    def test_empty_reasoning_not_downgraded(self):
+        """Test that empty reasoning does not trigger downgrade"""
+        claims = [
+            {
+                "claim_id": "c1",
+                "verification_result": "TRUE",
+                "reasoning": ""
+            }
+        ]
+        downgraded = ArticleFactChecker._check_reasoning_verdict_consistency(claims)
+        assert downgraded == 0
+        assert claims[0]["verification_result"] == "TRUE"
+
+    def test_no_reasoning_key_not_downgraded(self):
+        """Test that missing reasoning key does not trigger downgrade"""
+        claims = [
+            {
+                "claim_id": "c1",
+                "verification_result": "TRUE",
+            }
+        ]
+        downgraded = ArticleFactChecker._check_reasoning_verdict_consistency(claims)
+        assert downgraded == 0
+
+    def test_integration_with_aggregate_results(self):
+        """Test that consistency check is integrated into aggregate_results pipeline"""
+        from dingo.config.input_args import EvaluatorLLMArgs
+        original_config = getattr(ArticleFactChecker, 'dynamic_config', None)
+        ArticleFactChecker.dynamic_config = EvaluatorLLMArgs(
+            key="test-key", api_url="https://api.example.com", model="test-model"
+        )
+        ArticleFactChecker._thread_local.context = {
+            'start_time': 0, 'output_dir': None, 'content_length': 100
+        }
+
+        try:
+            data = Data(content="test article")
+            agent_output = json.dumps({
+                "article_verification_summary": {
+                    "article_type": "academic",
+                    "total_claims": 2,
+                    "verified_claims": 2,
+                    "false_claims": 0,
+                    "unverifiable_claims": 0,
+                    "accuracy_score": 1.0
+                },
+                "detailed_findings": [
+                    {
+                        "claim_id": "c1",
+                        "original_claim": "Paper by University X",
+                        "claim_type": "institutional",
+                        "verification_result": "TRUE",
+                        "reasoning": "The exact institutional affiliation is not explicitly stated in available sources"
+                    },
+                    {
+                        "claim_id": "c2",
+                        "original_claim": "Model has 0.9B params",
+                        "claim_type": "technical",
+                        "verification_result": "TRUE",
+                        "reasoning": "Confirmed by arXiv paper title and Hugging Face model card"
+                    },
+                ],
+                "false_claims_comparison": []
+            })
+            agent_result = {
+                'success': True,
+                'output': agent_output,
+                'tool_calls': [],
+                'reasoning_steps': 3
+            }
+
+            result = ArticleFactChecker.aggregate_results(data, [agent_result])
+
+            # c1 should be downgraded: 1 TRUE + 1 UNVERIFIABLE → accuracy = 0.5
+            assert result.score == pytest.approx(0.5, abs=0.01)
+            # Binary alignment: UNVERIFIABLE → status=True (issue detected)
+            assert result.status is True
+        finally:
+            if original_config is not None:
+                ArticleFactChecker.dynamic_config = original_config
+
+
+class TestBinaryAlignmentWithDingo:
+    """Test binary alignment of verification results with Dingo's evaluation model.
+
+    Dingo uses a binary evaluation system: status=True (issue) or status=False (pass).
+    ArticleFactChecker maps:
+      - TRUE claims → no issue (status=False)
+      - FALSE claims → issue (status=True, label=ARTICLE_FACTUAL_ERROR)
+      - UNVERIFIABLE claims → issue (status=True, label=ARTICLE_UNVERIFIED_CLAIMS)
+
+    FALSE takes label priority over UNVERIFIABLE when both are present.
+    """
+
+    @staticmethod
+    def _make_summary(total, verified, false_claims, unverifiable, accuracy):
+        """Build verification_data dict for _build_eval_detail_from_verification."""
+        return {
+            "article_verification_summary": {
+                "total_claims": total,
+                "verified_claims": verified,
+                "false_claims": false_claims,
+                "unverifiable_claims": unverifiable,
+                "accuracy_score": accuracy,
+            },
+            "detailed_findings": [],
+        }
+
+    def test_all_true_returns_no_issue(self):
+        """Test: all TRUE claims → status=False, QUALITY_GOOD label"""
+        verification_data = self._make_summary(total=3, verified=3, false_claims=0, unverifiable=0, accuracy=1.0)
+        result = ArticleFactChecker._build_eval_detail_from_verification(
+            verification_data, tool_calls=[], reasoning_steps=3
+        )
+        assert result.status is False
+        assert result.score == 1.0
+        assert any("QUALITY_GOOD" in label for label in result.label)
+
+    def test_unverifiable_only_returns_issue(self):
+        """Test: UNVERIFIABLE claims (no FALSE) → status=True, UNVERIFIED_CLAIMS label"""
+        verification_data = self._make_summary(total=5, verified=3, false_claims=0, unverifiable=2, accuracy=0.6)
+        result = ArticleFactChecker._build_eval_detail_from_verification(
+            verification_data, tool_calls=[], reasoning_steps=5
+        )
+        assert result.status is True
+        assert result.score == 0.6
+        assert any("ARTICLE_UNVERIFIED_CLAIMS" in label for label in result.label)
+
+    def test_false_only_returns_factual_error(self):
+        """Test: FALSE claims (no UNVERIFIABLE) → status=True, FACTUAL_ERROR label"""
+        verification_data = self._make_summary(total=4, verified=3, false_claims=1, unverifiable=0, accuracy=0.75)
+        result = ArticleFactChecker._build_eval_detail_from_verification(
+            verification_data, tool_calls=[], reasoning_steps=4
+        )
+        assert result.status is True
+        assert result.score == 0.75
+        assert any("ARTICLE_FACTUAL_ERROR" in label for label in result.label)
+
+    def test_false_plus_unverifiable_prefers_factual_error_label(self):
+        """Test: both FALSE and UNVERIFIABLE → FACTUAL_ERROR label takes priority"""
+        verification_data = self._make_summary(total=5, verified=2, false_claims=1, unverifiable=2, accuracy=0.4)
+        result = ArticleFactChecker._build_eval_detail_from_verification(
+            verification_data, tool_calls=[], reasoning_steps=5
+        )
+        assert result.status is True
+        assert result.score == 0.4
+        assert any("ARTICLE_FACTUAL_ERROR" in label for label in result.label)
+
+    def test_zero_claims_returns_no_issue(self):
+        """Test: zero claims → status=False (no evidence of issues)"""
+        verification_data = self._make_summary(total=0, verified=0, false_claims=0, unverifiable=0, accuracy=0.0)
+        result = ArticleFactChecker._build_eval_detail_from_verification(
+            verification_data, tool_calls=[], reasoning_steps=1
+        )
+        assert result.status is False
+        assert any("QUALITY_GOOD" in label for label in result.label)

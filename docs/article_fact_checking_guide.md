@@ -429,12 +429,14 @@ Agent Decision:
 ```python
 {
   "agent_config": {
-    "max_iterations": 15,  # Maximum reasoning steps
-    # output_path controls intermediate artifact saving.
-    # When set, saves: article_content.md, claims_extracted.jsonl,
-    # claims_verification.jsonl, verification_report.json
-    # When omitted/None, only Dingo standard output is generated.
-    "output_path": "outputs/article_factcheck/",  # Optional
+    "max_iterations": 15,       # Maximum reasoning steps
+
+    # Artifact output path (three options, evaluated in priority order):
+    # 1. "output_path": "path/to/dir"  → use explicit path (backward-compatible)
+    # 2. "save_artifacts": false        → disable artifact saving entirely
+    # 3. (default)                      → auto-generate outputs/article_factcheck_<timestamp>_<uuid>/
+    #    Override base dir with "base_output_path": "custom/base/"
+
     "tools": {
       "claims_extractor": {
         "api_key": "...",
@@ -513,7 +515,7 @@ The `EvalDetail` returned by `ArticleFactChecker` uses a **dual-layer reason** s
         "claim_types_distribution": {"factual": 5, "institutional": 3, "...": "..."}
       },
       "verification_summary": {
-        "total_verified": 18,
+        "total_verified": 20,
         "verified_true": 15,
         "verified_false": 5,
         "unverifiable": 0,
@@ -536,15 +538,21 @@ The `EvalDetail` returned by `ArticleFactChecker` uses a **dual-layer reason** s
 
 When `agent_config.output_path` is configured, ArticleFactChecker saves intermediate artifacts:
 
-**Dingo standard output** (always generated, saved to executor output_path):
-- `all_results.jsonl` - EvalDetail with dual-layer reason
+**Dingo standard output** (saved to executor output_path):
+
+Default mode (`merge=false`, the default):
+- `summary.json` - Aggregated statistics
+- `content/<LABEL>.jsonl` - Results grouped by quality label
+
+Merge mode (`executor.result_save.merge=true`):
+- `all_results.jsonl` - All EvalDetail records in single file
 - `summary.json` - Aggregated statistics
 
 **Intermediate artifacts** (only when `agent_config.output_path` is set):
 ```
 {output_path}/
   |-- article_content.md           # Original Markdown article
-  |-- claims_extracted.jsonl       # Extracted claims (one per line)
+  |-- claims_extracted.jsonl       # Extracted claims (from claims_extractor tool or agent reasoning fallback)
   |-- claims_verification.jsonl    # Per-claim verification details
   +-- verification_report.json     # Full structured report (v2.0)
 ```

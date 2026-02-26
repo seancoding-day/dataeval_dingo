@@ -43,6 +43,7 @@ import os
 import re
 import threading
 import time
+import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -81,12 +82,16 @@ Available Tools:
 2. arxiv_search: Search academic papers and verify metadata
    - Use for claims about research papers, academic publications
    - Provides paper metadata: title, authors, abstract, publication date
-   - LIMITATION: Does NOT provide structured institutional affiliations
-   - Best for: paper titles, author names, publication dates
+   - Authors in papers often indicate institutional affiliations in abstracts
+   - NOTE: Affiliations are in unstructured text, not dedicated fields
+   - Best for: paper titles, author names, publication dates, and
+     institutional claims when a related paper exists
+   - For institutional claims: use arxiv_search FIRST to find the paper,
+     then tavily_search to cross-verify affiliations
 
 3. tavily_search: General web search for fact verification
    - Use for general factual claims, current events, companies, products
-   - Use for institutional/organizational affiliations verification
+   - Use for cross-verifying institutional/organizational affiliations
    - Use for news, product specs, financial figures, comparative claims
    - Provides current web information with sources"""
 
@@ -96,9 +101,11 @@ Workflow (Autonomous Decision-Making):
 STEP 0: Analyze Article Type
    First, identify the article type to guide your verification strategy.
 
-Step 1: Extract Claims
-   - Call claims_extractor with the full article text
-   - Review the extracted claims carefully
+Step 1: Extract Claims (REQUIRED - Do NOT skip this step)
+   - You MUST call the claims_extractor tool with the full article text
+   - This is a mandatory first step before any verification
+   - Do NOT extract claims manually in your reasoning - use the tool
+   - Review the tool output and use the extracted claims for verification
    - Claims are categorized by type for targeted verification
 
 Step 2: Verify Each Claim (Autonomous Tool Selection)
@@ -106,7 +113,17 @@ Step 2: Verify Each Claim (Autonomous Tool Selection)
 
    Tool Selection Principles:
    1. arxiv_search - For academic paper verification (paper title, author, arXiv ID)
-   2. tavily_search - For general web verification (current events, companies, products, institutions)
+   2. tavily_search - For general web verification (current events, companies, products)
+
+   Claim-Type Specific Rules:
+   - INSTITUTIONAL/ATTRIBUTION claims (e.g., "released by X University and Y Lab"):
+     You MUST use arxiv_search FIRST to find the actual paper and check author
+     affiliations, THEN use tavily_search to cross-verify. Do NOT rely on
+     tavily_search alone for institutional claims — web sources often give
+     vague or incomplete attribution. The paper's author list is the
+     authoritative source for institutional affiliations.
+   - STATISTICAL/TECHNICAL claims: Use tavily_search for official benchmarks
+   - FACTUAL claims: Use tavily_search for general verification
 
    Adaptive Strategies:
    - COMBINE tools for comprehensive verification
@@ -156,6 +173,52 @@ You MUST return JSON in this exact format:
 }
 ```"""
 
+    VERDICT_CRITERIA = """
+Verdict Decision Criteria:
+==========================
+Before assigning a verification_result to any claim, apply these evidence-based criteria:
+
+TRUE - Claim is CONFIRMED by evidence:
+  - You found specific, credible evidence that DIRECTLY supports the claim
+  - The evidence explicitly confirms the key facts (names, numbers, dates, relationships)
+  - You can cite a specific source URL that contains the confirming information
+
+FALSE - Claim is CONTRADICTED by evidence:
+  - You found specific, credible evidence that DIRECTLY contradicts the claim
+  - The evidence reveals a clear factual error (wrong date, wrong number, wrong attribution)
+  - You can point to the specific discrepancy between claim and evidence
+
+UNVERIFIABLE - Insufficient or ambiguous evidence:
+  - You could NOT find evidence that clearly confirms OR contradicts the claim
+  - Evidence partially matches but key details cannot be confirmed
+  - Sources mention the topic but do not address the specific claim being checked
+  - The claim involves details not found in any source
+
+CRITICAL RULE: Absence of contradictory evidence does NOT equal confirmation.
+If your search did not find explicit confirming evidence, the verdict is UNVERIFIABLE, not TRUE.
+If your reasoning includes phrases like "not explicitly listed", "could not confirm",
+"no direct evidence", or "not mentioned in results", the verdict MUST be UNVERIFIABLE."""
+
+    SELF_VERIFICATION_STEP = """
+Step 3.5: Self-Verify Verdict-Reasoning Consistency (MANDATORY)
+   Before generating your final JSON report, review EVERY claim's verdict:
+
+   For each claim in your detailed_findings:
+   a) Re-read the evidence and reasoning you wrote for this claim
+   b) Ask yourself: "Does my evidence DIRECTLY and EXPLICITLY support this verdict?"
+   c) Apply these consistency checks:
+      - Reasoning says "not found", "not listed", "not mentioned", "no evidence"
+        -> Verdict MUST be UNVERIFIABLE (not TRUE)
+      - Reasoning says "confirmed by [specific source]" with a URL
+        -> Verdict can be TRUE
+      - Reasoning says "contradicts", "actually [different fact]", "incorrect"
+        -> Verdict MUST be FALSE
+      - Reasoning is uncertain or hedging ("may", "possibly", "unclear")
+        -> Verdict MUST be UNVERIFIABLE
+   d) If you find ANY inconsistency, correct the verdict NOW
+
+   This step is critical for report quality. Do NOT skip it."""
+
     CRITICAL_GUIDELINES = """
 Critical Guidelines:
 ====================
@@ -177,10 +240,10 @@ adapt to intermediate results, and ensure comprehensive verification."""
     ARTICLE_TYPE_GUIDANCE = {
         "academic": """
 Article Type Guidance (Academic):
-- Focus on arxiv_search for paper verification
-- Use tavily_search for institutional affiliations
-- Verify: paper titles, authors, publication dates, citations
-- Example: "OmniDocBench paper" → arxiv_search; "by Tsinghua" → tavily_search""",
+- Focus on arxiv_search for paper verification AND institutional claims
+- For institutional affiliations: COMBINE arxiv_search (paper authors/abstracts) + tavily_search (cross-verify)
+- Verify: paper titles, authors, publication dates, citations, institutional attributions
+- Example: "OmniDocBench by Tsinghua" → arxiv_search for paper metadata THEN tavily_search to cross-verify""",
 
         "news": """
 Article Type Guidance (News):
@@ -231,7 +294,8 @@ Article Type Guidance (Opinion Piece):
         parts = [
             cls.CORE_ROLE,
             cls.TOOLS_DESCRIPTION,
-            cls.WORKFLOW_STEPS
+            cls.WORKFLOW_STEPS,
+            cls.SELF_VERIFICATION_STEP
         ]
 
         # Add article-type specific guidance if provided
@@ -239,6 +303,7 @@ Article Type Guidance (Opinion Piece):
             parts.append(cls.ARTICLE_TYPE_GUIDANCE[article_type.lower()])
 
         parts.extend([
+            cls.VERDICT_CRITERIA,
             cls.OUTPUT_FORMAT,
             cls.CRITICAL_GUIDELINES
         ])
@@ -270,8 +335,9 @@ class ArticleFactChecker(BaseAgent):
     ===========================
     1. Extract Claims: Agent calls claims_extractor on full article
     2. Analyze & Route: For each claim, agent determines best verification tool:
-       - Institutional claims → arxiv_search (with verify_institutions)
-       - Academic/paper claims → arxiv_search (standard search)
+       - Institutional claims with related paper → COMBINE arxiv_search + tavily_search
+       - Institutional claims without paper → tavily_search
+       - Academic/paper claims → arxiv_search
        - General facts → tavily_search
     3. Build Evidence: Agent collects verification results from tools
     4. Generate Report: Agent synthesizes findings into structured report
@@ -279,8 +345,8 @@ class ArticleFactChecker(BaseAgent):
     Tool Selection Logic (Agent decides autonomously):
     =================================================
     - IF claim mentions institution affiliations (e.g., "released by University X"):
-      → FIRST try arxiv_search (if paper mentioned)
-      → FALLBACK to tavily_search if not academic
+      → Use COMBINED approach: arxiv_search (paper metadata) + tavily_search (cross-verify)
+      → If no related paper exists, use tavily_search alone
     - IF claim is about academic paper details:
       → Use arxiv_search
     - IF claim is general factual statement:
@@ -342,19 +408,28 @@ class ArticleFactChecker(BaseAgent):
     @classmethod
     def _get_output_dir(cls) -> Optional[str]:
         """
-        Get output directory from agent config or return None.
-
-        Checks parameters.agent_config.output_path for an explicit override.
-        If set, creates the directory and returns the path.
+        Get output directory for artifact files.
 
         Returns:
-            Output directory path, or None if not configured
+            Output directory path (created if needed), or None if saving is disabled.
         """
         params = cls.dynamic_config.parameters or {}
-        output_path = params.get('agent_config', {}).get('output_path')
-        if output_path:
-            os.makedirs(output_path, exist_ok=True)
-        return output_path
+        agent_cfg = params.get('agent_config') or {}
+
+        explicit_path = agent_cfg.get('output_path')
+        if explicit_path:
+            os.makedirs(explicit_path, exist_ok=True)
+            return explicit_path
+
+        if agent_cfg.get('save_artifacts') is False:
+            return None
+
+        base_output = agent_cfg.get('base_output_path') or 'outputs'
+        create_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+        auto_path = os.path.join(base_output, f"article_factcheck_{create_time}_{uuid.uuid4().hex[:6]}")
+        os.makedirs(auto_path, exist_ok=True)
+        log.debug(f"ArticleFactChecker: artifact path auto-derived: {auto_path}")
+        return auto_path
 
     @classmethod
     def _save_article_content(cls, output_dir: str, content: str) -> Optional[str]:
@@ -483,6 +558,125 @@ class ArticleFactChecker(BaseAgent):
         return []
 
     @classmethod
+    def _extract_claims_from_detailed_findings(cls, verification_data: Dict[str, Any]) -> List[Dict]:
+        """
+        Fallback: extract claims from agent's detailed_findings when
+        claims_extractor tool was not called.
+
+        Args:
+            verification_data: Agent's parsed JSON output
+
+        Returns:
+            List of claim dicts with source="agent_reasoning"
+        """
+        return [
+            {
+                "claim_id": finding.get("claim_id", ""),
+                "claim": finding.get("original_claim", ""),
+                "claim_type": finding.get("claim_type", "unknown"),
+                "confidence": None,
+                "verifiable": True,
+                "source": "agent_reasoning"
+            }
+            for finding in verification_data.get("detailed_findings", [])
+        ]
+
+    _VERDICT_MAP = {
+        "TRUE": "TRUE", "FALSE": "FALSE", "UNVERIFIABLE": "UNVERIFIABLE",
+        "CONFIRMED": "TRUE", "ACCURATE": "TRUE", "CORRECT": "TRUE", "VERIFIED": "TRUE",
+        "INACCURATE": "FALSE", "INCORRECT": "FALSE", "WRONG": "FALSE",
+        "DISPROVEN": "FALSE", "REFUTED": "FALSE",
+    }
+
+    @classmethod
+    def _normalize_verdict(cls, verdict: Any) -> str:
+        """Normalize verdict to standard values (TRUE/FALSE/UNVERIFIABLE). Unknown values default to UNVERIFIABLE."""
+        if not verdict or not isinstance(verdict, str):
+            return "UNVERIFIABLE"
+        return cls._VERDICT_MAP.get(verdict.strip().upper(), "UNVERIFIABLE")
+
+    # Hedging language patterns that indicate reasoning contradicts a TRUE verdict.
+    _HEDGING_PATTERNS = re.compile(
+        r"(?:"
+        r"not explicitly (?:stated|listed|mentioned|confirmed|found)"
+        r"|(?:cannot|could not|couldn't) (?:be verified|confirm|find|verify)"
+        r"|unable to (?:verify|confirm|find)"
+        r"|is(?:n't| not) explicitly"
+        r"|no (?:direct|explicit) evidence"
+        r"|insufficient evidence"
+        r"|not directly (?:confirmed|stated|verified)"
+        r"|cannot be fully verified"
+        r"|exact .{0,30} isn't .{0,30} stated"
+        r"|while .{0,40} isn't .{0,30} stated"
+        r"|not .{0,20} explicitly .{0,20} in (?:the )?(?:available |found )?(?:sources?|documentation|results?)"
+        r")",
+        re.IGNORECASE
+    )
+
+    @classmethod
+    def _check_reasoning_verdict_consistency(cls, enriched_claims: List[Dict]) -> int:
+        """
+        Downgrade TRUE verdicts to UNVERIFIABLE when reasoning contains hedging language.
+
+        Only affects TRUE verdicts; FALSE verdicts are never changed.
+
+        Args:
+            enriched_claims: List of enriched claim dicts (modified in place)
+
+        Returns:
+            Number of verdicts downgraded
+        """
+        downgraded = 0
+        for claim in enriched_claims:
+            if claim.get("verification_result") != "TRUE":
+                continue
+
+            reasoning = claim.get("reasoning", "")
+            if not reasoning:
+                continue
+
+            match = cls._HEDGING_PATTERNS.search(reasoning)
+            if match:
+                claim["verification_result"] = "UNVERIFIABLE"
+                claim_id = claim.get("claim_id", "unknown")
+                matched_text = match.group(0)
+                log.info(
+                    f"Verdict downgraded TRUE→UNVERIFIABLE for {claim_id}: "
+                    f"hedging detected in reasoning: '{matched_text}'"
+                )
+                downgraded += 1
+
+        return downgraded
+
+    @classmethod
+    def _recalculate_summary(cls, enriched_claims: List[Dict]) -> Dict[str, Any]:
+        """
+        Recalculate verification summary from actual enriched claim data.
+
+        This ensures the summary matches the actual verdict distribution,
+        overriding any inconsistent self-reported summary from the agent.
+
+        Args:
+            enriched_claims: List of enriched claim dicts with normalized verdicts
+
+        Returns:
+            Summary dict with total_claims, verified_claims, false_claims,
+            unverifiable_claims, and accuracy_score
+        """
+        total = len(enriched_claims)
+        true_count = sum(1 for c in enriched_claims if c.get("verification_result") == "TRUE")
+        false_count = sum(1 for c in enriched_claims if c.get("verification_result") == "FALSE")
+        unverifiable_count = sum(1 for c in enriched_claims if c.get("verification_result") == "UNVERIFIABLE")
+        accuracy = true_count / total if total > 0 else 0.0
+        return {
+            "total_claims": total,
+            "verified_claims": true_count,
+            "false_claims": false_count,
+            "unverifiable_claims": unverifiable_count,
+            "accuracy_score": round(accuracy, 4)
+        }
+
+    @classmethod
     def _build_per_claim_verification(
         cls,
         verification_data: Dict[str, Any],
@@ -576,19 +770,21 @@ class ArticleFactChecker(BaseAgent):
         tool_calls: List[Dict],
         reasoning_steps: int,
         content_length: int,
-        execution_time: float
+        execution_time: float,
+        claims_source: str = "claims_extractor_tool"
     ) -> Dict[str, Any]:
         """
         Build a complete structured verification report.
 
         Args:
             verification_data: Agent's parsed JSON output
-            extracted_claims: Claims from claims_extractor
+            extracted_claims: Claims from claims_extractor or fallback
             enriched_claims: Merged per-claim verification records
             tool_calls: Complete tool call list
             reasoning_steps: Number of reasoning steps
             content_length: Length of original article content
             execution_time: Total execution time in seconds
+            claims_source: Where claims came from ("claims_extractor_tool" or "agent_reasoning")
 
         Returns:
             Complete structured report dictionary
@@ -613,12 +809,13 @@ class ArticleFactChecker(BaseAgent):
             },
             "claims_extraction": {
                 "total_extracted": len(extracted_claims),
+                "claims_source": claims_source,
                 "verifiable": verifiable_count,
                 "claim_types_distribution": claim_types_dist
             },
             "verification_summary": {
-                "total_verified": summary.get("verified_claims", 0),
-                "verified_true": summary.get("verified_claims", 0) - summary.get("false_claims", 0),
+                "total_verified": summary.get("verified_claims", 0) + summary.get("false_claims", 0),
+                "verified_true": summary.get("verified_claims", 0),
                 "verified_false": summary.get("false_claims", 0),
                 "unverifiable": summary.get("unverifiable_claims", 0),
                 "accuracy_score": summary.get("accuracy_score", 0.0)
@@ -647,6 +844,9 @@ class ArticleFactChecker(BaseAgent):
         Saves original article content to output directory before running
         the LangChain agent, and sets up context for aggregate_results().
 
+        Temperature defaults to 0 for deterministic tool selection and
+        consistent verification results. Users can override via config.
+
         Args:
             input_data: Data object with article content
 
@@ -655,6 +855,15 @@ class ArticleFactChecker(BaseAgent):
         """
         start_time = time.time()
         output_dir = cls._get_output_dir()
+
+        # Default temperature=0 for fact-checking determinism.
+        # Temperature>0 causes non-deterministic tool selection, leading to
+        # inconsistent verification results across runs (especially for
+        # institutional claims that require specific tool combinations).
+        if cls.dynamic_config:
+            if cls.dynamic_config.parameters is None:
+                cls.dynamic_config.parameters = {}
+            cls.dynamic_config.parameters.setdefault("temperature", 0)
 
         # Save original article content
         if output_dir and input_data.content:
@@ -667,7 +876,7 @@ class ArticleFactChecker(BaseAgent):
             'content_length': len(input_data.content or ''),
         }
 
-        # Delegate to parent's eval which routes to _eval_with_langchain_agent
+        # Call LangChain agent directly (bypasses parent eval routing)
         return cls._eval_with_langchain_agent(input_data)
 
     @classmethod
@@ -826,11 +1035,37 @@ Begin your systematic fact-checking process now.
                 f"Failed to parse agent output: {str(e)}\nOutput: {output[:300]}..."
             )
 
-        # --- New: Extract claims and build enriched verification records ---
+        # --- Extract claims and build enriched verification records ---
         extracted_claims = cls._extract_claims_from_tool_calls(tool_calls)
+        claims_source = "claims_extractor_tool"
+        if not extracted_claims:
+            extracted_claims = cls._extract_claims_from_detailed_findings(verification_data)
+            claims_source = "agent_reasoning"
+            if extracted_claims:
+                log.info(f"Claims from agent reasoning (fallback): {len(extracted_claims)}")
+
         enriched_claims = cls._build_per_claim_verification(
             verification_data, extracted_claims, tool_calls
         )
+
+        # Normalize verdicts to standard values (TRUE/FALSE/UNVERIFIABLE)
+        for claim in enriched_claims:
+            claim["verification_result"] = cls._normalize_verdict(claim.get("verification_result", ""))
+
+        # Code-level reasoning-verdict consistency check:
+        # Detect hedging language in reasoning that contradicts TRUE verdicts
+        downgraded = cls._check_reasoning_verdict_consistency(enriched_claims)
+        if downgraded:
+            log.info(f"Reasoning-verdict consistency check: {downgraded} verdict(s) downgraded")
+
+        # Recalculate summary from actual data to override agent's self-reported summary
+        if enriched_claims:
+            recalculated = cls._recalculate_summary(enriched_claims)
+            original_summary = verification_data.get("article_verification_summary", {})
+            verification_data["article_verification_summary"] = {
+                "article_type": original_summary.get("article_type", "unknown"),
+                **recalculated
+            }
 
         # Calculate execution time from thread-local context
         ctx = getattr(cls._thread_local, 'context', {})
@@ -846,7 +1081,8 @@ Begin your systematic fact-checking process now.
             tool_calls=tool_calls,
             reasoning_steps=reasoning_steps,
             content_length=content_length,
-            execution_time=execution_time
+            execution_time=execution_time,
+            claims_source=claims_source
         )
 
         # --- Save artifacts to output directory ---
@@ -1072,18 +1308,25 @@ Begin your systematic fact-checking process now.
         summary = verification_data.get("article_verification_summary", {})
         total = summary.get("total_claims", 0)
         false_count = summary.get("false_claims", 0)
+        unverifiable_count = summary.get("unverifiable_claims", 0)
         verified = summary.get("verified_claims", 0)
         accuracy = summary.get("accuracy_score", 0.0)
 
-        # Determine status (True = issue detected, False = all good)
+        # Binary status aligned with Dingo's evaluation model:
+        # - TRUE claims → good (no issue)
+        # - FALSE / UNVERIFIABLE claims → bad (issue detected)
+        # Unverifiable claims indicate sourcing deficiencies, which is
+        # a data quality problem (consistent with journalism standards).
+        has_issues = (false_count + unverifiable_count) > 0
         result = EvalDetail(metric=cls.__name__)
-        result.status = false_count > 0
+        result.status = has_issues
         result.score = accuracy
-        result.label = [
-            f"{QualityLabel.QUALITY_BAD_PREFIX}ARTICLE_INACCURACY_{int((1-accuracy)*100)}"
-            if false_count > 0
-            else QualityLabel.QUALITY_GOOD
-        ]
+        if false_count > 0:
+            result.label = [f"{QualityLabel.QUALITY_BAD_PREFIX}ARTICLE_FACTUAL_ERROR"]
+        elif unverifiable_count > 0:
+            result.label = [f"{QualityLabel.QUALITY_BAD_PREFIX}ARTICLE_UNVERIFIED_CLAIMS"]
+        else:
+            result.label = [QualityLabel.QUALITY_GOOD]
 
         # Build human-readable text summary
         lines = [
@@ -1092,7 +1335,7 @@ Begin your systematic fact-checking process now.
             f"Total Claims Analyzed: {total}",
             f"Verified Claims: {verified}",
             f"False Claims: {false_count}",
-            f"Unverifiable Claims: {summary.get('unverifiable_claims', 0)}",
+            f"Unverifiable Claims: {unverifiable_count}",
             f"Overall Accuracy: {accuracy:.1%}",
             "",
             "Agent Performance:",
