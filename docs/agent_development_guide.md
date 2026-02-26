@@ -425,15 +425,36 @@ class ArticleFactChecker(BaseAgent):
 
 #### Output Path Access Pattern
 
+`_get_output_dir()` uses a three-priority chain (highest to lowest):
+
+1. **Explicit path** – `agent_config.output_path` is set → use it (backward-compatible)
+2. **Opt-out** – `agent_config.save_artifacts=false` → return `None`, skip saving
+3. **Auto-generate** – default behaviour: `outputs/article_factcheck_<timestamp>_<uuid>/`
+   - Override the base directory with `agent_config.base_output_path`
+
 ```python
 @classmethod
 def _get_output_dir(cls) -> Optional[str]:
-    """Get output directory from agent_config.output_path."""
+    """
+    Get output directory for artifact files (three-priority chain).
+    Returns output dir path (created if needed), or None if saving disabled.
+    """
     params = cls.dynamic_config.parameters or {}
-    output_path = params.get('agent_config', {}).get('output_path')
-    if output_path:
-        os.makedirs(output_path, exist_ok=True)
-    return output_path
+    agent_cfg = params.get('agent_config') or {}
+
+    explicit_path = agent_cfg.get('output_path')
+    if explicit_path:
+        os.makedirs(explicit_path, exist_ok=True)
+        return explicit_path
+
+    if agent_cfg.get('save_artifacts') is False:
+        return None  # Opted out of artifact saving
+
+    base_output = agent_cfg.get('base_output_path') or 'outputs'
+    create_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+    auto_path = os.path.join(base_output, f"article_factcheck_{create_time}_{uuid.uuid4().hex[:6]}")
+    os.makedirs(auto_path, exist_ok=True)
+    return auto_path
 ```
 
 #### Dual-Layer EvalDetail.reason
@@ -446,10 +467,10 @@ if report:
     result.reason.append(report)  # Dict, not str
 ```
 
-This ensures `all_results.jsonl` contains both readable summaries and full structured data.
+This ensures the Dingo standard output contains both readable summaries and full structured data.
 
 **Full implementation**: `dingo/model/llm/agent/agent_article_fact_checker.py`
-**Tests**: `test/scripts/model/llm/agent/test_article_fact_checker.py` (33 tests)
+**Tests**: `test/scripts/model/llm/agent/test_article_fact_checker.py` (88 tests)
 **Guide**: `docs/article_fact_checking_guide.md`
 
 ---

@@ -41,7 +41,7 @@ print(f"Issues Found: {result.status}")
 if result.reason:
     print(result.reason[0] if isinstance(result.reason[0], str) else str(result.reason[0]))
 
-    # reason[1]: Structured report dict (present when output_path is set)
+    # reason[1]: Structured report dict (always present after evaluation)
     if len(result.reason) > 1 and isinstance(result.reason[1], dict):
         report = result.reason[1]
         print(f"Report Version: {report.get('report_version', 'N/A')}")
@@ -471,7 +471,7 @@ Agent Decision:
 The `EvalDetail` returned by `ArticleFactChecker` uses a **dual-layer reason** structure:
 
 - `reason[0]`: Human-readable text summary (always present, `str`)
-- `reason[1]`: Structured report dictionary (present when `output_path` is set, `dict`)
+- `reason[1]`: Structured report dictionary (always present after evaluation, `dict`)
 
 ```python
 {
@@ -504,7 +504,7 @@ The `EvalDetail` returned by `ArticleFactChecker` uses a **dual-layer reason** s
     "   Evidence:\n"
     "      Verified via arXiv paper 2412.07626 author list",
 
-    # reason[1]: Structured report dict (when output_path is set)
+    # reason[1]: Structured report dict (always present)
     {
       "report_version": "2.0",
       "generated_at": "2026-02-06T15:30:00",
@@ -536,7 +536,7 @@ The `EvalDetail` returned by `ArticleFactChecker` uses a **dual-layer reason** s
 
 ### Output Files
 
-When `agent_config.output_path` is configured, ArticleFactChecker saves intermediate artifacts:
+ArticleFactChecker auto-saves intermediate artifacts to a timestamped directory by default.
 
 **Dingo standard output** (saved to executor output_path):
 
@@ -548,7 +548,7 @@ Merge mode (`executor.result_save.merge=true`):
 - `all_results.jsonl` - All EvalDetail records in single file
 - `summary.json` - Aggregated statistics
 
-**Intermediate artifacts** (only when `agent_config.output_path` is set):
+**Intermediate artifacts** (auto-saved by default; path: `outputs/article_factcheck_<timestamp>_<uuid>/`):
 ```
 {output_path}/
   |-- article_content.md           # Original Markdown article

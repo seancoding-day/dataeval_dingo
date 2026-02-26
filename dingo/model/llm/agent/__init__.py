@@ -9,10 +9,12 @@ Key Components:
 - Tool system: Registry and base classes for agent tools
 """
 
+from dingo.model.llm.agent.agent_article_fact_checker import ArticleFactChecker
 from dingo.model.llm.agent.base_agent import BaseAgent
 from dingo.model.llm.agent.tools import BaseTool, ToolConfig, ToolRegistry, get_tool, tool_register
 
 __all__ = [
+    'ArticleFactChecker',
     'BaseAgent',
     'BaseTool',
     'ToolConfig',
