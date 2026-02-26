@@ -1,41 +1,13 @@
 """
 ArticleFactChecker: Agent-based article fact-checking with claims extraction.
 
-This module implements a comprehensive article fact-checking agent using the
-Agent-First architecture pattern with LangChain Agent Executor for autonomous
-decision-making.
-
-Implementation Pattern: Agent-First (LangChain 1.0)
-===================================================
-
-This agent uses `use_agent_executor = True` to enable LangChain's create_agent
-with ReAct pattern, giving the agent full autonomy over:
-- Tool selection (claims_extractor, arxiv_search, tavily_search)
-- Execution order (adaptive based on claim types)
-- Multi-step reasoning and evidence tracking
-- Error handling and fallback strategies
-
-The agent autonomously:
-1. Extracts verifiable claims from article using claims_extractor
-2. Analyzes each claim type and selects appropriate verification tool
-3. Performs multi-step reasoning to build evidence chains
-4. Generates structured verification report with comparison tables
-
-Key Characteristics:
-- Autonomous decision-making
-- Intelligent tool selection
-- Multi-step reasoning
-- Adaptive verification strategy
-
-When to Use This Pattern:
-- Article-level fact-checking (vs. single claim)
-- Need comprehensive verification report
-- Benefit from agent's adaptive reasoning
-- Want transparent evidence chains
+Uses Agent-First architecture (LangChain ReAct / ``use_agent_executor=True``),
+giving the agent full autonomy over tool selection, execution order, and
+multi-step reasoning to verify factual claims in long-form articles.
 
 See Also:
-- AgentFactCheck: Single-claim hallucination detection
-- docs/agent_development_guide.md: Agent development patterns
+    AgentFactCheck: Single-claim hallucination detection
+    docs/agent_development_guide.md: Agent development patterns
 """
 
 import json
@@ -44,6 +16,7 @@ import re
 import threading
 import time
 import uuid
+from collections import Counter
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -93,7 +66,11 @@ Available Tools:
    - Use for general factual claims, current events, companies, products
    - Use for cross-verifying institutional/organizational affiliations
    - Use for news, product specs, financial figures, comparative claims
-   - Provides current web information with sources"""
+   - Supports multilingual queries: search BOTH English AND Chinese terms for
+     Chinese content (e.g., both "清华大学 OmniDocBench" and
+     "Tsinghua University OmniDocBench")
+   - Use search_depth='advanced' for authoritative fact-checking results
+   - Provides current web information with sources and URLs"""
 
     WORKFLOW_STEPS = """
 Workflow (Autonomous Decision-Making):
@@ -101,14 +78,14 @@ Workflow (Autonomous Decision-Making):
 STEP 0: Analyze Article Type
    First, identify the article type to guide your verification strategy.
 
-Step 1: Extract Claims (REQUIRED - Do NOT skip this step)
+STEP 1: Extract Claims (REQUIRED - Do NOT skip this step)
    - You MUST call the claims_extractor tool with the full article text
    - This is a mandatory first step before any verification
    - Do NOT extract claims manually in your reasoning - use the tool
    - Review the tool output and use the extracted claims for verification
    - Claims are categorized by type for targeted verification
 
-Step 2: Verify Each Claim (Autonomous Tool Selection)
+STEP 2: Verify Each Claim (Autonomous Tool Selection)
    For each claim, analyze its type and context, then SELECT THE BEST TOOL:
 
    Tool Selection Principles:
@@ -122,15 +99,21 @@ Step 2: Verify Each Claim (Autonomous Tool Selection)
      tavily_search alone for institutional claims — web sources often give
      vague or incomplete attribution. The paper's author list is the
      authoritative source for institutional affiliations.
+     For CHINESE institution names: translate to English before arxiv_search
+     (e.g., "清华大学" → "Tsinghua University", "达摩院" → "Alibaba DAMO Academy",
+      "上海人工智能实验室" → "Shanghai AI Laboratory")
+     Search with BOTH Chinese and English terms in tavily_search for maximum coverage.
    - STATISTICAL/TECHNICAL claims: Use tavily_search for official benchmarks
    - FACTUAL claims: Use tavily_search for general verification
 
    Adaptive Strategies:
    - COMBINE tools for comprehensive verification
-   - FALLBACK: If primary tool fails, try alternatives
+   - FALLBACK: If arxiv_search finds no paper → immediately use tavily_search alone
+   - FALLBACK: If tavily_search returns no relevant results → mark as UNVERIFIABLE
+     (do NOT retry with same query; try a different angle or accept UNVERIFIABLE)
    - MULTI-SOURCE: Cross-verify important claims with multiple sources
 
-Step 3: Synthesize Results
+STEP 3: Synthesize Results
    After verifying ALL claims, generate a comprehensive report."""
 
     OUTPUT_FORMAT = """
@@ -200,7 +183,7 @@ If your reasoning includes phrases like "not explicitly listed", "could not conf
 "no direct evidence", or "not mentioned in results", the verdict MUST be UNVERIFIABLE."""
 
     SELF_VERIFICATION_STEP = """
-Step 3.5: Self-Verify Verdict-Reasoning Consistency (MANDATORY)
+STEP 3.5: Self-Verify Verdict-Reasoning Consistency (MANDATORY)
    Before generating your final JSON report, review EVERY claim's verdict:
 
    For each claim in your detailed_findings:
@@ -295,16 +278,15 @@ Article Type Guidance (Opinion Piece):
             cls.CORE_ROLE,
             cls.TOOLS_DESCRIPTION,
             cls.WORKFLOW_STEPS,
-            cls.SELF_VERIFICATION_STEP
         ]
 
-        # Add article-type specific guidance if provided
         if article_type and article_type.lower() in cls.ARTICLE_TYPE_GUIDANCE:
             parts.append(cls.ARTICLE_TYPE_GUIDANCE[article_type.lower()])
 
         parts.extend([
             cls.VERDICT_CRITERIA,
             cls.OUTPUT_FORMAT,
+            cls.SELF_VERIFICATION_STEP,
             cls.CRITICAL_GUIDELINES
         ])
 
@@ -319,67 +301,39 @@ Article Type Guidance (Opinion Piece):
 @Model.llm_register("ArticleFactChecker")
 class ArticleFactChecker(BaseAgent):
     """
-    Article-level fact-checking agent with autonomous claims extraction and verification.
+    Article-level fact-checking agent using LangChain ReAct (Agent-First pattern).
 
-    Implementation Pattern: Agent-First (LangChain ReAct)
-    =====================================================
+    The agent autonomously:
+    1. Extracts claims via claims_extractor
+    2. Selects the best verification tool per claim type (arxiv_search / tavily_search)
+    3. Builds evidence chains and generates a structured verification report
 
-    This agent demonstrates the Agent-First architectural pattern, where the
-    LangChain agent has full autonomy over:
-    - When to extract claims (always first step)
-    - Which verification tool to use for each claim type
-    - How to handle verification failures (fallback strategies)
-    - When the verification process is complete
+    Configuration Example::
 
-    Agent Workflow (Autonomous):
-    ===========================
-    1. Extract Claims: Agent calls claims_extractor on full article
-    2. Analyze & Route: For each claim, agent determines best verification tool:
-       - Institutional claims with related paper → COMBINE arxiv_search + tavily_search
-       - Institutional claims without paper → tavily_search
-       - Academic/paper claims → arxiv_search
-       - General facts → tavily_search
-    3. Build Evidence: Agent collects verification results from tools
-    4. Generate Report: Agent synthesizes findings into structured report
-
-    Tool Selection Logic (Agent decides autonomously):
-    =================================================
-    - IF claim mentions institution affiliations (e.g., "released by University X"):
-      → Use COMBINED approach: arxiv_search (paper metadata) + tavily_search (cross-verify)
-      → If no related paper exists, use tavily_search alone
-    - IF claim is about academic paper details:
-      → Use arxiv_search
-    - IF claim is general factual statement:
-      → Use tavily_search
-    - Agent can use MULTIPLE tools for comprehensive verification
-
-    Configuration Example:
-    {
-        "name": "ArticleFactChecker",
-        "config": {
-            "key": "your-openai-api-key",
-            "model": "gpt-4o-mini",
-            "parameters": {
-                "agent_config": {
-                    "max_iterations": 10,
-                    "tools": {
-                        "claims_extractor": {
-                            "api_key": "your-openai-api-key",
-                            "max_claims": 50,
-                            "claim_types": ["factual", "institutional", "statistical", "attribution"]
-                        },
-                        "tavily_search": {
-                            "api_key": "your-tavily-api-key",
-                            "max_results": 5
-                        },
-                        "arxiv_search": {
-                            "max_results": 5
+        {
+            "name": "ArticleFactChecker",
+            "config": {
+                "key": "your-openai-api-key",
+                "model": "gpt-4o-mini",
+                "parameters": {
+                    "agent_config": {
+                        "max_iterations": 10,
+                        "tools": {
+                            "claims_extractor": {
+                                "api_key": "your-openai-api-key",
+                                "max_claims": 50,
+                                "claim_types": ["factual", "institutional", "statistical", "attribution"]
+                            },
+                            "tavily_search": {
+                                "api_key": "your-tavily-api-key",
+                                "max_results": 5
+                            },
+                            "arxiv_search": {"max_results": 5}
                         }
                     }
                 }
             }
         }
-    }
     """
 
     use_agent_executor = True  # Enable Agent-First mode
@@ -401,9 +355,7 @@ class ArticleFactChecker(BaseAgent):
     # Using threading.local() ensures concurrent evaluations don't interfere
     _thread_local = threading.local()
 
-    # ============================================================
-    # Output Path and File Saving Methods
-    # ============================================================
+    # --- Output Path and File Saving Methods ---
 
     @classmethod
     def _get_output_dir(cls) -> Optional[str]:
@@ -454,50 +406,34 @@ class ArticleFactChecker(BaseAgent):
             return None
 
     @classmethod
-    def _save_claims(cls, output_dir: str, claims: List[Dict]) -> Optional[str]:
-        """
-        Save extracted claims to JSONL file.
-
-        Args:
-            output_dir: Output directory path
-            claims: List of claim dictionaries
-
-        Returns:
-            Path to saved file, or None on failure
-        """
-        file_path = os.path.join(output_dir, "claims_extracted.jsonl")
+    def _write_jsonl_file(cls, file_path: str, records: List[Dict]) -> Optional[str]:
+        """Write records as JSONL. Returns file_path on success, None on failure."""
         try:
             with open(file_path, 'w', encoding='utf-8') as f:
-                for claim in claims:
-                    f.write(json.dumps(claim, ensure_ascii=False) + '\n')
-            log.info(f"Saved {len(claims)} claims to {file_path}")
+                for record in records:
+                    f.write(json.dumps(record, ensure_ascii=False) + '\n')
             return file_path
         except (IOError, OSError) as e:
-            log.error(f"Failed to save claims: {e}")
+            log.error(f"Failed to write {file_path}: {e}")
             return None
 
     @classmethod
+    def _save_claims(cls, output_dir: str, claims: List[Dict]) -> Optional[str]:
+        """Save extracted claims to JSONL file."""
+        file_path = os.path.join(output_dir, "claims_extracted.jsonl")
+        saved = cls._write_jsonl_file(file_path, claims)
+        if saved:
+            log.info(f"Saved {len(claims)} claims to {file_path}")
+        return saved
+
+    @classmethod
     def _save_verification_details(cls, output_dir: str, enriched_claims: List[Dict]) -> Optional[str]:
-        """
-        Save per-claim verification details to JSONL file.
-
-        Args:
-            output_dir: Output directory path
-            enriched_claims: List of enriched claim verification records
-
-        Returns:
-            Path to saved file, or None on failure
-        """
+        """Save per-claim verification details to JSONL file."""
         file_path = os.path.join(output_dir, "claims_verification.jsonl")
-        try:
-            with open(file_path, 'w', encoding='utf-8') as f:
-                for claim in enriched_claims:
-                    f.write(json.dumps(claim, ensure_ascii=False) + '\n')
+        saved = cls._write_jsonl_file(file_path, enriched_claims)
+        if saved:
             log.info(f"Saved {len(enriched_claims)} verification details to {file_path}")
-            return file_path
-        except (IOError, OSError) as e:
-            log.error(f"Failed to save verification details: {e}")
-            return None
+        return saved
 
     @classmethod
     def _save_full_report(cls, output_dir: str, report_data: Dict) -> Optional[str]:
@@ -521,9 +457,7 @@ class ArticleFactChecker(BaseAgent):
             log.error(f"Failed to save verification report: {e}")
             return None
 
-    # ============================================================
-    # Data Processing Methods
-    # ============================================================
+    # --- Data Processing Methods ---
 
     @classmethod
     def _extract_claims_from_tool_calls(cls, tool_calls: List[Dict]) -> List[Dict]:
@@ -832,9 +766,7 @@ class ArticleFactChecker(BaseAgent):
 
         return report
 
-    # ============================================================
-    # Overridden Core Methods
-    # ============================================================
+    # --- Overridden Core Methods ---
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
@@ -909,29 +841,8 @@ Begin your systematic fact-checking process now.
 
     @classmethod
     def _get_system_prompt(cls, input_data: Data) -> str:
-        """
-        Build system prompt for article fact-checking agent.
-
-        This method uses modular PromptTemplates to construct the system prompt,
-        which can be customized based on article type if specified in the input data.
-
-        The modular approach:
-        - Reduces context window usage for long articles
-        - Allows dynamic prompt customization based on article type
-        - Makes prompts easier to maintain and test
-
-        Args:
-            input_data: Input data, may contain article_type hint
-
-        Returns:
-            System prompt with agent instructions
-        """
-        # Check if article_type is specified in input_data
-        article_type = None
-        if hasattr(input_data, 'article_type'):
-            article_type = getattr(input_data, 'article_type', None)
-
-        # Build prompt using modular templates
+        """Build system prompt, optionally tailored to article type."""
+        article_type = getattr(input_data, 'article_type', None)
         return PromptTemplates.build(article_type=article_type)
 
     @classmethod
@@ -1368,12 +1279,7 @@ Begin your systematic fact-checking process now.
             lines.append("\n\nALL CLAIMS VERIFICATION SUMMARY:")
             lines.append("=" * 70)
 
-            # Count by verification result
-            result_counts: Dict[str, int] = {}
-            for finding in detailed:
-                vr = finding.get("verification_result", "UNKNOWN")
-                result_counts[vr] = result_counts.get(vr, 0) + 1
-
+            result_counts = Counter(f.get("verification_result", "UNKNOWN") for f in detailed)
             for result_type, count in result_counts.items():
                 lines.append(f"   {result_type}: {count} claims")
 

@@ -105,10 +105,10 @@ def main() -> int:
 
     print("Starting Article Fact-Checking")
     print("=" * 70)
-    print(f"Article: {article_path} (via temp JSONL)")
+    print(f"Article: {article_path}")
     print("Agent: ArticleFactChecker (Agent-First architecture)")
     print(f"Model: {config['evaluator'][0]['evals'][0]['config']['model']}")
-    print("Artifact output: outputs/article_factcheck_<timestamp>/ (auto-generated)")
+    print("Artifact output: outputs/article_factcheck_<timestamp>/")
     print("=" * 70)
 
     # Create input args and executor
@@ -138,7 +138,8 @@ def main() -> int:
                             print("\nDetailed Report:")
                             print("-" * 70)
                             if eval_detail.reason:
-                                print(eval_detail.reason[0] if isinstance(eval_detail.reason[0], str) else str(eval_detail.reason[0]))
+                                reason_text = eval_detail.reason[0]
+                                print(reason_text if isinstance(reason_text, str) else str(reason_text))
 
                                 if len(eval_detail.reason) > 1 and isinstance(eval_detail.reason[1], dict):
                                     report = eval_detail.reason[1]
