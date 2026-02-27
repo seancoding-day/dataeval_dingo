@@ -142,46 +142,103 @@ class AgentWrapper:
                     "messages": [("user", input_text)]
                 })
 
-            # Extract messages from result
-            messages = result.get('messages', [])
-
-            # Get final output (last AI message)
-            output = ""
-            if messages:
-                last_message = messages[-1]
-                output = getattr(last_message, 'content', str(last_message))
-
-            # Parse tool calls from messages
-            tool_calls = AgentWrapper._extract_tool_calls(messages)
-
-            # Count reasoning steps (messages between user input and final response)
-            reasoning_steps = len([m for m in messages if hasattr(m, 'type') and m.type == 'ai'])
-
-            formatted_result = {
-                'output': output,
-                'messages': messages,
-                'tool_calls': tool_calls,
-                'reasoning_steps': reasoning_steps,
-                'success': True
-            }
-
+            formatted_result = AgentWrapper._format_agent_result(result)
             log.debug(
-                f"Agent execution completed: {len(tool_calls)} tool calls, "
-                f"{reasoning_steps} reasoning steps"
+                f"Agent execution completed: {len(formatted_result['tool_calls'])} tool calls, "
+                f"{formatted_result['reasoning_steps']} reasoning steps"
             )
-
             return formatted_result
 
         except Exception as e:
             log.error(f"Agent invocation failed: {e}")
-            return {
-                'output': '',
-                'messages': [],
-                'tool_calls': [],
-                'reasoning_steps': 0,
-                'success': False,
-                'error': str(e)
-            }
+            return AgentWrapper._make_error_result(str(e))
+
+    @staticmethod
+    async def async_invoke_and_format(
+        agent,
+        input_text: str,
+        input_data: Optional[Any] = None,
+        max_iterations: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Async version of invoke_and_format using agent.ainvoke().
+
+        Used for concurrent claim verification in ArticleFactChecker's
+        two-phase parallel architecture.
+
+        Args:
+            agent: Compiled agent (from create_agent)
+            input_text: Text to pass to agent
+            input_data: Optional Data object for context (unused, kept for API parity)
+            max_iterations: Maximum reasoning iterations (recursion_limit)
+
+        Returns:
+            Dict with output, messages, tool_calls, reasoning_steps, success
+        """
+        try:
+            config = {}
+            if max_iterations is not None:
+                config["recursion_limit"] = max_iterations
+
+            if config:
+                result = await agent.ainvoke(
+                    {"messages": [("user", input_text)]},
+                    config
+                )
+            else:
+                result = await agent.ainvoke({"messages": [("user", input_text)]})
+
+            formatted_result = AgentWrapper._format_agent_result(result)
+            log.debug(
+                f"Async agent execution completed: {len(formatted_result['tool_calls'])} tool calls, "
+                f"{formatted_result['reasoning_steps']} reasoning steps"
+            )
+            return formatted_result
+
+        except Exception as e:
+            log.error(f"Async agent invocation failed: {e}")
+            return AgentWrapper._make_error_result(str(e))
+
+    @staticmethod
+    def _format_agent_result(result: Dict) -> Dict[str, Any]:
+        """
+        Convert raw agent invocation result into Dingo's standard output format.
+
+        Shared by both invoke_and_format (sync) and async_invoke_and_format (async)
+        to avoid duplication of message-parsing logic.
+
+        Args:
+            result: Raw dict returned by agent.invoke() / agent.ainvoke()
+
+        Returns:
+            Dict with output, messages, tool_calls, reasoning_steps, success=True
+        """
+        messages = result.get('messages', [])
+        output = ""
+        if messages:
+            last_message = messages[-1]
+            output = getattr(last_message, 'content', str(last_message))
+        tool_calls = AgentWrapper._extract_tool_calls(messages)
+        reasoning_steps = len([m for m in messages if hasattr(m, 'type') and m.type == 'ai'])
+        return {
+            'output': output,
+            'messages': messages,
+            'tool_calls': tool_calls,
+            'reasoning_steps': reasoning_steps,
+            'success': True,
+        }
+
+    @staticmethod
+    def _make_error_result(error: str) -> Dict[str, Any]:
+        """Build a standard error result dict for failed agent invocations."""
+        return {
+            'output': '',
+            'messages': [],
+            'tool_calls': [],
+            'reasoning_steps': 0,
+            'success': False,
+            'error': error,
+        }
 
     @staticmethod
     def _extract_tool_calls(messages: List) -> List[Dict[str, Any]]:

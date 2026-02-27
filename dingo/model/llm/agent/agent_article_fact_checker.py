@@ -10,6 +10,7 @@ See Also:
     docs/agent_development_guide.md: Agent development patterns
 """
 
+import asyncio
 import json
 import os
 import re
@@ -262,6 +263,26 @@ Article Type Guidance (Opinion Piece):
 - Distinguish opinions from verifiable facts"""
     }
 
+    PER_CLAIM_VERIFICATION_PROMPT = """You are a fact-checking expert. Verify ONE specific factual claim.
+
+Use available search tools to find evidence, then respond ONLY with valid JSON:
+
+{
+  "verification_result": "TRUE|FALSE|UNVERIFIABLE",
+  "evidence": "Key evidence found (1-3 sentences)",
+  "sources": ["url1", "url2"],
+  "verification_method": "tavily_search|arxiv_search|combined|no_search",
+  "search_queries_used": ["query text"],
+  "reasoning": "Step-by-step reasoning for your verdict"
+}
+
+Verdict Rules:
+- TRUE: Found specific, direct evidence CONFIRMING the claim with a cited URL
+- FALSE: Found specific evidence CONTRADICTING the claim
+- UNVERIFIABLE: Could not find clear confirming OR contradicting evidence
+
+CRITICAL: Start with search, then produce JSON only. No text outside the JSON."""
+
     @classmethod
     def build(cls, article_type: Optional[str] = None) -> str:
         """
@@ -343,6 +364,7 @@ class ArticleFactChecker(BaseAgent):
         "tavily_search"      # General web search verification
     ]
     max_iterations = 10  # Allow more iterations for comprehensive checking
+    max_concurrent_claims = 5  # Default parallel claim verification slots
 
     _required_fields = [RequiredField.CONTENT]  # Article text
 
@@ -771,10 +793,13 @@ class ArticleFactChecker(BaseAgent):
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         """
-        Override BaseAgent.eval() to add context tracking and file saving.
+        Two-phase async fact-checking with parallel claim verification.
 
-        Saves original article content to output directory before running
-        the LangChain agent, and sets up context for aggregate_results().
+        Phase 1: Extract claims via ClaimsExtractor (direct call, ~30s)
+        Phase 2: Verify each claim with a focused mini-agent using asyncio.gather
+                 with Semaphore(max_concurrent_claims) to limit concurrency (~80-120s)
+
+        This replaces the old single-agent sequential approach (~669s for 15 claims).
 
         Temperature defaults to 0 for deterministic tool selection and
         consistent verification results. Users can override via config.
@@ -788,28 +813,355 @@ class ArticleFactChecker(BaseAgent):
         start_time = time.time()
         output_dir = cls._get_output_dir()
 
-        # Default temperature=0 for fact-checking determinism.
-        # Temperature>0 causes non-deterministic tool selection, leading to
-        # inconsistent verification results across runs (especially for
-        # institutional claims that require specific tool combinations).
         if cls.dynamic_config:
             if cls.dynamic_config.parameters is None:
                 cls.dynamic_config.parameters = {}
             cls.dynamic_config.parameters.setdefault("temperature", 0)
 
-        # Save original article content
         if output_dir and input_data.content:
             cls._save_article_content(output_dir, input_data.content)
 
-        # Set up thread-local context for aggregate_results()
-        cls._thread_local.context = {
-            'start_time': start_time,
-            'output_dir': output_dir,
-            'content_length': len(input_data.content or ''),
+        try:
+            return asyncio.run(cls._async_eval(input_data, start_time, output_dir))
+        except RuntimeError as e:
+            # Fallback when called inside an already-running event loop (e.g. Jupyter, tests)
+            if "cannot run" in str(e).lower() or "already running" in str(e).lower():
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    future = pool.submit(
+                        lambda: asyncio.run(cls._async_eval(input_data, start_time, output_dir))
+                    )
+                    return future.result()
+            raise
+
+    # --- Two-Phase Async Architecture Methods ---
+
+    @classmethod
+    async def _async_eval(
+        cls, input_data: Data, start_time: float, output_dir: Optional[str]
+    ) -> EvalDetail:
+        """
+        Async two-phase orchestrator for parallel claim verification.
+
+        Phase 1: Extract claims directly via ClaimsExtractor tool (~30s).
+        Phase 2: Verify claims concurrently with asyncio.gather and Semaphore.
+        """
+        # Phase 1: Extract claims directly (no agent overhead)
+        claims = await cls._async_extract_claims(input_data)
+        if not claims:
+            return cls._create_error_result("No claims extracted from article")
+
+        if output_dir:
+            cls._save_claims(output_dir, claims)
+
+        # Phase 2: Parallel verification with semaphore-controlled concurrency
+        max_concurrent = cls._get_max_concurrent_claims()
+        semaphore = asyncio.Semaphore(max_concurrent)
+        log.info(
+            f"ArticleFactChecker: verifying {len(claims)} claims "
+            f"with max_concurrent={max_concurrent}"
+        )
+
+        # Pre-create LLM and tools once to avoid concurrent config modification
+        llm = cls.get_langchain_llm()
+        lc_tools = cls.get_langchain_tools()
+        search_tools = [t for t in lc_tools if t.name in ('tavily_search', 'arxiv_search')]
+
+        verification_results = await asyncio.gather(
+            *[
+                cls._async_verify_single_claim(claim, semaphore, llm, search_tools)
+                for claim in claims
+            ],
+            return_exceptions=True
+        )
+
+        return cls._aggregate_parallel_results(
+            input_data, claims, verification_results, start_time, output_dir
+        )
+
+    @classmethod
+    async def _async_extract_claims(cls, input_data: Data) -> List[Dict]:
+        """
+        Phase 1: Extract claims by calling ClaimsExtractor directly.
+
+        Runs the synchronous ClaimsExtractor.execute() in a thread executor
+        to avoid blocking the event loop.
+
+        Returns:
+            List of claim dicts with claim_id, claim, claim_type, etc.
+        """
+        from dingo.model.llm.agent.tools.claims_extractor import ClaimsExtractor, ClaimsExtractorConfig
+
+        params = cls.dynamic_config.parameters or {}
+        agent_cfg = params.get('agent_config') or {}
+        extractor_cfg = agent_cfg.get('tools', {}).get('claims_extractor', {})
+
+        config_kwargs: Dict[str, Any] = {
+            'model': cls.dynamic_config.model or "gpt-4o-mini",
+            'api_key': extractor_cfg.get('api_key') or cls.dynamic_config.key,
+            'max_claims': extractor_cfg.get('max_claims', 50),
+        }
+        base_url = extractor_cfg.get('base_url') or getattr(cls.dynamic_config, 'api_url', None)
+        if base_url:
+            config_kwargs['base_url'] = base_url
+        claim_types = extractor_cfg.get('claim_types')
+        if claim_types:
+            config_kwargs['claim_types'] = claim_types
+
+        ClaimsExtractor.config = ClaimsExtractorConfig(**config_kwargs)
+
+        content = input_data.content or ''
+        loop = asyncio.get_running_loop()
+        result = await loop.run_in_executor(None, ClaimsExtractor.execute, content)
+
+        if result.get('success'):
+            data_section = result.get('data', result)
+            return data_section.get('claims', [])
+
+        log.warning(f"ClaimsExtractor failed: {result.get('error', 'unknown')}")
+        return []
+
+    @classmethod
+    async def _async_verify_single_claim(
+        cls,
+        claim: Dict,
+        semaphore: asyncio.Semaphore,
+        llm: Any,
+        search_tools: List,
+    ) -> Dict:
+        """
+        Phase 2: Verify one claim with a focused mini-agent.
+
+        The semaphore limits concurrent API calls to prevent rate limiting.
+        Each mini-agent only handles one claim with a simplified prompt,
+        returning structured JSON verification output.
+
+        Args:
+            claim: Claim dict from ClaimsExtractor (has claim_id, claim, claim_type)
+            semaphore: Asyncio semaphore for concurrency control
+            llm: Pre-created LangChain LLM instance (shared, thread-safe)
+            search_tools: Pre-configured search tools (tavily_search / arxiv_search)
+
+        Returns:
+            Dict with claim, agent_result, success keys
+        """
+        from dingo.model.llm.agent.agent_wrapper import AgentWrapper
+
+        async with semaphore:
+            claim_id = claim.get('claim_id', 'unknown')
+            claim_text = claim.get('claim', '')
+            claim_type = claim.get('claim_type', 'factual')
+
+            try:
+                agent = AgentWrapper.create_agent(
+                    llm=llm,
+                    tools=search_tools,
+                    system_prompt=PromptTemplates.PER_CLAIM_VERIFICATION_PROMPT
+                )
+
+                input_text = (
+                    f"Claim ID: {claim_id}\n"
+                    f"Claim Type: {claim_type}\n"
+                    f"Claim to verify: {claim_text}"
+                )
+
+                per_claim_max_iter = max(cls.get_max_iterations(), 5)
+
+                agent_result = await AgentWrapper.async_invoke_and_format(
+                    agent,
+                    input_text=input_text,
+                    max_iterations=per_claim_max_iter
+                )
+
+                log.debug(f"Verified {claim_id}: success={agent_result.get('success')}")
+                return {"claim": claim, "agent_result": agent_result, "success": True}
+
+            except Exception as e:
+                log.error(f"Failed to verify {claim_id}: {e}")
+                return {
+                    "claim": claim,
+                    "agent_result": {"output": "", "success": False, "error": str(e)},
+                    "success": False
+                }
+
+    @classmethod
+    def _get_max_concurrent_claims(cls) -> int:
+        """Read max_concurrent_claims from agent_config or use class default."""
+        params = cls.dynamic_config.parameters or {}
+        agent_cfg = params.get('agent_config') or {}
+        return agent_cfg.get('max_concurrent_claims', cls.max_concurrent_claims)
+
+    @classmethod
+    def _parse_single_claim_result(cls, claim: Dict, agent_result: Dict) -> Dict:
+        """
+        Parse mini-agent JSON output into enriched claim verification record.
+
+        Tries to extract the JSON block from agent output; falls back to
+        metadata derived from tool_calls when parsing fails.
+
+        Args:
+            claim: Original claim dict from ClaimsExtractor
+            agent_result: Result dict from AgentWrapper.async_invoke_and_format
+
+        Returns:
+            Enriched claim dict compatible with existing report structure
+        """
+        output = agent_result.get('output', '')
+        tool_calls = agent_result.get('tool_calls', [])
+
+        parsed: Dict[str, Any] = {}
+        try:
+            json_match = re.search(
+                r'\{[^{}]*"verification_result"[^{}]*\}', output, re.DOTALL
+            )
+            if json_match:
+                parsed = json.loads(json_match.group(0))
+        except (json.JSONDecodeError, AttributeError):
+            pass
+
+        search_queries = [
+            tc.get('args', {}).get('query', '')
+            for tc in tool_calls
+            if tc.get('args', {}).get('query')
+        ]
+        methods_used = list({tc.get('tool', '') for tc in tool_calls if tc.get('tool')})
+        if parsed.get('verification_method'):
+            verification_method = parsed['verification_method']
+        elif len(methods_used) > 1:
+            verification_method = 'combined'
+        elif methods_used:
+            verification_method = methods_used[0]
+        else:
+            verification_method = 'no_search'
+
+        return {
+            "claim_id": claim.get('claim_id', ''),
+            "original_claim": claim.get('claim', ''),
+            "claim_type": claim.get('claim_type', 'unknown'),
+            "confidence": claim.get('confidence'),
+            "verification_result": cls._normalize_verdict(
+                parsed.get('verification_result', 'UNVERIFIABLE')
+            ),
+            "evidence": parsed.get('evidence', ''),
+            "sources": parsed.get('sources', []),
+            "verification_method": verification_method,
+            "search_queries_used": parsed.get('search_queries_used', search_queries),
+            "reasoning": parsed.get('reasoning', output[:500] if output else ''),
+            "error_type": None,
+            "severity": None,
         }
 
-        # Call LangChain agent directly (bypasses parent eval routing)
-        return cls._eval_with_langchain_agent(input_data)
+    @classmethod
+    def _build_unverifiable_claim_record(cls, claim: Dict, error_msg: str) -> Dict:
+        """Build a fallback UNVERIFIABLE record when claim verification fails."""
+        return {
+            "claim_id": claim.get('claim_id', ''),
+            "original_claim": claim.get('claim', ''),
+            "claim_type": claim.get('claim_type', 'unknown'),
+            "confidence": None,
+            "verification_result": "UNVERIFIABLE",
+            "evidence": "",
+            "sources": [],
+            "verification_method": "error",
+            "search_queries_used": [],
+            "reasoning": f"Verification failed: {error_msg}",
+            "error_type": None,
+            "severity": None,
+        }
+
+    @classmethod
+    def _aggregate_parallel_results(
+        cls,
+        input_data: Data,
+        claims: List[Dict],
+        verification_results: List[Any],
+        start_time: float,
+        output_dir: Optional[str],
+    ) -> EvalDetail:
+        """
+        Aggregate parallel verification results into a final EvalDetail.
+
+        Merges per-claim mini-agent outputs, applies reasoning-verdict
+        consistency checks, recalculates the summary, and produces the
+        same structured report format as the sequential path.
+
+        Args:
+            input_data: Original article Data object
+            claims: Extracted claims from Phase 1
+            verification_results: List of results from asyncio.gather
+                (may contain Exception objects due to return_exceptions=True)
+            start_time: Wall-clock start time for execution_time calculation
+            output_dir: Optional path to save artifacts
+
+        Returns:
+            EvalDetail with full verification report
+        """
+        execution_time = time.time() - start_time
+        enriched_claims: List[Dict] = []
+        all_tool_calls: List[Dict] = []
+        total_reasoning_steps = 0
+
+        for claim, vr in zip(claims, verification_results):
+            if isinstance(vr, Exception):
+                enriched = cls._build_unverifiable_claim_record(claim, str(vr))
+            elif not vr.get('success', False):
+                error = vr.get('agent_result', {}).get('error', 'unknown error')
+                enriched = cls._build_unverifiable_claim_record(claim, error)
+            else:
+                agent_result = vr.get('agent_result', {})
+                enriched = cls._parse_single_claim_result(claim, agent_result)
+                all_tool_calls.extend(agent_result.get('tool_calls', []))
+                total_reasoning_steps += agent_result.get('reasoning_steps', 0)
+            enriched_claims.append(enriched)
+
+        # Apply reasoning-verdict consistency downgrade (TRUE → UNVERIFIABLE on hedging)
+        downgraded = cls._check_reasoning_verdict_consistency(enriched_claims)
+        if downgraded:
+            log.info(f"Consistency check: downgraded {downgraded} TRUE→UNVERIFIABLE")
+
+        summary = cls._recalculate_summary(enriched_claims)
+
+        # Build verification_data in the format _build_structured_report() expects
+        verification_data: Dict[str, Any] = {
+            "article_verification_summary": {
+                "article_type": "unknown",
+                **summary
+            },
+            "detailed_findings": enriched_claims,
+            "false_claims_comparison": [
+                {
+                    "article_claimed": c["original_claim"],
+                    "error_type": c.get("error_type"),
+                    "severity": c.get("severity"),
+                    "evidence": c.get("evidence", ""),
+                }
+                for c in enriched_claims
+                if c.get("verification_result") == "FALSE"
+            ],
+        }
+
+        report = cls._build_structured_report(
+            verification_data=verification_data,
+            extracted_claims=claims,
+            enriched_claims=enriched_claims,
+            tool_calls=all_tool_calls,
+            reasoning_steps=total_reasoning_steps,
+            content_length=len(input_data.content or ''),
+            execution_time=execution_time,
+            claims_source="claims_extractor_direct_async",
+        )
+
+        if output_dir:
+            cls._save_verification_details(output_dir, enriched_claims)
+            cls._save_full_report(output_dir, report)
+
+        # Build EvalDetail with the same structure as _build_eval_detail_from_verification
+        return cls._build_eval_detail_from_verification(
+            verification_data,
+            all_tool_calls,
+            total_reasoning_steps,
+            report=report,
+        )
 
     @classmethod
     def _format_agent_input(cls, input_data: Data) -> str:
@@ -1262,8 +1614,9 @@ Begin your systematic fact-checking process now.
             lines.append("=" * 70)
 
             for i, fc in enumerate(false_claims, 1):
+                error_type_str = (fc.get('error_type') or 'ERROR').upper()
                 lines.extend([
-                    f"\n#{i} {fc.get('error_type', 'ERROR').upper()} "
+                    f"\n#{i} {error_type_str} "
                     f"[Severity: {fc.get('severity', 'unknown')}]",
                     "   Article Claimed:",
                     f"      {fc.get('article_claimed', 'N/A')}",
