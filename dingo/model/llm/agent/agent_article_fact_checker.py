@@ -149,8 +149,6 @@ You MUST return JSON in this exact format:
     {
       "article_claimed": "Example: OpenAI released o1 in November 2024",
       "actual_truth": "OpenAI released o1 on December 5, 2024",
-      "error_type": "temporal_error",
-      "severity": "medium",
       "evidence": "Verified via official OpenAI announcement"
     }
   ]
@@ -211,7 +209,6 @@ Critical Guidelines:
 - VERIFY each claim independently
 - USE multiple sources when possible (especially for critical claims)
 - CITE specific evidence and URLs
-- IDENTIFY severity of false claims (high/medium/low)
 - BE THOROUGH: Don't skip claims
 - ADAPTIVE: If a tool fails, try alternatives intelligently
 - CONTEXT-AWARE: Consider article type when selecting verification approach
@@ -551,6 +548,14 @@ class ArticleFactChecker(BaseAgent):
             return "UNVERIFIABLE"
         return cls._VERDICT_MAP.get(verdict.strip().upper(), "UNVERIFIABLE")
 
+    # Pre-compiled regexes for Tier 3 per-field extraction in _parse_claim_json_robust.
+    _RE_VERDICT = re.compile(r'"verification_result"\s*:\s*"(TRUE|FALSE|UNVERIFIABLE)"', re.IGNORECASE)
+    _RE_EVIDENCE = re.compile(r'"evidence"\s*:\s*"((?:[^"\\]|\\.)*)"', re.DOTALL)
+    _RE_EVIDENCE_TRUNC = re.compile(r'"evidence"\s*:\s*"((?:[^"\\]|\\.)+)', re.DOTALL)
+    _RE_SOURCES = re.compile(r'"sources"\s*:\s*\[(.*?)\]', re.DOTALL)
+    _RE_REASONING = re.compile(r'"reasoning"\s*:\s*"((?:[^"\\]|\\.)*)"', re.DOTALL)
+    _RE_REASONING_TRUNC = re.compile(r'"reasoning"\s*:\s*"((?:[^"\\]|\\.)+)', re.DOTALL)
+
     # Hedging language patterns that indicate reasoning contradicts a TRUE verdict.
     _HEDGING_PATTERNS = re.compile(
         r"(?:"
@@ -681,19 +686,7 @@ class ArticleFactChecker(BaseAgent):
                 "verification_method": finding.get('verification_method', ''),
                 "search_queries_used": finding.get('search_queries_used', []),
                 "reasoning": finding.get('reasoning', ''),
-                "error_type": None,
-                "severity": None
             }
-
-            # If this is a FALSE claim, try to get error details from false_claims_comparison
-            if enriched["verification_result"] == "FALSE":
-                for fc in verification_data.get("false_claims_comparison", []):
-                    # Match by claim text similarity
-                    if (enriched["original_claim"] and
-                            enriched["original_claim"][:40] in fc.get('article_claimed', '')):
-                        enriched["error_type"] = fc.get('error_type')
-                        enriched["severity"] = fc.get('severity')
-                        break
 
             enriched_claims.append(enriched)
 
@@ -711,8 +704,6 @@ class ArticleFactChecker(BaseAgent):
                     "verification_method": "",
                     "search_queries_used": [],
                     "reasoning": "No verification data available from agent",
-                    "error_type": None,
-                    "severity": None
                 })
 
         return enriched_claims
@@ -992,6 +983,91 @@ class ArticleFactChecker(BaseAgent):
         return agent_cfg.get('max_concurrent_claims', cls.max_concurrent_claims)
 
     @classmethod
+    def _parse_claim_json_robust(cls, output: Optional[str]) -> Dict[str, Any]:
+        """
+        Robustly parse claim verification JSON from LLM output.
+
+        Three-tier parsing strategy:
+          1. Regex match for a complete *flat* JSON object containing
+             ``"verification_result"`` (cannot match nested ``{}``).
+          2. Truncated-JSON repair: strip markdown fences, append missing
+             closing characters, then ``json.loads``.
+          3. Per-field regex extraction as last resort (includes fallback
+             patterns for truncated string values).
+
+        Args:
+            output: Raw string returned by the per-claim mini-agent, or None.
+
+        Returns:
+            Dict with as many fields as could be recovered; empty dict on
+            total failure.
+        """
+        if not output or not isinstance(output, str):
+            return {}
+
+        # --- Tier 1: exact regex match for flat JSON object ---
+        try:
+            json_match = re.search(
+                r'\{[^{}]*"verification_result"[^{}]*\}', output, re.DOTALL
+            )
+            if json_match:
+                return json.loads(json_match.group(0))
+        except (json.JSONDecodeError, AttributeError):
+            pass
+
+        # --- Tier 2: truncated-JSON repair ---
+        try:
+            text = output.strip()
+            text = re.sub(r'^```(?:json)?\s*', '', text)
+            text = re.sub(r'\s*```\s*$', '', text)
+            text = text.strip()
+
+            brace_start = text.find('{')
+            if brace_start != -1:
+                fragment = text[brace_start:]
+                suffixes = ['', '"', '"}', '"]', '"]}', '"}]']
+                for suffix in suffixes:
+                    patched = fragment + suffix
+                    open_braces = patched.count('{') - patched.count('}')
+                    open_brackets = patched.count('[') - patched.count(']')
+                    closing = ']' * max(0, open_brackets) + '}' * max(0, open_braces)
+                    try:
+                        candidate = json.loads(patched + closing)
+                        if isinstance(candidate, dict) and 'verification_result' in candidate:
+                            return candidate
+                    except (json.JSONDecodeError, ValueError):
+                        continue
+        except Exception:
+            pass
+
+        # --- Tier 3: per-field regex extraction ---
+        extracted: Dict[str, Any] = {}
+        try:
+            verdict_m = cls._RE_VERDICT.search(output)
+            if verdict_m:
+                extracted['verification_result'] = verdict_m.group(1).upper()
+
+            evidence_m = cls._RE_EVIDENCE.search(output) or cls._RE_EVIDENCE_TRUNC.search(output)
+            if evidence_m:
+                extracted['evidence'] = evidence_m.group(1).replace('\\"', '"').replace('\\n', '\n')
+
+            sources_m = cls._RE_SOURCES.search(output)
+            if sources_m:
+                raw_sources = sources_m.group(1)
+                extracted['sources'] = [
+                    s.strip().strip('"') for s in raw_sources.split(',')
+                    if s.strip().strip('"')
+                ]
+
+            reasoning_m = cls._RE_REASONING.search(output) or cls._RE_REASONING_TRUNC.search(output)
+            if reasoning_m:
+                extracted['reasoning'] = reasoning_m.group(1).replace('\\"', '"').replace('\\n', '\n')
+        except Exception:
+            pass
+
+        return extracted
+
+    @classmethod
     def _parse_single_claim_result(cls, claim: Dict, agent_result: Dict) -> Dict:
         """
         Parse mini-agent JSON output into enriched claim verification record.
@@ -1009,15 +1085,7 @@ class ArticleFactChecker(BaseAgent):
         output = agent_result.get('output', '')
         tool_calls = agent_result.get('tool_calls', [])
 
-        parsed: Dict[str, Any] = {}
-        try:
-            json_match = re.search(
-                r'\{[^{}]*"verification_result"[^{}]*\}', output, re.DOTALL
-            )
-            if json_match:
-                parsed = json.loads(json_match.group(0))
-        except (json.JSONDecodeError, AttributeError):
-            pass
+        parsed = cls._parse_claim_json_robust(output)
 
         search_queries = [
             tc.get('args', {}).get('query', '')
@@ -1047,8 +1115,6 @@ class ArticleFactChecker(BaseAgent):
             "verification_method": verification_method,
             "search_queries_used": parsed.get('search_queries_used', search_queries),
             "reasoning": parsed.get('reasoning', output[:500] if output else ''),
-            "error_type": None,
-            "severity": None,
         }
 
     @classmethod
@@ -1065,8 +1131,6 @@ class ArticleFactChecker(BaseAgent):
             "verification_method": "error",
             "search_queries_used": [],
             "reasoning": f"Verification failed: {error_msg}",
-            "error_type": None,
-            "severity": None,
         }
 
     @classmethod
@@ -1131,8 +1195,6 @@ class ArticleFactChecker(BaseAgent):
             "false_claims_comparison": [
                 {
                     "article_claimed": c["original_claim"],
-                    "error_type": c.get("error_type"),
-                    "severity": c.get("severity"),
                     "evidence": c.get("evidence", ""),
                 }
                 for c in enriched_claims
@@ -1527,8 +1589,6 @@ Begin your systematic fact-checking process now.
             false_claims_comparison.append({
                 "article_claimed": claimed.strip(),
                 "actual_truth": truth.strip(),
-                "error_type": "extracted_from_text",
-                "severity": "unknown"
             })
 
         return {
@@ -1614,10 +1674,8 @@ Begin your systematic fact-checking process now.
             lines.append("=" * 70)
 
             for i, fc in enumerate(false_claims, 1):
-                error_type_str = (fc.get('error_type') or 'ERROR').upper()
                 lines.extend([
-                    f"\n#{i} {error_type_str} "
-                    f"[Severity: {fc.get('severity', 'unknown')}]",
+                    f"\n#{i} FALSE CLAIM",
                     "   Article Claimed:",
                     f"      {fc.get('article_claimed', 'N/A')}",
                     "   Actual Truth:",

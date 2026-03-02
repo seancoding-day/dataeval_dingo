@@ -693,20 +693,6 @@ class ArxivSearch(BaseTool):
                 matches = re.findall(pattern, summary_start)
                 institutions.update(match.strip() for match in matches)
 
-        # Special handling for known OmniDocBench paper (arXiv:2412.07626)
-        # This is a fallback for testing - actual implementation should use
-        # Semantic Scholar API or PDF parsing for reliable affiliation data
-        paper_id = paper.get('arxiv_id', '')
-        if '2412.07626' in paper_id:
-            # Known institutions for OmniDocBench paper
-            # Source: https://arxiv.org/abs/2412.07626
-            institutions.update([
-                'Shanghai AI Laboratory',
-                'Shanghai Artificial Intelligence Laboratory',
-                'Abaka AI',
-                '2077AI'
-            ])
-
         return list(institutions)
 
     @classmethod

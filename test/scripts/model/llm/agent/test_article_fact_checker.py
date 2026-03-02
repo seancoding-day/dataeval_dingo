@@ -336,8 +336,8 @@ class TestPerClaimVerification:
         assert enriched[0]["verification_result"] == "TRUE"
         assert enriched[0]["verification_method"] == "tavily_search"
 
-    def test_merge_with_false_claims_matching(self):
-        """Test that FALSE claims get error_type and severity from comparison"""
+    def test_merge_with_false_claims_preserves_evidence(self):
+        """Test that FALSE claims preserve evidence from detailed_findings"""
         verification_data = {
             "detailed_findings": [
                 {
@@ -351,8 +351,6 @@ class TestPerClaimVerification:
                 {
                     "article_claimed": "OpenAI released o1 in November 2024",
                     "actual_truth": "Released December 5",
-                    "error_type": "temporal_error",
-                    "severity": "medium"
                 }
             ]
         }
@@ -362,8 +360,10 @@ class TestPerClaimVerification:
         )
 
         assert len(enriched) == 1
-        assert enriched[0]["error_type"] == "temporal_error"
-        assert enriched[0]["severity"] == "medium"
+        assert enriched[0]["verification_result"] == "FALSE"
+        assert enriched[0]["evidence"] == "Released Dec 5"
+        assert "error_type" not in enriched[0]
+        assert "severity" not in enriched[0]
 
     def test_fallback_when_no_detailed_findings(self):
         """Test placeholder records when agent has no detailed_findings"""

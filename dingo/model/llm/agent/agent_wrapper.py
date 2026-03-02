@@ -335,7 +335,7 @@ class AgentWrapper:
             base_url=dynamic_config.api_url,
             model=dynamic_config.model or "gpt-4.1-mini",
             temperature=params.get("temperature", 0.3),
-            max_tokens=params.get("max_tokens", 1000),  # Lower default to avoid context length issues
+            max_tokens=params.get("max_tokens", 4096),
             top_p=params.get("top_p", 1.0),
             timeout=params.get("timeout", 30)
         )

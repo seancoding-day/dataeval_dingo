@@ -150,6 +150,171 @@ class TestParseSingleClaimResult:
         assert result["verification_method"] == "combined"
 
 
+# ─── Tests for _parse_claim_json_robust ──────────────────────────────────────
+
+
+class TestParseClaimJsonRobust:
+    """Unit tests for the three-tier robust JSON parser."""
+
+    def setup_method(self):
+        from dingo.model.llm.agent.agent_article_fact_checker import ArticleFactChecker
+
+        self.checker = ArticleFactChecker
+
+    def test_complete_json_parsed_normally(self):
+        """Tier 1: complete JSON with verification_result should parse directly."""
+        output = json.dumps({
+            "verification_result": "TRUE",
+            "evidence": "Found direct evidence.",
+            "sources": ["https://example.com"],
+            "reasoning": "The claim is supported by evidence.",
+        })
+        result = self.checker._parse_claim_json_robust(output)
+
+        assert result["verification_result"] == "TRUE"
+        assert result["evidence"] == "Found direct evidence."
+        assert result["sources"] == ["https://example.com"]
+        assert "supported" in result["reasoning"]
+
+    def test_truncated_json_missing_closing_brace(self):
+        """Tier 2: JSON truncated mid-value, missing closing brace, should be repaired."""
+        output = (
+            '{"verification_result": "FALSE", "evidence": "Contradicted by source X", '
+            '"sources": ["https://example.com"], "reasoning": "The claim is false'
+        )
+        result = self.checker._parse_claim_json_robust(output)
+
+        assert result["verification_result"] == "FALSE"
+        assert "Contradicted" in result.get("evidence", "")
+
+    def test_markdown_wrapped_truncated_json(self):
+        """Tier 2: markdown code-block wrapped truncated JSON should be unwrapped and repaired."""
+        output = (
+            '```json\n'
+            '{"verification_result": "TRUE", "evidence": "Confirmed by multiple sources", '
+            '"sources": ["https://a.com", "https://b.com"], "reasoning": "Strong evidence'
+        )
+        result = self.checker._parse_claim_json_robust(output)
+
+        assert result.get("verification_result") == "TRUE"
+        assert "Confirmed" in result.get("evidence", "")
+
+    def test_corrupted_trailing_text_uses_regex_fallback(self):
+        """Tier 3: output with corrupted trailing text should still extract fields via regex."""
+        output = (
+            '{"verification_result": "FALSE", "evidence": "The data shows otherwise", '
+            '"sources": ["https://example.com"], "reasoning": "Clear contradiction<ctrl46>'
+        )
+        result = self.checker._parse_claim_json_robust(output)
+
+        assert result.get("verification_result") == "FALSE"
+        assert "data shows" in result.get("evidence", "")
+        assert result.get("sources") == ["https://example.com"]
+
+    def test_completely_irrelevant_text_returns_empty(self):
+        """When output is completely non-JSON, should return empty dict."""
+        output = "I apologize, but I was unable to verify this claim due to technical issues."
+        result = self.checker._parse_claim_json_robust(output)
+
+        assert result == {}
+
+    def test_empty_string_returns_empty(self):
+        """Empty string input should return empty dict."""
+        assert self.checker._parse_claim_json_robust("") == {}
+
+    def test_none_input_returns_empty(self):
+        """None input should return empty dict."""
+        assert self.checker._parse_claim_json_robust(None) == {}
+
+    def test_truncated_json_with_incomplete_sources_array(self):
+        """Tier 2: JSON truncated inside sources array should recover what it can."""
+        output = (
+            '{"verification_result": "TRUE", "evidence": "Found evidence", '
+            '"sources": ["https://a.com", "https://b.com'
+        )
+        result = self.checker._parse_claim_json_robust(output)
+
+        # Should at least extract verification_result
+        assert result.get("verification_result") == "TRUE"
+
+    def test_json_embedded_in_surrounding_text(self):
+        """Tier 1: JSON block embedded in prose should be extracted."""
+        output = (
+            'Based on my analysis, here is the result:\n'
+            '{"verification_result": "UNVERIFIABLE", "evidence": "", "sources": [], '
+            '"reasoning": "No relevant sources found"}\n'
+            'Let me know if you need more details.'
+        )
+        result = self.checker._parse_claim_json_robust(output)
+
+        assert result["verification_result"] == "UNVERIFIABLE"
+        assert result["reasoning"] == "No relevant sources found"
+
+    def test_tier1_match_but_invalid_json_falls_to_tier2(self):
+        """Tier 1 regex match with trailing comma should fall through to Tier 2."""
+        output = (
+            '{"verification_result": "TRUE", "evidence": "found",}'
+        )
+        result = self.checker._parse_claim_json_robust(output)
+
+        # Tier 1 json.loads fails on trailing comma; Tier 2 or Tier 3 should recover
+        assert result.get("verification_result") == "TRUE"
+
+    def test_case_insensitive_verdict_in_tier3(self):
+        """Tier 3 should match lowercase/mixed-case verdicts and normalize to uppercase."""
+        # No opening brace → Tier 1 and 2 skip, only Tier 3 regex fires
+        output = 'Result: "verification_result": "true", "evidence": "confirmed"'
+        result = self.checker._parse_claim_json_robust(output)
+
+        assert result.get("verification_result") == "TRUE"
+        assert result.get("evidence") == "confirmed"
+
+    def test_escaped_quotes_in_string_values(self):
+        """Strings with escaped quotes should be parsed correctly."""
+        output = json.dumps({
+            "verification_result": "TRUE",
+            "evidence": 'The study states "significant results"',
+            "sources": [],
+            "reasoning": "ok",
+        })
+        result = self.checker._parse_claim_json_robust(output)
+
+        assert result["verification_result"] == "TRUE"
+        assert '"significant results"' in result["evidence"]
+
+    def test_truncated_reasoning_recovered_via_fallback_regex(self):
+        """Tier 3 truncated-string fallback should recover partial reasoning."""
+        output = (
+            '{"verification_result": "FALSE", '
+            '"reasoning": "The claim contradicts multiple peer-reviewed'
+        )
+        result = self.checker._parse_claim_json_robust(output)
+
+        assert result.get("verification_result") == "FALSE"
+        assert "contradicts" in result.get("reasoning", "")
+
+    def test_integration_with_parse_single_claim_result(self):
+        """Robust parser should integrate correctly with _parse_single_claim_result."""
+        claim = _make_claim(99)
+        # Simulate truncated output that old regex couldn't handle
+        truncated_output = (
+            '{"verification_result": "FALSE", "evidence": "Source contradicts claim", '
+            '"sources": ["https://example.com"], "reasoning": "Clear evidence of'
+        )
+        agent_result = {
+            "output": truncated_output,
+            "tool_calls": [{"tool": "tavily_search", "args": {"query": "test"}, "observation": "ok"}],
+            "reasoning_steps": 2,
+            "success": True,
+        }
+
+        result = self.checker._parse_single_claim_result(claim, agent_result)
+
+        # Should recover FALSE instead of falling back to UNVERIFIABLE
+        assert result["verification_result"] == "FALSE"
+        assert "contradicts" in result.get("evidence", "").lower()
+
+
 # ─── Tests for _build_unverifiable_claim_record ──────────────────────────────
 
 
@@ -168,7 +333,7 @@ class TestBuildUnverifiableClaimRecord:
         assert record["verification_method"] == "error"
         assert "API timeout" in record["reasoning"]
         assert record["sources"] == []
-        assert record["error_type"] is None
+        assert "error_type" not in record
 
 
 # ─── Tests for _aggregate_parallel_results ───────────────────────────────────

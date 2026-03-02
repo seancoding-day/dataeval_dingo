@@ -67,21 +67,21 @@ def main() -> int:
                         "name": "ArticleFactChecker",
                         "config": {
                             "key": openai_key,
-                            "api_url": "https://api.deepseek.com/v1",
-                            "model": "deepseek-chat",
+                            "model": "gemini-3-flash-preview",
+                            "api_url": "your api url",
                             "parameters": {
                                 "timeout": 600,
                                 "temperature": 0,  # deterministic output
                                 "agent_config": {
-                                    "max_iterations": 100,
+                                    "max_iterations": 50,
                                     # Artifacts auto-saved to outputs/article_factcheck_<timestamp>/
                                     # Override with: "output_path": "your/custom/path"
                                     "tools": {
                                         "claims_extractor": {
                                             "api_key": openai_key,
-                                            "model": "deepseek-chat",
-                                            "base_url": "https://api.deepseek.com/v1",
-                                            "max_claims": 100,
+                                            "model": "gemini-3-flash-preview",
+                                            "base_url": "your api url",
+                                            "max_claims": 50,
                                             "claim_types": [
                                                 "factual", "statistical", "attribution", "institutional",
                                                 "temporal", "comparative", "monetary", "technical"
@@ -126,34 +126,16 @@ def main() -> int:
         print("FACT-CHECKING RESULTS")
         print("=" * 70)
 
-        if result and hasattr(result, 'eval_details'):
-            for item_id, details_by_field in result.eval_details.items():
-                for field_key, eval_details in details_by_field.items():
-                    for eval_detail in eval_details:
-                        if eval_detail.metric == "ArticleFactChecker":
-                            print(f"\nMetric: {eval_detail.metric}")
-                            print(f"Status: {'Issues Found' if eval_detail.status else 'All Good'}")
-                            if eval_detail.score is not None:
-                                print(f"Accuracy Score: {eval_detail.score:.2%}")
-                            print("\nDetailed Report:")
-                            print("-" * 70)
-                            if eval_detail.reason:
-                                reason_text = eval_detail.reason[0]
-                                print(reason_text if isinstance(reason_text, str) else str(reason_text))
-
-                                if len(eval_detail.reason) > 1 and isinstance(eval_detail.reason[1], dict):
-                                    report = eval_detail.reason[1]
-                                    print("\nStructured Report Summary:")
-                                    print(f"  Report Version: {report.get('report_version', 'N/A')}")
-                                    v_summary = report.get('verification_summary', {})
-                                    print(f"  Verified True:  {v_summary.get('verified_true', 'N/A')}")
-                                    print(f"  Verified False: {v_summary.get('verified_false', 'N/A')}")
-                                    print(f"  Unverifiable:   {v_summary.get('unverifiable', 'N/A')}")
-                                    c_extraction = report.get('claims_extraction', {})
-                                    print(f"  Claims Extracted: {c_extraction.get('total_extracted', 'N/A')}")
-                                    meta = report.get('agent_metadata', {})
-                                    print(f"  Execution Time: {meta.get('execution_time_seconds', 'N/A')}s")
-                            print("-" * 70)
+        if result:
+            print(f"\nTotal items evaluated: {result.total}")
+            print(f"Passed: {result.num_good}  |  Issues found: {result.num_bad}")
+            if result.score:
+                print(f"Overall score: {result.score:.2%}")
+            if result.type_ratio:
+                print("\nIssue breakdown:")
+                for field_key, type_counts in result.type_ratio.items():
+                    for label, count in type_counts.items():
+                        print(f"  [{field_key}] {label}: {count}")
 
         print("\nFact-checking complete!")
         print(f"\nDingo standard output: {input_args.output_path}/")
