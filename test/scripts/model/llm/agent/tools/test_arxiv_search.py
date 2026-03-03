@@ -219,20 +219,12 @@ class TestArxivSearchExecution:
 
     def test_search_by_arxiv_id(self):
         """Test direct arXiv ID search"""
-        # Create mock arxiv module
-        mock_arxiv = MagicMock()
-        mock_search = MagicMock()
-        mock_search.results.return_value = [self._create_mock_paper()]
-        mock_arxiv.Search.return_value = mock_search
-        mock_arxiv.SortCriterion = MagicMock(Relevance=1)
-        mock_arxiv.SortOrder = MagicMock(Descending=1)
+        mock_arxiv = self._create_mock_arxiv()
+        mock_arxiv.Client.return_value.results.return_value = [self._create_mock_paper()]
 
-        # Patch the import inside execute method
         with patch.dict('sys.modules', {'arxiv': mock_arxiv}):
-            # Execute search
             result = ArxivSearch.execute(query="1706.03762")
 
-            # Verify result
             assert result['success'] is True
             assert result['query'] == "1706.03762"
             assert result['search_type'] == "arxiv_id"
@@ -243,20 +235,12 @@ class TestArxivSearchExecution:
 
     def test_search_by_doi(self):
         """Test DOI search"""
-        # Create mock arxiv module
-        mock_arxiv = MagicMock()
-        mock_search = MagicMock()
-        mock_search.results.return_value = [self._create_mock_paper()]
-        mock_arxiv.Search.return_value = mock_search
-        mock_arxiv.SortCriterion = MagicMock(Relevance=1)
-        mock_arxiv.SortOrder = MagicMock(Descending=1)
+        mock_arxiv = self._create_mock_arxiv()
+        mock_arxiv.Client.return_value.results.return_value = [self._create_mock_paper()]
 
-        # Patch the import
         with patch.dict('sys.modules', {'arxiv': mock_arxiv}):
-            # Execute search
             result = ArxivSearch.execute(query="10.48550/arXiv.1706.03762")
 
-            # Verify result
             assert result['success'] is True
             assert result['search_type'] == "doi"
             assert len(result['results']) == 1
@@ -264,9 +248,7 @@ class TestArxivSearchExecution:
     def test_search_by_title(self):
         """Test title/keyword search"""
         mock_arxiv = self._create_mock_arxiv()
-        mock_search = MagicMock()
-        mock_search.results.return_value = [self._create_mock_paper()]
-        mock_arxiv.Search.return_value = mock_search
+        mock_arxiv.Client.return_value.results.return_value = [self._create_mock_paper()]
 
         with patch.dict('sys.modules', {'arxiv': mock_arxiv}):
             result = ArxivSearch.execute(query="Attention is All You Need")
@@ -278,9 +260,7 @@ class TestArxivSearchExecution:
     def test_auto_detection_arxiv_id(self):
         """Test auto-detection mode with arXiv ID"""
         mock_arxiv = self._create_mock_arxiv()
-        mock_search = MagicMock()
-        mock_search.results.return_value = [self._create_mock_paper()]
-        mock_arxiv.Search.return_value = mock_search
+        mock_arxiv.Client.return_value.results.return_value = [self._create_mock_paper()]
 
         with patch.dict('sys.modules', {'arxiv': mock_arxiv}):
             result = ArxivSearch.execute(query="2301.12345", search_type="auto")
@@ -291,9 +271,7 @@ class TestArxivSearchExecution:
     def test_auto_detection_doi(self):
         """Test auto-detection mode with DOI"""
         mock_arxiv = self._create_mock_arxiv()
-        mock_search = MagicMock()
-        mock_search.results.return_value = [self._create_mock_paper()]
-        mock_arxiv.Search.return_value = mock_search
+        mock_arxiv.Client.return_value.results.return_value = [self._create_mock_paper()]
 
         with patch.dict('sys.modules', {'arxiv': mock_arxiv}):
             result = ArxivSearch.execute(query="10.1234/example", search_type="auto")
@@ -304,9 +282,7 @@ class TestArxivSearchExecution:
     def test_auto_detection_title(self):
         """Test auto-detection mode defaults to title"""
         mock_arxiv = self._create_mock_arxiv()
-        mock_search = MagicMock()
-        mock_search.results.return_value = [self._create_mock_paper()]
-        mock_arxiv.Search.return_value = mock_search
+        mock_arxiv.Client.return_value.results.return_value = [self._create_mock_paper()]
 
         with patch.dict('sys.modules', {'arxiv': mock_arxiv}):
             result = ArxivSearch.execute(query="machine learning", search_type="auto")
@@ -344,9 +320,7 @@ class TestArxivSearchExecution:
     def test_rate_limiting(self):
         """Test rate limiting is applied"""
         mock_arxiv = self._create_mock_arxiv()
-        mock_search = MagicMock()
-        mock_search.results.return_value = []
-        mock_arxiv.Search.return_value = mock_search
+        mock_arxiv.Client.return_value.results.return_value = []
 
         # Reset last request time
         ArxivSearch._last_request_time = 0.0
@@ -364,9 +338,7 @@ class TestArxivSearchExecution:
     def test_thread_safety_rate_limiting(self):
         """Test that rate limiting is thread-safe"""
         mock_arxiv = self._create_mock_arxiv()
-        mock_search = MagicMock()
-        mock_search.results.return_value = []
-        mock_arxiv.Search.return_value = mock_search
+        mock_arxiv.Client.return_value.results.return_value = []
 
         # Reset last request time
         ArxivSearch._last_request_time = 0.0
@@ -409,10 +381,8 @@ class TestArxivSearchExecution:
     def test_result_formatting(self):
         """Test that result formatting is correct"""
         mock_arxiv = self._create_mock_arxiv()
-        mock_search = MagicMock()
         mock_paper = self._create_mock_paper()
-        mock_search.results.return_value = [mock_paper]
-        mock_arxiv.Search.return_value = mock_search
+        mock_arxiv.Client.return_value.results.return_value = [mock_paper]
 
         with patch.dict('sys.modules', {'arxiv': mock_arxiv}):
             result = ArxivSearch.execute(query="1706.03762")
@@ -441,12 +411,10 @@ class TestArxivSearchExecution:
     def test_multiple_results(self):
         """Test handling multiple search results"""
         mock_arxiv = self._create_mock_arxiv()
-        mock_search = MagicMock()
-        mock_search.results.return_value = [
+        mock_arxiv.Client.return_value.results.return_value = [
             self._create_mock_paper("1706.03762"),
             self._create_mock_paper("2301.12345")
         ]
-        mock_arxiv.Search.return_value = mock_search
 
         with patch.dict('sys.modules', {'arxiv': mock_arxiv}):
             result = ArxivSearch.execute(query="transformer", max_results=10)
@@ -458,9 +426,7 @@ class TestArxivSearchExecution:
     def test_api_error_handling(self):
         """Test handling of API errors"""
         mock_arxiv = self._create_mock_arxiv()
-        mock_search = MagicMock()
-        mock_search.results.side_effect = Exception("API Error")
-        mock_arxiv.Search.return_value = mock_search
+        mock_arxiv.Client.return_value.results.side_effect = Exception("API Error")
 
         with patch.dict('sys.modules', {'arxiv': mock_arxiv}):
             result = ArxivSearch.execute(query="test")

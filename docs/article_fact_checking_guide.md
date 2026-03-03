@@ -390,8 +390,8 @@ Agent Decision:
 1. Recognizes institutional claim
 2. Checks if paper mentioned → Yes (OmniDocBench)
 3. Selects arxiv_search tool
-4. Calls verify_institutions(paper_id, institutions)
-5. Compares claimed vs actual institutions
+4. Searches for paper metadata and author affiliations
+5. Compares claimed vs actual institutions via LLM reasoning
 ```
 
 ### Statistical Claims
@@ -461,7 +461,8 @@ Agent Decision:
         "max_results": 5,
         "search_depth": "advanced"  # or "basic"
       }
-    }
+    },
+    "max_concurrent_claims": 5       # Max parallel claim verifications (asyncio Semaphore)
   }
 }
 ```
@@ -478,7 +479,7 @@ The `EvalDetail` returned by `ArticleFactChecker` uses a **dual-layer reason** s
   "metric": "ArticleFactChecker",
   "status": true,  # true = issues found, false = all good
   "score": 0.75,   # Overall accuracy (0.0-1.0)
-  "label": ["QUALITY_BAD.ARTICLE_INACCURACY_25"],
+  "label": ["QUALITY_BAD_ARTICLE_FACTUAL_ERROR"],  # or QUALITY_BAD_ARTICLE_UNVERIFIED_CLAIMS / QUALITY_GOOD
   "reason": [
     # reason[0]: Human-readable text summary (str)
     "Article Fact-Checking Report\n"
@@ -496,7 +497,7 @@ The `EvalDetail` returned by `ArticleFactChecker` uses a **dual-layer reason** s
     "FALSE CLAIMS DETAILED COMPARISON:\n"
     "======================================================================\n"
     "\n"
-    "#1 INSTITUTIONAL_MISATTRIBUTION [Severity: high]\n"
+    "#1 FALSE CLAIM\n"
     "   Article Claimed:\n"
     "      OmniDocBench was released by Tsinghua University...\n"
     "   Actual Truth:\n"
@@ -568,7 +569,7 @@ Each line contains one extracted claim:
 
 Each line contains a complete verification record:
 ```json
-{"claim_id":"claim_001","original_claim":"...","claim_type":"institutional","confidence":0.95,"verification_result":"FALSE","evidence":"...","sources":["https://arxiv.org/abs/2412.07626"],"verification_method":"arxiv_search","search_queries_used":["OmniDocBench"],"reasoning":"...","error_type":"institutional_misattribution","severity":"high"}
+{"claim_id":"claim_001","original_claim":"...","claim_type":"institutional","confidence":0.95,"verification_result":"FALSE","evidence":"...","sources":["https://arxiv.org/abs/2412.07626"],"verification_method":"arxiv_search","search_queries_used":["OmniDocBench"],"reasoning":"..."}
 ```
 
 ## Real-World Example
@@ -599,19 +600,17 @@ Each line contains a complete verification record:
 3. **Verification**
    ```
    Tool: arxiv_search
-   Method: verify_institutions(
-       paper_id="2412.07626",
-       claimed_institutions=["清华大学", "阿里达摩院", "上海人工智能实验室"]
-   )
+   Query: "OmniDocBench 2412.07626"
 
-   Actual Institutions (from arXiv):
+   Paper Found: arXiv:2412.07626
+   Authors/Affiliations from arXiv metadata:
    - Shanghai AI Laboratory ✅
    - Abaka AI
    - 2077AI
 
-   Verification Results:
-   - 清华大学 (Tsinghua): ❌ NOT VERIFIED
-   - 阿里达摩院 (Alibaba DAMO): ❌ NOT VERIFIED
+   LLM Reasoning:
+   - 清华大学 (Tsinghua): ❌ NOT found in paper metadata
+   - 阿里达摩院 (Alibaba DAMO): ❌ NOT found in paper metadata
    - 上海人工智能实验室 (Shanghai AI Lab): ✅ VERIFIED
    ```
 
@@ -621,8 +620,6 @@ Each line contains a complete verification record:
 
    Article Claimed: Released by Tsinghua, Alibaba DAMO, Shanghai AI Lab
    Actual Truth: Released ONLY by Shanghai AI Lab, Abaka AI, 2077AI
-   Error Type: institutional_misattribution
-   Severity: high
    Evidence: arXiv:2412.07626 author list verification
    ```
 

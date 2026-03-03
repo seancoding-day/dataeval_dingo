@@ -59,8 +59,8 @@ class TestArticleFactCheckerProduct:
     @pytest.fixture(autouse=True)
     def skip_if_no_api_key(self):
         """Auto-skip all tests if no API keys available."""
-        if not (os.getenv("OPENAI_API_KEY") or os.getenv("TAVILY_API_KEY")):
-            pytest.skip("No API keys available")
+        if not os.getenv("OPENAI_API_KEY"):
+            pytest.skip("OPENAI_API_KEY not set")
 
     def test_structure_validation(self, product_review: str):
         """Test data structure without API calls."""

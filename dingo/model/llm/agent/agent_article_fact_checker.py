@@ -374,6 +374,10 @@ class ArticleFactChecker(BaseAgent):
     # Using threading.local() ensures concurrent evaluations don't interfere
     _thread_local = threading.local()
 
+    # Lock to serialise ClaimsExtractor class-level config mutation across threads.
+    # Required because LocalExecutor may call eval() from multiple threads concurrently.
+    _claims_extractor_lock = threading.Lock()
+
     # --- Output Path and File Saving Methods ---
 
     @classmethod
@@ -553,6 +557,7 @@ class ArticleFactChecker(BaseAgent):
     _RE_EVIDENCE = re.compile(r'"evidence"\s*:\s*"((?:[^"\\]|\\.)*)"', re.DOTALL)
     _RE_EVIDENCE_TRUNC = re.compile(r'"evidence"\s*:\s*"((?:[^"\\]|\\.)+)', re.DOTALL)
     _RE_SOURCES = re.compile(r'"sources"\s*:\s*\[(.*?)\]', re.DOTALL)
+    _RE_SOURCES_TRUNC = re.compile(r'"sources"\s*:\s*\[(.*)', re.DOTALL)
     _RE_REASONING = re.compile(r'"reasoning"\s*:\s*"((?:[^"\\]|\\.)*)"', re.DOTALL)
     _RE_REASONING_TRUNC = re.compile(r'"reasoning"\s*:\s*"((?:[^"\\]|\\.)+)', re.DOTALL)
 
@@ -899,11 +904,11 @@ class ArticleFactChecker(BaseAgent):
         if claim_types:
             config_kwargs['claim_types'] = claim_types
 
-        ClaimsExtractor.config = ClaimsExtractorConfig(**config_kwargs)
-
         content = input_data.content or ''
         loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(None, ClaimsExtractor.execute, content)
+        with cls._claims_extractor_lock:
+            ClaimsExtractor.config = ClaimsExtractorConfig(**config_kwargs)
+            result = await loop.run_in_executor(None, ClaimsExtractor.execute, content)
 
         if result.get('success'):
             data_section = result.get('data', result)
@@ -1051,7 +1056,7 @@ class ArticleFactChecker(BaseAgent):
             if evidence_m:
                 extracted['evidence'] = evidence_m.group(1).replace('\\"', '"').replace('\\n', '\n')
 
-            sources_m = cls._RE_SOURCES.search(output)
+            sources_m = cls._RE_SOURCES.search(output) or cls._RE_SOURCES_TRUNC.search(output)
             if sources_m:
                 raw_sources = sources_m.group(1)
                 extracted['sources'] = [
@@ -1600,7 +1605,7 @@ Begin your systematic fact-checking process now.
                 "unverifiable_claims": unverifiable,
                 "accuracy_score": accuracy
             },
-            "false_claims_comparison": false_claims_comparison if false_claims_comparison else [],
+            "false_claims_comparison": false_claims_comparison,
             "raw_output": output,  # Include raw output for debugging
             "parse_method": "text_analysis_fallback"
         }

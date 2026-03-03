@@ -381,46 +381,48 @@ Provide a concise summary of the key facts."""
 #### Key Implementation Steps
 
 1. Set `use_agent_executor = True` (same as Pattern 1)
-2. **Override `eval()`** to add context tracking before delegation:
-   - Save original content to output directory
-   - Set thread-local context (`threading.local()`) for `aggregate_results()`
-   - Call `cls._eval_with_langchain_agent(input_data)` (not `super().eval()`)
-3. **Override `aggregate_results()`** for enriched output:
-   - Extract claims from `tool_calls` observation data
-   - Build per-claim verification records
-   - Generate structured report (v2.0)
-   - Save artifacts to output directory
+2. **Override `eval()`** with a two-phase async architecture:
+   - Save article content to output directory
+   - Call `asyncio.run(cls._async_eval(input_data, ...))` (bypasses `_eval_with_langchain_agent`)
+   - Phase 1: Direct `ClaimsExtractor.execute()` call (no agent overhead)
+   - Phase 2: Per-claim verification via `asyncio.gather()` + `Semaphore(max_concurrent_claims)`
+3. **Each claim** gets its own independent LangChain mini-agent:
+   - `_async_verify_single_claim()` invokes `AgentWrapper.async_invoke_and_format()`
+   - Results parsed by `_parse_claim_json_robust()` (3-tier robust parser)
+4. **Aggregation** via `_aggregate_parallel_results()` and `_recalculate_summary()`
+   - Save artifacts (claims_extracted.jsonl, claims_verification.jsonl, report.json)
    - Return EvalDetail with dual-layer reason: `[text_summary, report_dict]`
 
-#### Thread-Safe Context Pattern
+#### Async Parallel Execution Pattern
 
 ```python
+import asyncio
 import threading
 
 class ArticleFactChecker(BaseAgent):
-    # Thread-local storage ensures concurrent evaluations don't interfere
     _thread_local = threading.local()
+    _claims_extractor_lock = threading.Lock()  # Thread-safe config mutation
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         start_time = time.time()
         output_dir = cls._get_output_dir()
-
-        # Save context for aggregate_results()
-        cls._thread_local.context = {
-            'start_time': start_time,
-            'output_dir': output_dir,
-            'content_length': len(input_data.content or ''),
-        }
-        return cls._eval_with_langchain_agent(input_data)
+        if output_dir and input_data.content:
+            cls._save_article_content(output_dir, input_data.content)
+        try:
+            return asyncio.run(cls._async_eval(input_data, start_time, output_dir))
+        except RuntimeError:
+            # Fallback for already-running event loop (e.g., Jupyter)
+            loop = asyncio.new_event_loop()
+            return loop.run_until_complete(cls._async_eval(input_data, start_time, output_dir))
 
     @classmethod
-    def aggregate_results(cls, input_data, results):
-        # Read context (safe for concurrent threads)
-        ctx = getattr(cls._thread_local, 'context', {})
-        execution_time = time.time() - ctx.get('start_time', time.time())
-        output_dir = ctx.get('output_dir')
-        # ... build report, save artifacts ...
+    async def _async_eval(cls, input_data, start_time, output_dir) -> EvalDetail:
+        claims = await cls._async_extract_claims(input_data)
+        semaphore = asyncio.Semaphore(cls._get_max_concurrent_claims())
+        tasks = [cls._async_verify_single_claim(c, semaphore, ...) for c in claims]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        return cls._build_eval_detail(results, start_time, output_dir, input_data)
 ```
 
 #### Output Path Access Pattern
@@ -470,7 +472,8 @@ if report:
 This ensures the Dingo standard output contains both readable summaries and full structured data.
 
 **Full implementation**: `dingo/model/llm/agent/agent_article_fact_checker.py`
-**Tests**: `test/scripts/model/llm/agent/test_article_fact_checker.py` (88 tests)
+**Tests**: `test/scripts/model/llm/agent/test_article_fact_checker.py` (88 tests),
+`test/scripts/model/llm/agent/test_async_article_fact_checker.py` (30 tests)
 **Guide**: `docs/article_fact_checking_guide.md`
 
 ---

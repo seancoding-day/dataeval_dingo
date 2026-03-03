@@ -432,7 +432,7 @@ Critical: Extract SPECIFIC claims with verifiable details. Ignore opinions, mark
             # Try to break at sentence boundary
             if end < len(text):
                 # Look for sentence ending within last 20% of chunk
-                search_start = int(end * 0.8)
+                search_start = start + int((end - start) * 0.8)
                 sentence_end = max(
                     text.rfind('。', search_start, end),
                     text.rfind('.', search_start, end),

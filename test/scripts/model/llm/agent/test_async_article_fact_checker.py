@@ -199,8 +199,8 @@ class TestParseClaimJsonRobust:
         assert result.get("verification_result") == "TRUE"
         assert "Confirmed" in result.get("evidence", "")
 
-    def test_corrupted_trailing_text_uses_regex_fallback(self):
-        """Tier 3: output with corrupted trailing text should still extract fields via regex."""
+    def test_truncated_json_with_corrupted_trailing_text_repaired_by_tier2(self):
+        """Tier 2: truncated JSON with corrupted trailing text should be repaired by truncation repair."""
         output = (
             '{"verification_result": "FALSE", "evidence": "The data shows otherwise", '
             '"sources": ["https://example.com"], "reasoning": "Clear contradiction<ctrl46>'
@@ -282,8 +282,8 @@ class TestParseClaimJsonRobust:
         assert result["verification_result"] == "TRUE"
         assert '"significant results"' in result["evidence"]
 
-    def test_truncated_reasoning_recovered_via_fallback_regex(self):
-        """Tier 3 truncated-string fallback should recover partial reasoning."""
+    def test_truncated_json_missing_reasoning_repaired_by_tier2(self):
+        """Tier 2: truncated JSON with missing closing quote/brace should recover reasoning field."""
         output = (
             '{"verification_result": "FALSE", '
             '"reasoning": "The claim contradicts multiple peer-reviewed'

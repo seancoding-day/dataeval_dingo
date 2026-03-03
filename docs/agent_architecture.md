@@ -130,7 +130,8 @@ test/
             └── agent/                    # ✨ Agent tests
                 ├── test_agent_fact_check.py
                 ├── test_agent_hallucination.py
-                ├── test_article_fact_checker.py  # ArticleFactChecker tests (82 tests)
+                ├── test_article_fact_checker.py       # ArticleFactChecker tests (88 tests)
+                ├── test_async_article_fact_checker.py # Async/parsing tests (30 tests)
                 ├── test_tool_registry.py
                 └── tools/
                     ├── test_claims_extractor.py
@@ -215,7 +216,7 @@ class BaseAgent(BaseOpenAI):
 **Execution Flow**:
 ```
 eval()
-├─ use_agent_executor == True?
+├─ use_agent_executor == True?  (standard path)
 │  ├─ Yes → _eval_with_langchain_agent()
 │  │         ├─ get_langchain_tools()
 │  │         ├─ get_langchain_llm()
@@ -229,6 +230,10 @@ eval()
 │            │   ├─ execute_tool() for tool steps
 │            │   └─ send_messages() for LLM steps
 │            └─ aggregate_results()
+
+Note: ArticleFactChecker overrides eval() entirely and uses a two-phase
+async parallel architecture (asyncio.run → _async_eval) instead of
+the above base-class dispatch. See ArticleFactChecker section below.
 ```
 
 ### 2. Tool System
@@ -405,26 +410,29 @@ Return EvalDetail with provenance
 - Saves intermediate artifacts (article, claims, verification, report)
 - Produces dual-layer `EvalDetail.reason`: `[text_summary, structured_report_dict]`
 
-**Workflow**:
+**Workflow** (two-phase parallel architecture):
 ```
 Input: Article text (Markdown)
   |
 eval() override:
   |- Save article content to output_path
-  |- Set thread-local context (start_time, output_dir)
-  |- Delegate to _eval_with_langchain_agent()
+  |- asyncio.run(_async_eval())
   |
-LangChain Agent (ReAct):
-  |- Extract claims (claims_extractor tool)
-  |- Verify each claim (arxiv_search / tavily_search)
-  |- Generate JSON report
+Phase 1 — Claims Extraction:
+  |- ClaimsExtractor.execute(content)   # Direct tool call, not via agent
+  |- Returns list of factual claims
   |
-aggregate_results() override:
-  |- Parse agent JSON output
-  |- Extract claims from tool_calls
-  |- Build per-claim verification records
-  |- Build structured report (v2.0)
-  |- Normalize verdicts and recalculate summary
+Phase 2 — Parallel Claim Verification:
+  |- asyncio.gather() with Semaphore(max_concurrent_claims)
+  |- Each claim → independent LangChain mini-agent
+  │    |- _async_verify_single_claim()
+  │    |- AgentWrapper.async_invoke_and_format()
+  │    |- _parse_claim_json_robust()    # 3-tier robust JSON parsing
+  │    └─ Returns per-claim verdict
+  |
+Aggregation:
+  |- _aggregate_parallel_results()
+  |- _recalculate_summary()
   |- Save artifacts (claims_extracted.jsonl, claims_verification.jsonl, report.json)
   |- Return EvalDetail with dual-layer reason
 ```
