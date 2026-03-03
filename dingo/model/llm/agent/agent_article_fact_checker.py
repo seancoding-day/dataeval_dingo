@@ -843,34 +843,62 @@ class ArticleFactChecker(BaseAgent):
         Phase 2: Verify claims concurrently with asyncio.gather and Semaphore.
         """
         # Phase 1: Extract claims directly (no agent overhead)
+        print("[ArticleFactChecker] Phase 1: Extracting claims from article...", flush=True)
         claims = await cls._async_extract_claims(input_data)
         if not claims:
             return cls._create_error_result("No claims extracted from article")
 
+        print(f"[ArticleFactChecker] Phase 1 done: {len(claims)} claims extracted", flush=True)
         if output_dir:
             cls._save_claims(output_dir, claims)
 
         # Phase 2: Parallel verification with semaphore-controlled concurrency
         max_concurrent = cls._get_max_concurrent_claims()
         semaphore = asyncio.Semaphore(max_concurrent)
-        log.info(
-            f"ArticleFactChecker: verifying {len(claims)} claims "
-            f"with max_concurrent={max_concurrent}"
+        total = len(claims)
+        print(
+            f"[ArticleFactChecker] Phase 2: Verifying {total} claims "
+            f"(max {max_concurrent} concurrent)...",
+            flush=True
         )
+        log.info(f"ArticleFactChecker: verifying {total} claims with max_concurrent={max_concurrent}")
 
         # Pre-create LLM and tools once to avoid concurrent config modification
         llm = cls.get_langchain_llm()
         lc_tools = cls.get_langchain_tools()
         search_tools = [t for t in lc_tools if t.name in ('tavily_search', 'arxiv_search')]
 
+        _completed = [0]  # mutable counter; safe in asyncio single-threaded context
+
+        async def _verify_with_progress(claim: Dict) -> Any:
+            claim_id = claim.get('claim_id', '')
+            try:
+                result = await cls._async_verify_single_claim(claim, semaphore, llm, search_tools)
+            except Exception as exc:
+                _completed[0] += 1
+                print(f"[ArticleFactChecker]   [{_completed[0]}/{total}] {claim_id} → ERROR", flush=True)
+                return exc
+            _completed[0] += 1
+            if not isinstance(result, dict) or not result.get('success'):
+                verdict = 'ERROR'
+            else:
+                out = (result.get('agent_result') or {}).get('output') or ''
+                m = cls._RE_VERDICT.search(out)
+                verdict = m.group(1) if m else '?'
+            print(f"[ArticleFactChecker]   [{_completed[0]}/{total}] {claim_id} → {verdict}", flush=True)
+            return result
+
         verification_results = await asyncio.gather(
-            *[
-                cls._async_verify_single_claim(claim, semaphore, llm, search_tools)
-                for claim in claims
-            ],
+            *[_verify_with_progress(claim) for claim in claims],
             return_exceptions=True
         )
 
+        elapsed = time.time() - start_time
+        print(
+            f"[ArticleFactChecker] Phase 2 done: {total}/{total} claims verified "
+            f"({elapsed:.1f}s elapsed)",
+            flush=True
+        )
         return cls._aggregate_parallel_results(
             input_data, claims, verification_results, start_time, output_dir
         )
@@ -947,6 +975,8 @@ class ArticleFactChecker(BaseAgent):
             claim_id = claim.get('claim_id', 'unknown')
             claim_text = claim.get('claim', '')
             claim_type = claim.get('claim_type', 'factual')
+            claim_preview = (claim_text or '')[:60]
+            print(f"[ArticleFactChecker]   → {claim_id} ({claim_type}): {claim_preview}", flush=True)
 
             try:
                 agent = AgentWrapper.create_agent(
