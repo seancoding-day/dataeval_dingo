@@ -67,20 +67,21 @@ def main() -> int:
                         "name": "ArticleFactChecker",
                         "config": {
                             "key": openai_key,
-                            "model": "gemini-3-flash-preview",
-                            "api_url": "your api url",
+                            "model": "intern-s1-pro",
+                            "api_url": "https://chat.intern-ai.org.cn/api/v1/",
                             "parameters": {
                                 "timeout": 600,
                                 "temperature": 0,  # deterministic output
                                 "agent_config": {
+                                    "max_concurrent_claims": 10,
                                     "max_iterations": 50,
                                     # Artifacts auto-saved to outputs/article_factcheck_<timestamp>/
                                     # Override with: "output_path": "your/custom/path"
                                     "tools": {
                                         "claims_extractor": {
                                             "api_key": openai_key,
-                                            "model": "gemini-3-flash-preview",
-                                            "base_url": "your api url",
+                                            "model": "intern-s1-pro",
+                                            "base_url": "https://chat.intern-ai.org.cn/api/v1/",
                                             "max_claims": 50,
                                             "claim_types": [
                                                 "factual", "statistical", "attribution", "institutional",
