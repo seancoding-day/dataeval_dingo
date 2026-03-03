@@ -35,8 +35,13 @@ class TestToolRegistry:
     """Test ToolRegistry functionality"""
 
     def setup_method(self):
-        """Reset registry before each test"""
+        """Save registry state and reset before each test."""
+        self._saved_tools = ToolRegistry._tools.copy()
         ToolRegistry._tools = {}
+
+    def teardown_method(self):
+        """Restore registry state after each test."""
+        ToolRegistry._tools = self._saved_tools
 
     def test_register_tool(self):
         """Test registering a tool"""
