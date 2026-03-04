@@ -541,6 +541,7 @@ Both patterns share the same configuration interface and are transparent to user
 **Built-in Agents:**
 - `AgentFactCheck`: LangChain-based fact-checking with autonomous search control
 - `AgentHallucination`: Custom workflow hallucination detection with adaptive context gathering
+- `ArticleFactChecker`: Two-phase article fact-checking — extracts verifiable claims then verifies each in parallel using web search and Arxiv, with configurable concurrency control
 
 **Quick Example:**
 
@@ -597,6 +598,7 @@ For detailed guidance on choosing and implementing agent patterns, see [Agent De
 - [Agent Development Guide](docs/agent_development_guide.md) - Comprehensive guide for creating custom agents and tools
 - [AgentHallucination Example](examples/agent/agent_hallucination_example.py) - Production agent example
 - [AgentFactCheck Example](examples/agent/agent_executor_example.py) - LangChain agent example
+- [ArticleFactChecker Example](examples/agent/agent_article_fact_checking_example.py) - Article-scale two-phase fact verification
 
 ## ⚙️ Execution Modes
 
