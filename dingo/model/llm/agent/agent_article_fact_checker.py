@@ -370,10 +370,6 @@ class ArticleFactChecker(BaseAgent):
         "description": "Article-level fact checking with autonomous claims extraction and verification"
     }
 
-    # Thread-local context for passing state between eval() and aggregate_results()
-    # Using threading.local() ensures concurrent evaluations don't interfere
-    _thread_local = threading.local()
-
     # Lock to serialise ClaimsExtractor class-level config mutation across threads.
     # Required because LocalExecutor may call eval() from multiple threads concurrently.
     _claims_extractor_lock = threading.Lock()
@@ -1427,11 +1423,12 @@ Begin your systematic fact-checking process now.
                 **recalculated
             }
 
-        # Calculate execution time from thread-local context
-        ctx = getattr(cls._thread_local, 'context', {})
-        execution_time = time.time() - ctx.get('start_time', time.time())
-        content_length = ctx.get('content_length', 0)
-        output_dir = ctx.get('output_dir')
+        # Note: this legacy path is only reached if someone calls aggregate_results()
+        # directly (bypassing the overridden eval()). Timing metadata is unavailable
+        # here; use the async eval() path for accurate execution_time and artifact saving.
+        execution_time = 0.0
+        content_length = len(getattr(input_data, 'content', '') or '')
+        output_dir = None
 
         # Build structured report
         report = cls._build_structured_report(

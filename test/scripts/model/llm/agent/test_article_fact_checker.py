@@ -590,18 +590,12 @@ class TestAggregateResultsErrorPaths:
     """Test aggregate_results error handling paths"""
 
     def setup_method(self):
-        """Set up dynamic_config and thread-local context"""
+        """Set up dynamic_config"""
         from dingo.config.input_args import EvaluatorLLMArgs
         self._original_dynamic_config = getattr(ArticleFactChecker, 'dynamic_config', None)
         ArticleFactChecker.dynamic_config = EvaluatorLLMArgs(
             key="test-key", api_url="https://api.example.com", model="test-model"
         )
-        # Set thread-local context to avoid KeyError
-        ArticleFactChecker._thread_local.context = {
-            'start_time': 0,
-            'output_dir': None,
-            'content_length': 100,
-        }
 
     def teardown_method(self):
         """Restore original dynamic_config"""
@@ -1060,17 +1054,12 @@ class TestAggregateResultsNormalization:
     """Test verdict normalization and summary recalculation in aggregate_results"""
 
     def setup_method(self):
-        """Set up dynamic_config and thread-local context"""
+        """Set up dynamic_config"""
         from dingo.config.input_args import EvaluatorLLMArgs
         self._original_dynamic_config = getattr(ArticleFactChecker, 'dynamic_config', None)
         ArticleFactChecker.dynamic_config = EvaluatorLLMArgs(
             key="test-key", api_url="https://api.example.com", model="test-model"
         )
-        ArticleFactChecker._thread_local.context = {
-            'start_time': 0,
-            'output_dir': None,
-            'content_length': 100,
-        }
 
     def teardown_method(self):
         """Restore original dynamic_config"""
@@ -1356,10 +1345,6 @@ class TestReasoningVerdictConsistency:
         ArticleFactChecker.dynamic_config = EvaluatorLLMArgs(
             key="test-key", api_url="https://api.example.com", model="test-model"
         )
-        ArticleFactChecker._thread_local.context = {
-            'start_time': 0, 'output_dir': None, 'content_length': 100
-        }
-
         try:
             data = Data(content="test article")
             agent_output = json.dumps({
