@@ -62,7 +62,7 @@
 
 ## 🚀 企业级 Dingo SaaS 版本
 
-需要 **生产级数据质量平台** 吗？试试 [Dingo SaaS](https://github.com/MigoXLab/dingo-saas) 企业版！
+需要 **生产级数据质量平台** 吗？试试 [Dingo SaaS](https://dingo.openxlab.org.cn) 企业版！
 
 ### ✨ 相比开源版，SaaS 版提供：
 

@@ -62,7 +62,7 @@
 
 ## 🚀 エンタープライズ SaaS 版
 
-**本番グレードのデータ品質プラットフォーム**が必要ですか？[Dingo SaaS](https://github.com/MigoXLab/dingo-saas) エンタープライズ版をお試しください！
+**本番グレードのデータ品質プラットフォーム**が必要ですか？[Dingo SaaS](https://dingo.openxlab.org.cn) エンタープライズ版をお試しください！
 
 ### ✨ オープンソース版と比較して、SaaS 版が提供する機能：
 

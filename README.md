@@ -63,7 +63,7 @@
 
 ## 🚀 Enterprise Dingo SaaS Version
 
-Need a **production-grade data quality platform**? Try [Dingo SaaS](https://github.com/MigoXLab/dingo-saas) Enterprise Edition!
+Need a **production-grade data quality platform**? Try [Dingo SaaS](https://dingo.openxlab.org.cn) Enterprise Edition!
 
 ### ✨ Compared to the open-source version, SaaS provides:
 
