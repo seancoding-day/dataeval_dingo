@@ -161,31 +161,32 @@ from dingo.config import InputArgs
 from dingo.exec import Executor
 
 # Evaluate a dataset from Hugging Face
-input_data = {
-    "input_path": "tatsu-lab/alpaca",  # Dataset from Hugging Face
-    "dataset": {
-        "source": "hugging_face",
-        "format": "plaintext"  # Format: plaintext
-    },
-    "executor": {
-        "result_save": {
-            "bad": True  # Save evaluation results
-        }
-    },
-    "evaluator": [
-        {
-            "evals": [
-                {"name": "RuleColonEnd"},
-                {"name": "RuleSpecialCharacter"}
-            ]
-        }
-    ]
-}
+if __name__ == '__main__':
+    input_data = {
+        "input_path": "tatsu-lab/alpaca",  # Dataset from Hugging Face
+        "dataset": {
+            "source": "hugging_face",
+            "format": "plaintext"  # Format: plaintext
+        },
+        "executor": {
+            "result_save": {
+                "bad": True  # Save evaluation results
+            }
+        },
+        "evaluator": [
+            {
+                "evals": [
+                    {"name": "RuleColonEnd"},
+                    {"name": "RuleSpecialCharacter"}
+                ]
+            }
+        ]
+    }
 
-input_args = InputArgs(**input_data)
-executor = Executor.exec_map["local"](input_args)
-result = executor.execute()
-print(result)
+    input_args = InputArgs(**input_data)
+    executor = Executor.exec_map["local"](input_args)
+    result = executor.execute()
+    print(result)
 ```
 
 ## Command Line Interface

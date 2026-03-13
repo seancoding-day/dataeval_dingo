@@ -160,32 +160,33 @@ def rule():
 from dingo.config import InputArgs
 from dingo.exec import Executor
 
-# 评估来自Hugging Face的数据集
-input_data = {
-    "input_path": "tatsu-lab/alpaca",  # Hugging Face的数据集
-    "dataset": {
-        "source": "hugging_face",
-        "format": "plaintext"  # 格式: plaintext
-    },
-    "executor": {
-        "result_save": {
-            "bad": True  # 保存评估结果
-        }
-    },
-    "evaluator": [
-        {
-            "evals": [
-                {"name": "RuleColonEnd"},
-                {"name": "RuleSpecialCharacter"}
-            ]
-        }
-    ]
-}
+# Evaluate a dataset from Hugging Face
+if __name__ == '__main__':
+    input_data = {
+        "input_path": "tatsu-lab/alpaca",  # Dataset from Hugging Face
+        "dataset": {
+            "source": "hugging_face",
+            "format": "plaintext"  # Format: plaintext
+        },
+        "executor": {
+            "result_save": {
+                "bad": True  # Save evaluation results
+            }
+        },
+        "evaluator": [
+            {
+                "evals": [
+                    {"name": "RuleColonEnd"},
+                    {"name": "RuleSpecialCharacter"}
+                ]
+            }
+        ]
+    }
 
-input_args = InputArgs(**input_data)
-executor = Executor.exec_map["local"](input_args)
-result = executor.execute()
-print(result)
+    input_args = InputArgs(**input_data)
+    executor = Executor.exec_map["local"](input_args)
+    result = executor.execute()
+    print(result)
 ```
 
 ## 命令行界面
