@@ -37,7 +37,6 @@ def detect_format(path: str) -> Tuple[str, bool]:
         '.json': ('json', False),
         '.md': ('plaintext', True),
         '.txt': ('plaintext', True),
-        '.csv': ('csv', True),
     }
     return format_map.get(ext, ('plaintext', True))
 
@@ -210,7 +209,7 @@ def parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description="Dingo ArticleFactChecker Skill Script")
     parser.add_argument("article_path", help="Path to article file (.md, .jsonl, .json, .txt)")
-    parser.add_argument("--model", default=None, help="LLM model name (default: env OPENAI_MODEL or gpt-4o-mini)")
+    parser.add_argument("--model", default=None, help="LLM model name (default: env OPENAI_MODEL or gpt-5.4-mini)")
     parser.add_argument("--max-claims", type=int, default=50, help="Max claims to extract (default: 50)")
     parser.add_argument("--max-concurrent", type=int, default=5, help="Parallel verification slots (default: 5)")
     return parser.parse_args()
@@ -297,7 +296,7 @@ def main() -> int:
         )
 
     api_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
-    model = args.model or os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    model = args.model or os.getenv("OPENAI_MODEL", "gpt-5.4-mini")
     tavily_key = os.getenv("TAVILY_API_KEY")
 
     if not tavily_key:

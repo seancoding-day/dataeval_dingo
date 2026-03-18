@@ -35,7 +35,7 @@ python ${CLAUDE_SKILL_DIR}/scripts/fact_check.py $ARGUMENTS
 
 ### Optional arguments
 
-- `--model MODEL`: Override LLM model (default: env `OPENAI_MODEL` or `gpt-4o-mini`)
+- `--model MODEL`: Override LLM model (default: env `OPENAI_MODEL` or `gpt-5.4-mini`)
 - `--max-claims N`: Max claims to extract (default: 50, reduce for faster runs)
 - `--max-concurrent N`: Parallel verification slots (default: 5)
 
@@ -87,7 +87,7 @@ Read the `error` and `hint` fields and help the user resolve the issue.
 
 - Single article: typically 2-5 minutes depending on claim count and model speed
 - Progress is printed to stderr during execution
-- For faster runs: use `--max-claims 10 --model gpt-4o-mini`
+- For faster runs: use `--max-claims 10 --model gpt-5.4-mini`
 
 ## Advanced Configuration
 

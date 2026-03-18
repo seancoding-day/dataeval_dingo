@@ -39,10 +39,10 @@ class TestDetectFormat:
         assert fmt == "json"
         assert needs_wrap is False
 
-    def test_csv_needs_wrapping(self):
+    def test_csv_defaults_to_plaintext_wrapping(self):
         from fact_check import detect_format
         fmt, needs_wrap = detect_format("data.csv")
-        assert fmt == "csv"
+        assert fmt == "plaintext"
         assert needs_wrap is True
 
     def test_unknown_extension_defaults_to_plaintext(self):
