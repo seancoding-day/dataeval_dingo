@@ -60,6 +60,7 @@ class TestWrapPlaintext:
             f.write("This is a test article.\nWith multiple lines.")
             src_path = f.name
 
+        temp_path = None
         try:
             temp_path = wrap_plaintext(src_path)
             assert temp_path.endswith('.jsonl')
@@ -72,7 +73,7 @@ class TestWrapPlaintext:
             assert "With multiple lines." in data["content"]
         finally:
             os.unlink(src_path)
-            if os.path.exists(temp_path):
+            if temp_path and os.path.exists(temp_path):
                 os.unlink(temp_path)
 
     def test_preserves_unicode(self):
@@ -82,6 +83,7 @@ class TestWrapPlaintext:
             f.write("清华大学发布了 OmniDocBench")
             src_path = f.name
 
+        temp_path = None
         try:
             temp_path = wrap_plaintext(src_path)
             with open(temp_path, 'r', encoding='utf-8') as f:
@@ -89,7 +91,7 @@ class TestWrapPlaintext:
             assert "清华大学" in data["content"]
         finally:
             os.unlink(src_path)
-            if os.path.exists(temp_path):
+            if temp_path and os.path.exists(temp_path):
                 os.unlink(temp_path)
 
 

@@ -18,7 +18,7 @@ import os
 import sys
 import tempfile
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, NoReturn, Optional, Tuple
 from uuid import uuid4
 
 # --- Pure helper functions (no Dingo imports, testable standalone) ---
@@ -197,7 +197,7 @@ def build_report(
     return report
 
 
-def error_exit(error: str, hint: str = "") -> None:
+def error_exit(error: str, hint: str = "") -> NoReturn:
     """Print error JSON to stderr and exit with code 1."""
     msg: Dict[str, Any] = {"success": False, "error": error}
     if hint:
