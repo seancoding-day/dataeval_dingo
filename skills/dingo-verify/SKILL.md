@@ -5,10 +5,10 @@ description: >
   in a document. Triggers on: "fact-check", "verify article", "check facts",
   "文章事实核查", "验证文章". Runs Dingo's ArticleFactChecker via SDK to
   extract and verify all factual claims with web search evidence.
-  Requires OPENAI_API_KEY and Python 3 with dingo-python installed.
+  Requires OPENAI_API_KEY. TAVILY_API_KEY is optional but recommended for web search.
 license: Apache-2.0
-compatibility: "Python 3.9+. Install: pip install dingo-python && pip install -r requirements/agent.txt"
-metadata: {"openclaw":{"requires":{"bins":["python3"],"env":["OPENAI_API_KEY"]},"primaryEnv":"OPENAI_API_KEY","emoji":"🔍","os":["darwin","linux"],"homepage":"https://github.com/DataEval/dingo"}}
+compatibility: "Python 3.10+. Install: pip install \"dingo-python[agent]\""
+metadata: {"openclaw":{"requires":{"bins":["python3"],"env":["OPENAI_API_KEY"]},"primaryEnv":"OPENAI_API_KEY","emoji":"🔍","os":["darwin","linux"],"homepage":"https://github.com/DataEval/dingo","install":[{"kind":"uv","package":"dingo-python[agent]"}]}}
 ---
 
 # Dingo Article Fact-Checker

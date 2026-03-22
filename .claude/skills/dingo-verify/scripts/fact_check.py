@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Dingo ArticleFactChecker SDK wrapper for Claude Code Skill.
+Dingo ArticleFactChecker SDK wrapper for dingo-verify skill.
 
 Usage:
     python fact_check.py <article_path> [--model MODEL] [--max-claims N] [--max-concurrent N]
@@ -15,13 +15,47 @@ Environment Variables:
 import argparse
 import json
 import os
+import pathlib
 import sys
 import tempfile
 import time
 from typing import Any, Dict, NoReturn, Optional, Tuple
-from uuid import uuid4
 
 # --- Pure helper functions (no Dingo imports, testable standalone) ---
+
+_ALLOWED_EXTENSIONS: frozenset = frozenset({'.md', '.txt', '.jsonl', '.json'})
+_BLOCKED_PATH_PREFIXES: Tuple[str, ...] = ('/proc/', '/sys/', '/dev/')
+MAX_ARTICLE_BYTES: int = 10 * 1024 * 1024  # 10 MB
+
+
+def validate_article_path(path: str) -> str:
+    """
+    Resolve and validate article path against traversal and special filesystem attacks.
+
+    Args:
+        path: User-supplied article file path
+
+    Returns:
+        Resolved absolute path string
+
+    Raises:
+        ValueError: If path targets a special filesystem, symlink, or unsupported format
+    """
+    resolved = pathlib.Path(path).resolve()
+    path_str = str(resolved)
+
+    if any(path_str.startswith(prefix) for prefix in _BLOCKED_PATH_PREFIXES):
+        raise ValueError(f"Refusing to read from special filesystem path: {path_str}")
+
+    if pathlib.Path(path).is_symlink():
+        raise ValueError(f"Refusing to follow symlink: {path}")
+
+    ext = resolved.suffix.lower()
+    if ext not in _ALLOWED_EXTENSIONS:
+        allowed = ', '.join(sorted(_ALLOWED_EXTENSIONS))
+        raise ValueError(f"Unsupported file type: {ext!r}. Supported: {allowed}")
+
+    return path_str
 
 
 def detect_format(path: str) -> Tuple[str, bool]:
@@ -55,19 +89,28 @@ def wrap_plaintext(path: str) -> str:
         Path to the temporary JSONL file (caller must clean up)
 
     Raises:
-        ValueError: If the file is empty
+        ValueError: If the file is empty or too large
     """
+    size = os.path.getsize(path)
+    if size > MAX_ARTICLE_BYTES:
+        raise ValueError(
+            f"Article file too large: {size / 1024 / 1024:.1f} MB "
+            f"(limit: {MAX_ARTICLE_BYTES // 1024 // 1024} MB)"
+        )
+
     with open(path, 'r', encoding='utf-8') as f:
         content = f.read()
 
     if not content.strip():
         raise ValueError(f"Article file is empty: {path}")
 
-    temp_path = os.path.join(tempfile.gettempdir(), f"dingo_verify_{uuid4().hex[:8]}.jsonl")
-    with open(temp_path, 'w', encoding='utf-8') as f:
-        f.write(json.dumps({"content": content}, ensure_ascii=False) + '\n')
-
-    return temp_path
+    # NamedTemporaryFile: uses O_CREAT|O_EXCL (atomic), mode 0o600 (private), full-entropy name
+    with tempfile.NamedTemporaryFile(
+        mode='w', suffix='.jsonl', prefix='dingo_verify_',
+        encoding='utf-8', delete=False
+    ) as tmp:
+        tmp.write(json.dumps({"content": content}, ensure_ascii=False) + '\n')
+        return tmp.name
 
 
 def build_config(
@@ -205,13 +248,25 @@ def error_exit(error: str, hint: str = "") -> NoReturn:
     sys.exit(1)
 
 
+def _bounded_int(lo: int, hi: int) -> Any:
+    """Return an argparse type function that validates an int within [lo, hi]."""
+    def _check(value: str) -> int:
+        n = int(value)
+        if not lo <= n <= hi:
+            raise argparse.ArgumentTypeError(f"must be between {lo} and {hi}, got {n}")
+        return n
+    return _check
+
+
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(description="Dingo ArticleFactChecker Skill Script")
     parser.add_argument("article_path", help="Path to article file (.md, .jsonl, .json, .txt)")
     parser.add_argument("--model", default=None, help="LLM model name (default: env OPENAI_MODEL or gpt-5.4-mini)")
-    parser.add_argument("--max-claims", type=int, default=50, help="Max claims to extract (default: 50)")
-    parser.add_argument("--max-concurrent", type=int, default=5, help="Parallel verification slots (default: 5)")
+    parser.add_argument("--max-claims", type=_bounded_int(1, 200), default=50,
+                        help="Max claims to extract, 1-200 (default: 50)")
+    parser.add_argument("--max-concurrent", type=_bounded_int(1, 20), default=5,
+                        help="Parallel verification slots, 1-20 (default: 5)")
     return parser.parse_args()
 
 
@@ -248,7 +303,7 @@ def extract_detail_report(output_path: str) -> Optional[Dict[str, Any]]:
                     # Navigate: eval_details -> "content" -> [0] -> reason -> [1]
                     eval_details = result_info.get("eval_details", {})
                     for field_key, details_list in eval_details.items():
-                        if details_list and len(details_list) > 0:
+                        if details_list:
                             detail = details_list[0]
                             reason = detail.get("reason", [])
                             if len(reason) >= 2 and isinstance(reason[1], dict):
@@ -262,12 +317,17 @@ def main() -> int:
     """Main entry point for the Dingo fact-check skill script."""
     args = parse_args()
 
-    # Validate inputs
+    # Validate inputs — existence check first, then security validation
     if not os.path.exists(args.article_path):
         error_exit(
             f"File not found: {args.article_path}",
             "Check the file path and try again"
         )
+
+    try:
+        article_path = validate_article_path(args.article_path)
+    except ValueError as e:
+        error_exit(str(e))
 
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -292,7 +352,7 @@ def main() -> int:
     except ImportError:
         error_exit(
             "LangChain not installed (required by ArticleFactChecker)",
-            "pip install -r requirements/agent.txt"
+            'pip install "dingo-python[agent]"'
         )
 
     api_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
@@ -300,22 +360,19 @@ def main() -> int:
     tavily_key = os.getenv("TAVILY_API_KEY")
 
     if not tavily_key:
-        print(
-            json.dumps({"warning": "TAVILY_API_KEY not set, web search verification disabled"}),
-            file=sys.stderr
-        )
+        print("Warning: TAVILY_API_KEY not set, web search verification disabled", file=sys.stderr)
 
     # Format detection and wrapping
-    data_format, needs_wrap = detect_format(args.article_path)
+    data_format, needs_wrap = detect_format(article_path)
     temp_path = None
 
     try:
         if needs_wrap:
-            temp_path = wrap_plaintext(args.article_path)
+            temp_path = wrap_plaintext(article_path)
             effective_path = temp_path
             effective_format = "jsonl"
         else:
-            effective_path = args.article_path
+            effective_path = article_path
             effective_format = data_format
 
         # Build config and execute
@@ -354,9 +411,13 @@ def main() -> int:
         print(json.dumps(report, ensure_ascii=False, indent=2))
         return 0
 
-    except Exception as e:
-        error_exit(f"Execution failed: {str(e)}")
-        return 1  # unreachable but satisfies type checker
+    except ValueError as e:
+        error_exit(str(e))
+        return 1  # unreachable
+    except Exception:
+        # Do not echo exception message to avoid leaking SDK internals or config values
+        error_exit("Execution failed. Check Dingo SDK logs in the output directory.")
+        return 1  # unreachable
 
     finally:
         if temp_path and os.path.exists(temp_path):

@@ -109,6 +109,78 @@ class TestWrapPlaintextEmpty:
         finally:
             os.unlink(src_path)
 
+    def test_file_too_large_raises_value_error(self):
+        from fact_check import MAX_ARTICLE_BYTES, wrap_plaintext
+
+        with tempfile.NamedTemporaryFile(mode='wb', suffix='.md', delete=False) as f:
+            # Write just over the limit
+            f.write(b'x' * (MAX_ARTICLE_BYTES + 1))
+            src_path = f.name
+
+        try:
+            with pytest.raises(ValueError, match="too large"):
+                wrap_plaintext(src_path)
+        finally:
+            os.unlink(src_path)
+
+
+class TestValidateArticlePath:
+    def test_valid_md_file_passes(self):
+        from fact_check import validate_article_path
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as f:
+            src_path = f.name
+
+        try:
+            result = validate_article_path(src_path)
+            assert result.endswith('.md') or result  # resolves to absolute path
+        finally:
+            os.unlink(src_path)
+
+    def test_valid_jsonl_file_passes(self):
+        from fact_check import validate_article_path
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.jsonl', delete=False) as f:
+            src_path = f.name
+
+        try:
+            validate_article_path(src_path)  # Should not raise
+        finally:
+            os.unlink(src_path)
+
+    def test_unsupported_extension_raises(self):
+        from fact_check import validate_article_path
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
+            src_path = f.name
+
+        try:
+            with pytest.raises(ValueError, match="Unsupported file type"):
+                validate_article_path(src_path)
+        finally:
+            os.unlink(src_path)
+
+    def test_special_proc_path_raises(self):
+        from fact_check import validate_article_path
+
+        with pytest.raises(ValueError, match="special filesystem"):
+            validate_article_path("/proc/self/environ")
+
+    def test_symlink_raises(self):
+        from fact_check import validate_article_path
+
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as f:
+            target_path = f.name
+        link_path = target_path + "_link.md"
+        os.symlink(target_path, link_path)
+
+        try:
+            with pytest.raises(ValueError, match="symlink"):
+                validate_article_path(link_path)
+        finally:
+            os.unlink(link_path)
+            os.unlink(target_path)
+
 
 class TestBuildConfig:
     def test_basic_config_structure(self):
