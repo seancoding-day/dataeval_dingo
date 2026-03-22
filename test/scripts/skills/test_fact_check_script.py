@@ -13,40 +13,36 @@ SCRIPT_DIR = os.path.join(
 )
 sys.path.insert(0, os.path.abspath(SCRIPT_DIR))
 
+from fact_check import MAX_ARTICLE_BYTES, build_config, build_report, detect_format, validate_article_path, wrap_plaintext  # noqa: E402
+
 
 class TestDetectFormat:
     def test_markdown_needs_wrapping(self):
-        from fact_check import detect_format
         fmt, needs_wrap = detect_format("article.md")
         assert fmt == "plaintext"
         assert needs_wrap is True
 
     def test_txt_needs_wrapping(self):
-        from fact_check import detect_format
         fmt, needs_wrap = detect_format("article.txt")
         assert fmt == "plaintext"
         assert needs_wrap is True
 
     def test_jsonl_no_wrapping(self):
-        from fact_check import detect_format
         fmt, needs_wrap = detect_format("data.jsonl")
         assert fmt == "jsonl"
         assert needs_wrap is False
 
     def test_json_no_wrapping(self):
-        from fact_check import detect_format
         fmt, needs_wrap = detect_format("data.json")
         assert fmt == "json"
         assert needs_wrap is False
 
     def test_csv_defaults_to_plaintext_wrapping(self):
-        from fact_check import detect_format
         fmt, needs_wrap = detect_format("data.csv")
         assert fmt == "plaintext"
         assert needs_wrap is True
 
     def test_unknown_extension_defaults_to_plaintext(self):
-        from fact_check import detect_format
         fmt, needs_wrap = detect_format("data.xyz")
         assert fmt == "plaintext"
         assert needs_wrap is True
@@ -54,8 +50,6 @@ class TestDetectFormat:
 
 class TestWrapPlaintext:
     def test_creates_temp_jsonl_with_content(self):
-        from fact_check import wrap_plaintext
-
         with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as f:
             f.write("This is a test article.\nWith multiple lines.")
             src_path = f.name
@@ -77,8 +71,6 @@ class TestWrapPlaintext:
                 os.unlink(temp_path)
 
     def test_preserves_unicode(self):
-        from fact_check import wrap_plaintext
-
         with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False, encoding='utf-8') as f:
             f.write("清华大学发布了 OmniDocBench")
             src_path = f.name
@@ -97,8 +89,6 @@ class TestWrapPlaintext:
 
 class TestWrapPlaintextEmpty:
     def test_empty_file_raises_value_error(self):
-        from fact_check import wrap_plaintext
-
         with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as f:
             f.write("")
             src_path = f.name
@@ -110,8 +100,6 @@ class TestWrapPlaintextEmpty:
             os.unlink(src_path)
 
     def test_file_too_large_raises_value_error(self):
-        from fact_check import MAX_ARTICLE_BYTES, wrap_plaintext
-
         with tempfile.NamedTemporaryFile(mode='wb', suffix='.md', delete=False) as f:
             # Write just over the limit
             f.write(b'x' * (MAX_ARTICLE_BYTES + 1))
@@ -126,20 +114,16 @@ class TestWrapPlaintextEmpty:
 
 class TestValidateArticlePath:
     def test_valid_md_file_passes(self):
-        from fact_check import validate_article_path
-
         with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as f:
             src_path = f.name
 
         try:
             result = validate_article_path(src_path)
-            assert result.endswith('.md') or result  # resolves to absolute path
+            assert os.path.isabs(result)
         finally:
             os.unlink(src_path)
 
     def test_valid_jsonl_file_passes(self):
-        from fact_check import validate_article_path
-
         with tempfile.NamedTemporaryFile(mode='w', suffix='.jsonl', delete=False) as f:
             src_path = f.name
 
@@ -149,8 +133,6 @@ class TestValidateArticlePath:
             os.unlink(src_path)
 
     def test_unsupported_extension_raises(self):
-        from fact_check import validate_article_path
-
         with tempfile.NamedTemporaryFile(mode='w', suffix='.csv', delete=False) as f:
             src_path = f.name
 
@@ -161,14 +143,10 @@ class TestValidateArticlePath:
             os.unlink(src_path)
 
     def test_special_proc_path_raises(self):
-        from fact_check import validate_article_path
-
         with pytest.raises(ValueError, match="special filesystem"):
             validate_article_path("/proc/self/environ")
 
     def test_symlink_raises(self):
-        from fact_check import validate_article_path
-
         with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as f:
             target_path = f.name
         link_path = target_path + "_link.md"
@@ -184,7 +162,6 @@ class TestValidateArticlePath:
 
 class TestBuildConfig:
     def test_basic_config_structure(self):
-        from fact_check import build_config
         config = build_config(
             input_path="test.jsonl",
             data_format="jsonl",
@@ -202,7 +179,6 @@ class TestBuildConfig:
         assert evaluator["config"]["model"] == "gpt-4o-mini"
 
     def test_tavily_omitted_when_no_key(self):
-        from fact_check import build_config
         config = build_config(
             input_path="test.jsonl",
             data_format="jsonl",
@@ -219,7 +195,6 @@ class TestBuildConfig:
         assert "arxiv_search" in tools
 
     def test_tavily_included_when_key_present(self):
-        from fact_check import build_config
         config = build_config(
             input_path="test.jsonl",
             data_format="jsonl",
@@ -235,7 +210,6 @@ class TestBuildConfig:
         assert tools["tavily_search"]["api_key"] == "tvly-xxx"
 
     def test_temperature_is_zero(self):
-        from fact_check import build_config
         config = build_config(
             input_path="test.jsonl",
             data_format="jsonl",
@@ -277,8 +251,6 @@ class TestErrorOutput:
 
 class TestBuildReport:
     def test_builds_report_from_summary_and_detail(self):
-        from fact_check import build_report
-
         summary = {
             "output_path": "/tmp/test_output",
             "total": 1,

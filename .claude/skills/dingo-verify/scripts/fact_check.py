@@ -23,7 +23,7 @@ from typing import Any, Dict, NoReturn, Optional, Tuple
 
 # --- Pure helper functions (no Dingo imports, testable standalone) ---
 
-_ALLOWED_EXTENSIONS: frozenset = frozenset({'.md', '.txt', '.jsonl', '.json'})
+_ALLOWED_EXTENSIONS: frozenset[str] = frozenset({'.md', '.txt', '.jsonl', '.json'})
 _BLOCKED_PATH_PREFIXES: Tuple[str, ...] = ('/proc/', '/sys/', '/dev/')
 MAX_ARTICLE_BYTES: int = 10 * 1024 * 1024  # 10 MB
 
@@ -41,13 +41,14 @@ def validate_article_path(path: str) -> str:
     Raises:
         ValueError: If path targets a special filesystem, symlink, or unsupported format
     """
-    resolved = pathlib.Path(path).resolve()
+    p = pathlib.Path(path)
+    resolved = p.resolve()
     path_str = str(resolved)
 
     if any(path_str.startswith(prefix) for prefix in _BLOCKED_PATH_PREFIXES):
         raise ValueError(f"Refusing to read from special filesystem path: {path_str}")
 
-    if pathlib.Path(path).is_symlink():
+    if p.is_symlink():
         raise ValueError(f"Refusing to follow symlink: {path}")
 
     ext = resolved.suffix.lower()
@@ -395,16 +396,16 @@ def main() -> int:
 
         # Extract structured report from output files
         detail_report = None
-        if result and result.output_path:
+        if result.output_path:
             detail_report = extract_detail_report(result.output_path)
 
         # Build and output report
         summary_dict = {
-            "total": result.total if result else 0,
-            "num_good": result.num_good if result else 0,
-            "num_bad": result.num_bad if result else 0,
-            "score": result.score if result else 0.0,
-            "output_path": result.output_path if result else "",
+            "total": result.total,
+            "num_good": result.num_good,
+            "num_bad": result.num_bad,
+            "score": result.score,
+            "output_path": result.output_path,
         }
 
         report = build_report(summary_dict, detail_report, duration)
