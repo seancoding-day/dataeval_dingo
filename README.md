@@ -74,7 +74,7 @@ Need a **production-grade data quality platform**? Try [Dingo SaaS](https://ding
 
 ### 📝 How to Get Free SaaS Code
 
-👉 **[Apply for Dingo SaaS Repository Access](https://aicarrier.feishu.cn/share/base/form/shrcn9RqYttByQ5H1np6Yrnmhuf)** 
+👉 **[Apply for Dingo SaaS Repository Access](https://aicarrier.feishu.cn/share/base/form/shrcnr19E0upfiA92Wm5i2eic7g)** 
 
 Review time: 1-5 business days | Suitable for enterprise data governance, team collaboration
 
@@ -448,9 +448,9 @@ class MyCustomRule(BaseRule):
 ✅ Per-rule violation details  
 ✅ Type and name distribution
 
-**GUI Visualization**  
-✅ Built-in web interface  
-✅ Interactive data exploration  
+**GUI Visualization (via [Dingo SaaS](https://github.com/MigoXLab/dingo-saas))**  
+✅ Web UI with interactive data exploration  
+✅ Visual reports with trend analysis  
 ✅ Anomaly tracking
 
 **Metric Aggregation**  

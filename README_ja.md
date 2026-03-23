@@ -73,7 +73,7 @@
 
 ### 📝 無料 SaaS コードの入手方法
 
-👉 **[Dingo SaaS リポジトリアクセスを申請する](https://aicarrier.feishu.cn/share/base/form/shrcn9RqYttByQ5H1np6Yrnmhuf)** 
+👉 **[Dingo SaaS リポジトリアクセスを申請する](https://aicarrier.feishu.cn/share/base/form/shrcnr19E0upfiA92Wm5i2eic7g)** 
 
 審査時間：1-5営業日 | エンタープライズデータガバナンス、チームコラボレーションに最適
 
@@ -446,9 +446,9 @@ class MyCustomRule(BaseRule):
 ✅ ルール違反ごとの詳細情報  
 ✅ タイプと名前の分布
 
-**GUI 可視化**  
-✅ 組み込み Web インターフェース  
-✅ インタラクティブなデータ探索  
+**GUI 可視化（[Dingo SaaS](https://github.com/MigoXLab/dingo-saas) 経由）**  
+✅ Web UI によるインタラクティブなデータ探索  
+✅ トレンド分析付きビジュアルレポート  
 ✅ 異常追跡
 
 **メトリクス集計**  
