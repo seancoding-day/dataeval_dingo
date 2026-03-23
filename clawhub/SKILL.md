@@ -401,3 +401,108 @@ For detailed MCP documentation, see: https://github.com/MigoXLab/dingo/blob/main
 * **Metrics Documentation**: https://github.com/MigoXLab/dingo/blob/main/docs/metrics.md
 * **RAG Evaluation Guide**: https://github.com/MigoXLab/dingo/blob/main/docs/rag_evaluation_en.md
 * **Discord**: https://discord.gg/Jhgb2eKWh8
+
+---
+
+## Fact-Checking Articles with ArticleFactChecker
+
+ArticleFactChecker extracts all verifiable claims from an article and verifies each one using ArXiv academic search and web search. It runs as an autonomous agent and produces a structured verification report.
+
+### Prerequisites
+
+```bash
+pip install "dingo-python[agent]"
+python3 -c "from dingo.config import InputArgs; print('Dingo OK')"
+```
+
+Required: `OPENAI_API_KEY`
+Optional (recommended for web search): `TAVILY_API_KEY`
+
+### Quick start — use the bundled script
+
+The skill includes `scripts/fact_check.py` which handles all input preparation and configuration automatically:
+
+```bash
+python3 {baseDir}/scripts/fact_check.py path/to/article.md
+```
+
+Supported input formats: `.md`, `.txt` (auto-wrapped), `.jsonl`, `.json`
+
+Optional arguments:
+- `--model MODEL` — LLM model (default: env `OPENAI_MODEL` or `gpt-5.4-mini`)
+- `--max-claims N` — claims to extract, 1–200 (default: 50)
+- `--max-concurrent N` — parallel verification slots, 1–20 (default: 5)
+
+The script outputs structured JSON to stdout. Parse and present:
+- **accuracy_score** (0.0–1.0): fraction of claims verified true
+- **false_claims**: list of contradicted claims with evidence
+- **all_claims**: full breakdown with TRUE/FALSE/UNVERIFIABLE verdicts
+
+### Manual SDK usage
+
+For direct SDK integration without the script:
+
+```python
+import json, os, tempfile
+from dingo.config import InputArgs
+from dingo.exec import Executor
+
+# IMPORTANT: wrap article into JSONL — plaintext is read line-by-line otherwise
+article_text = open("article.md", encoding="utf-8").read()
+tmp = tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False, encoding="utf-8")
+tmp.write(json.dumps({"content": article_text}, ensure_ascii=False) + "\n")
+tmp.close()
+
+config = {
+    "input_path": tmp.name,
+    "dataset": {"source": "local", "format": "jsonl"},
+    "executor": {"max_workers": 1},
+    "evaluator": [{
+        "fields": {"content": "content"},
+        "evals": [{
+            "name": "ArticleFactChecker",
+            "config": {
+                "key": os.environ["OPENAI_API_KEY"],
+                "model": os.getenv("OPENAI_MODEL", "gpt-5.4-mini"),
+                "api_url": os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+                "parameters": {
+                    "temperature": 0,
+                    "agent_config": {
+                        "max_concurrent_claims": 5,
+                        "max_iterations": 50,
+                        "tools": {
+                            "claims_extractor": {
+                                "api_key": os.environ["OPENAI_API_KEY"],
+                                "model": os.getenv("OPENAI_MODEL", "gpt-5.4-mini"),
+                                "base_url": os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+                                "max_claims": 50
+                            },
+                            "arxiv_search": {"max_results": 5},
+                            **({"tavily_search": {"api_key": os.environ["TAVILY_API_KEY"]}}
+                               if os.getenv("TAVILY_API_KEY") else {})
+                        }
+                    }
+                }
+            }
+        }]
+    }]
+}
+
+if __name__ == "__main__":
+    result = Executor.exec_map["local"](InputArgs(**config)).execute()
+    print(f"Score: {result.score:.1f}%  |  Output: {result.output_path}")
+    os.unlink(tmp.name)
+```
+
+> **Key requirement**: Always use `if __name__ == "__main__":` when running Dingo with multiprocessing — required on macOS, recommended everywhere.
+
+### Interpreting the output
+
+The `summary.json` in the output directory contains overall stats. Detailed per-claim results are in `content/QUALITY_BAD_*.jsonl` (for articles with false claims).
+
+Each result item's `eval_details.content[0]` has:
+- `score`: accuracy_score (0.0–1.0, ratio of verified-true claims)
+- `reason[0]`: human-readable text summary
+- `reason[1]`: full structured report dict with `detailed_findings` and `false_claims_comparison`
+
+For advanced configuration (model selection, claim types, tuning), see [references/advanced-config.md](references/advanced-config.md).

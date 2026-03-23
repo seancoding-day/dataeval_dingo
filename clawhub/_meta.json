@@ -18,14 +18,15 @@
     "fact-checking"
   ],
   "requires": {
-    "bins": [],
-    "packages": ["dingo-python"]
+    "bins": ["python3"],
+    "packages": ["dingo-python", "dingo-python[agent]"]
   },
   "env": {
     "optional": {
-      "OPENAI_API_KEY": "API key for LLM-based evaluation (not needed for rule-based)",
-      "OPENAI_BASE_URL": "Custom API endpoint URL",
-      "OPENAI_MODEL": "Model name for LLM evaluation"
+      "OPENAI_API_KEY": "API key for LLM-based evaluation and ArticleFactChecker fact-checking",
+      "OPENAI_BASE_URL": "Custom API endpoint URL (default: https://api.openai.com/v1)",
+      "OPENAI_MODEL": "Model name for LLM evaluation (default: gpt-5.4-mini)",
+      "TAVILY_API_KEY": "Tavily API key for web search verification in ArticleFactChecker (optional but recommended)"
     }
   }
 }
