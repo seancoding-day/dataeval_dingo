@@ -147,7 +147,7 @@ def build_config(
             "base_url": api_url,
             "max_claims": max_claims,
         },
-        "arxiv_search": {"max_results": 5},
+        "arxiv_search": {"max_results": 5, "fetch_affiliations": True},
     }
     if tavily_key:
         tools_config["tavily_search"] = {"api_key": tavily_key}
