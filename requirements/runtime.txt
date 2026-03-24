@@ -32,4 +32,4 @@ diff_match_patch
 wordninja==2.0.0
 
 # ===== MCP server =====
-fastmcp>=2.0.0,<3.0.0
+fastmcp>=2.0.0
