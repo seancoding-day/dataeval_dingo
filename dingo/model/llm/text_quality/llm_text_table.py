@@ -17,7 +17,7 @@ class LLMTextTable(BaseTextQuality):
         "evaluation_results": "docs/eval/prompt/redpajama_data_evaluated_by_prompt.md"
     }
     _required_fields = [RequiredField.CONTENT]
-    prompt = """
+    prompt = r"""
 你是一个专业的表格数据质检员。我会给你一段从文档中提取的 HTML 表格（table_body 字段），请判断该表格是否存在质量问题。
 
 ## 检测维度

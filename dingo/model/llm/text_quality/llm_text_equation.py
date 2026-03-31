@@ -17,7 +17,7 @@ class LLMTextEquation(BaseTextQuality):
         "evaluation_results": "docs/eval/prompt/redpajama_data_evaluated_by_prompt.md"
     }
     _required_fields = [RequiredField.CONTENT]
-    prompt = """
+    prompt = r"""
 你是一个专业的数学、化学等学科的公式质检员。我会给你一个从文档中提取的 equation 类型元素（JSON 格式），请对其 text 字段进行质量检测。
 
 ## 检测维度
