@@ -343,23 +343,21 @@ class ArticleFactChecker(BaseAgent):
             "config": {
                 "key": "your-openai-api-key",
                 "model": "gpt-4o-mini",
-                "parameters": {
-                    "agent_config": {
-                        "max_iterations": 10,
-                        "overall_timeout": 900,
-                        "max_concurrent_claims": 5,
-                        "tools": {
-                            "claims_extractor": {
-                                "api_key": "your-openai-api-key",
-                                "max_claims": 50,
-                                "claim_types": ["factual", "institutional", "statistical", "attribution"]
-                            },
-                            "tavily_search": {
-                                "api_key": "your-tavily-api-key",
-                                "max_results": 5
-                            },
-                            "arxiv_search": {"max_results": 5}
-                        }
+                "agent_config": {
+                    "max_iterations": 10,
+                    "overall_timeout": 900,
+                    "max_concurrent_claims": 5,
+                    "tools": {
+                        "claims_extractor": {
+                            "api_key": "your-openai-api-key",
+                            "max_claims": 50,
+                            "claim_types": ["factual", "institutional", "statistical", "attribution"]
+                        },
+                        "tavily_search": {
+                            "api_key": "your-tavily-api-key",
+                            "max_results": 5
+                        },
+                        "arxiv_search": {"max_results": 5}
                     }
                 }
             }
@@ -399,8 +397,8 @@ class ArticleFactChecker(BaseAgent):
         Returns:
             Output directory path (created if needed), or None if saving is disabled.
         """
-        params = cls.dynamic_config.parameters or {}
-        agent_cfg = params.get('agent_config') or {}
+        extra_params = cls.dynamic_config.model_extra
+        agent_cfg = extra_params.get('agent_config') or {}
 
         explicit_path = agent_cfg.get('output_path')
         if explicit_path:
@@ -821,9 +819,8 @@ class ArticleFactChecker(BaseAgent):
         output_dir = cls._get_output_dir()
 
         if cls.dynamic_config:
-            if cls.dynamic_config.parameters is None:
-                cls.dynamic_config.parameters = {}
-            cls.dynamic_config.parameters.setdefault("temperature", 0)
+            if 'temperature' not in cls.dynamic_config.model_extra:
+                cls.dynamic_config.temperature = 0
 
         if output_dir and input_data.content:
             cls._save_article_content(output_dir, input_data.content)
@@ -946,8 +943,8 @@ class ArticleFactChecker(BaseAgent):
         """
         from dingo.model.llm.agent.tools.claims_extractor import ClaimsExtractor, ClaimsExtractorConfig
 
-        params = cls.dynamic_config.parameters or {}
-        agent_cfg = params.get('agent_config') or {}
+        extra_params = cls.dynamic_config.model_extra
+        agent_cfg = extra_params.get('agent_config') or {}
         extractor_cfg = agent_cfg.get('tools', {}).get('claims_extractor', {})
 
         config_kwargs: Dict[str, Any] = {
@@ -1043,8 +1040,8 @@ class ArticleFactChecker(BaseAgent):
     @classmethod
     def _get_max_concurrent_claims(cls) -> int:
         """Read max_concurrent_claims from agent_config or use class default."""
-        params = cls.dynamic_config.parameters or {}
-        agent_cfg = params.get('agent_config') or {}
+        extra_params = cls.dynamic_config.model_extra
+        agent_cfg = extra_params.get('agent_config') or {}
         return agent_cfg.get('max_concurrent_claims', cls.max_concurrent_claims)
 
     @classmethod
@@ -1054,8 +1051,8 @@ class ArticleFactChecker(BaseAgent):
         Returns:
             Positive timeout in seconds, clamped to [30, 7200].
         """
-        params = cls.dynamic_config.parameters or {}
-        agent_cfg = params.get('agent_config') or {}
+        extra_params = cls.dynamic_config.model_extra
+        agent_cfg = extra_params.get('agent_config') or {}
         raw = agent_cfg.get('overall_timeout', cls.overall_timeout)
         try:
             timeout = float(raw)
