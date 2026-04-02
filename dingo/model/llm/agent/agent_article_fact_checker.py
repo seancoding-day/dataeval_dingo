@@ -343,23 +343,21 @@ class ArticleFactChecker(BaseAgent):
             "config": {
                 "key": "your-openai-api-key",
                 "model": "gpt-4o-mini",
-                "parameters": {
-                    "agent_config": {
-                        "max_iterations": 10,
-                        "overall_timeout": 900,
-                        "max_concurrent_claims": 5,
-                        "tools": {
-                            "claims_extractor": {
-                                "api_key": "your-openai-api-key",
-                                "max_claims": 50,
-                                "claim_types": ["factual", "institutional", "statistical", "attribution"]
-                            },
-                            "tavily_search": {
-                                "api_key": "your-tavily-api-key",
-                                "max_results": 5
-                            },
-                            "arxiv_search": {"max_results": 5}
-                        }
+                "agent_config": {
+                    "max_iterations": 10,
+                    "overall_timeout": 900,
+                    "max_concurrent_claims": 5,
+                    "tools": {
+                        "claims_extractor": {
+                            "api_key": "your-openai-api-key",
+                            "max_claims": 50,
+                            "claim_types": ["factual", "institutional", "statistical", "attribution"]
+                        },
+                        "tavily_search": {
+                            "api_key": "your-tavily-api-key",
+                            "max_results": 5
+                        },
+                        "arxiv_search": {"max_results": 5}
                     }
                 }
             }

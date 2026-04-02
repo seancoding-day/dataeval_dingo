@@ -321,7 +321,7 @@ Output:
 
             # 难度评估没有"通过/不通过"的概念，只是描述性的
             # 但为了兼容框架，我们设置一个合理的默认行为
-            # 可以通过 parameters 配置 min_difficulty 和 max_difficulty
+            # 可以通过 config 中的 min_difficulty 和 max_difficulty 配置难度范围
             result.status = False  # 默认不标记为问题
             result.label = [f"TASK_DIFFICULTY.{difficulty_level.upper()}"]
 

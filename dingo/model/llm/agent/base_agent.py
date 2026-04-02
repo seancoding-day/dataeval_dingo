@@ -146,7 +146,7 @@ class BaseAgent(BaseOpenAI):
         Extract tool configuration from agent's dynamic_config.
 
         Configuration is expected in:
-        dynamic_config.parameters.agent_config.tools.{tool_name}
+        dynamic_config.agent_config.tools.{tool_name}
 
         Args:
             tool_name: Name of the tool
