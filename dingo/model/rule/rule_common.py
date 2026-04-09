@@ -2678,6 +2678,52 @@ class RulePIIDetection(BaseRule):
         return res
 
 
+@Model.rule_register("QUALITY_BAD_EFFECTIVENESS", [""])
+class RuleDictConsistency(BaseRule):
+    """Compare two dict fields and report mismatched keys."""
+
+    _metric_info = {
+        "category": "Rule-Based TEXT Quality Metrics",
+        "quality_dimension": "EFFECTIVENESS",
+        "metric_name": "RuleDictConsistency",
+        "description": "Checks whether metadata and context dict are consistent by key/value equality",
+        "evaluation_results": ""
+    }
+
+    _required_fields = [RequiredField.METADATA, RequiredField.CONTEXT]
+
+    @classmethod
+    def eval(cls, input_data: Data) -> EvalDetail:
+        res = EvalDetail(metric=cls.__name__)
+        left_dict = getattr(input_data, "metadata", None)
+        right_dict = getattr(input_data, "context", None)
+
+        if not isinstance(left_dict, dict) or not isinstance(right_dict, dict):
+            res.status = True
+            res.label = [f"{cls.metric_type}.{cls.__name__}", "INVALID_DICT_FIELD"]
+            res.reason = [
+                "metadata/context must both be dict, "
+                f"got metadata={type(left_dict).__name__}, context={type(right_dict).__name__}"
+            ]
+            return res
+
+        diff_keys = []
+        all_keys = set(left_dict.keys()) | set(right_dict.keys())
+        for key in sorted(all_keys, key=lambda x: str(x)):
+            if key not in left_dict or key not in right_dict or left_dict[key] != right_dict[key]:
+                diff_keys.append(str(key))
+
+        if diff_keys:
+            res.status = True
+            res.label = [
+                f"{cls.metric_type}.{cls.__name__}.{key}" for key in diff_keys
+            ]
+            res.reason = [f"Inconsistent keys: {', '.join(diff_keys)}"]
+        else:
+            res.label = [QualityLabel.QUALITY_GOOD]
+        return res
+
+
 if __name__ == "__main__":
     data = Data(data_id="", prompt="", content="\n \n \n \n hello \n \n ")
     tmp = RuleEnterAndSpace().eval(data)
