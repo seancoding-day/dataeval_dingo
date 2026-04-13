@@ -2691,12 +2691,36 @@ class RuleDictConsistency(BaseRule):
     }
 
     _required_fields = [RequiredField.METADATA, RequiredField.CONTEXT]
+    dynamic_config = EvaluatorRuleArgs(parameters={"ignore_order": True})
+
+    @classmethod
+    def _normalize_value(cls, value, ignore_order: bool):
+        """Normalize nested values for configurable order-aware comparison."""
+        if isinstance(value, dict):
+            return {
+                key: cls._normalize_value(value[key], ignore_order)
+                for key in sorted(value.keys(), key=lambda x: str(x))
+            }
+
+        if isinstance(value, (list, tuple)):
+            normalized = [cls._normalize_value(item, ignore_order) for item in value]
+            if ignore_order:
+                return sorted(normalized, key=lambda x: repr(x))
+            return normalized
+
+        if isinstance(value, set):
+            normalized = [cls._normalize_value(item, ignore_order) for item in value]
+            return sorted(normalized, key=lambda x: repr(x))
+
+        return value
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         res = EvalDetail(metric=cls.__name__)
         left_dict = getattr(input_data, "metadata", None)
         right_dict = getattr(input_data, "context", None)
+        parameters = cls.dynamic_config.parameters or {}
+        ignore_order = parameters.get("ignore_order", True)
 
         if not isinstance(left_dict, dict) or not isinstance(right_dict, dict):
             res.status = True
@@ -2710,7 +2734,13 @@ class RuleDictConsistency(BaseRule):
         diff_keys = []
         all_keys = set(left_dict.keys()) | set(right_dict.keys())
         for key in sorted(all_keys, key=lambda x: str(x)):
-            if key not in left_dict or key not in right_dict or left_dict[key] != right_dict[key]:
+            if key not in left_dict or key not in right_dict:
+                diff_keys.append(str(key))
+                continue
+
+            left_value = cls._normalize_value(left_dict[key], ignore_order)
+            right_value = cls._normalize_value(right_dict[key], ignore_order)
+            if left_value != right_value:
                 diff_keys.append(str(key))
 
         if diff_keys:
