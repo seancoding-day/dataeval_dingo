@@ -33,6 +33,19 @@ class ResultInfo(BaseModel):
         Returns:
             包含原始数据和dingo_result的字典
         """
+        def move_conflict_field(field_name: str):
+            if field_name not in self.raw_data:
+                return
+
+            index = 1
+            while True:
+                backup_field = f'{field_name}_old_v{index}'
+                if backup_field not in self.raw_data:
+                    self.raw_data[backup_field] = self.raw_data[field_name]
+                    del self.raw_data[field_name]
+                    return
+                index += 1
+
         dingo_result = {
             'eval_status': self.eval_status,
             'eval_details': {
@@ -40,6 +53,8 @@ class ResultInfo(BaseModel):
                 for k, v in self.eval_details.items()
             },
         }
+        move_conflict_field('dingo_id')
+        move_conflict_field('dingo_result')
         self.raw_data['dingo_id'] = self.dingo_id
         self.raw_data['dingo_result'] = dingo_result
         return self.raw_data
