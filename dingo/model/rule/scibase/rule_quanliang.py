@@ -65,10 +65,11 @@ GRADE_CLASS_VALUES = {"k12", "higher-edu", "vocational-edu", "other", ""}
 GRADE_VALUES = {"小学", "初中", "高中", ""}
 
 _DEFAULT_LANGUAGE_VALUES = {"zh", "en", "ja", "de", "fr", "es", "ru", "ko", "ar"}
+ASSETS_DIR = Path(__file__).resolve().parent / "assets"
 
 
 def _load_language_allowed_values() -> set[str]:
-    base = Path(__file__).resolve().parent / "doc" / "to_iso-639.json"
+    base = ASSETS_DIR / "to_iso-639.json"
     if not base.exists():
         return set(_DEFAULT_LANGUAGE_VALUES)
     try:
@@ -82,7 +83,7 @@ def _load_language_allowed_values() -> set[str]:
 
 
 def _load_journal_mapping() -> Dict[str, str]:
-    csv_path = Path(__file__).resolve().parent / "doc" / "journal_name_mapping_execute_20260512.csv"
+    csv_path = ASSETS_DIR / "journal_name_mapping_execute_20260512.csv"
     if not csv_path.exists():
         return {}
     # Lazy import to avoid top-level optional dependency / heavier import.
