@@ -13,7 +13,7 @@ This document provides comprehensive information about all quality metrics used 
 | `LLMRAGContextRecall` | LLMRAGContextRecall | 评估检索上下文的完整性，判断上下文是否能支持答案中的所有陈述 | [RAGAS: Automated Evaluation of Retrieval Augmented Generation](https://arxiv.org/abs/2309.15217) | N/A | [📝 View Example](../examples/rag/dataset_rag_eval_baseline.py) |
 | `LLMRAGContextRelevancy` | LLMRAGContextRelevancy | 评估检索上下文与问题的相关性，检测噪声信息 | [RAGAS: Automated Evaluation of Retrieval Augmented Generation](https://arxiv.org/abs/2309.15217) | N/A | [📝 View Example](../examples/rag/dataset_rag_eval_baseline.py) |
 | `LLMRAGFaithfulness` | LLMRAGFaithfulness | 评估生成答案是否忠实于给定上下文，检测幻觉和编造信息 | [RAGAS: Automated Evaluation of Retrieval Augmented Generation](https://arxiv.org/abs/2309.15217) | N/A | [📝 View Example](../examples/rag/dataset_rag_eval_baseline.py) |
-
+| `LLMChunkQuality` | LLMChunkQuality | 评估 RAG 引用 chunk 的起始边界截断与重复开头问题，判断其是否适合作为可溯源证据 | [WanJuanSiLu: A High-Quality Open-Source Webtext Dataset for Low-Resource Languages](https://arxiv.org/abs/2501.14506) | N/A | [📝 View Example](../examples/rag/sdk_chunk_eval.py) |
 ### Pretrain Text Quality Assessment Metrics
 
 | Type | Metric | Description | Paper Source | Evaluation Results | Examples |
