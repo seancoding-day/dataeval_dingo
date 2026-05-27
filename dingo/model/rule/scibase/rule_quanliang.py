@@ -437,8 +437,6 @@ def check_grade(grade: Any, grade_class: Any) -> bool:
         return False
     if grade not in GRADE_VALUES:
         return True
-    if grade_class == "k12" and grade == "":
-        return True
     if grade_class != "k12" and grade != "":
         return True
     return False
