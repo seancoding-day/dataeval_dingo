@@ -27,6 +27,7 @@ class LocalExecutor(ExecProto):
         self.input_args: InputArgs = input_args
         self.llm: Optional[BaseLLM] = None
         self.summary: SummaryModel = SummaryModel()
+        self._full_field_written_count: int = 0
 
     def load_data(self) -> Generator[Data, None, None]:
         """
@@ -266,6 +267,16 @@ class LocalExecutor(ExecProto):
     def _json_dumps(cls, value: dict) -> str:
         return json.dumps(value, ensure_ascii=False, default=cls._json_default)
 
+    def _resolve_field_list(self, input_args: InputArgs) -> Optional[List[str]]:
+        if input_args.executor.result_save.full_field_sample_count <= 0:
+            return input_args.executor.result_save.field_list
+
+        if self._full_field_written_count < input_args.executor.result_save.full_field_sample_count:
+            self._full_field_written_count += 1
+            return None
+
+        return input_args.executor.result_save.field_list
+
     def write_single_data(
         self, path: str, input_args: InputArgs, result_info: ResultInfo
     ):
@@ -274,7 +285,7 @@ class LocalExecutor(ExecProto):
 
         # 如果启用 merge 模式，将所有数据写入同一个文件
         if input_args.executor.result_save.merge:
-            field_list = input_args.executor.result_save.field_list
+            field_list = self._resolve_field_list(input_args)
             if input_args.executor.result_save.raw:
                 output_data = result_info.to_raw_dict(field_list=field_list)
             else:
@@ -289,7 +300,7 @@ class LocalExecutor(ExecProto):
         if not input_args.executor.result_save.good and not result_info.eval_status:
             return
 
-        field_list = input_args.executor.result_save.field_list
+        field_list = self._resolve_field_list(input_args)
         if input_args.executor.result_save.raw:
             output_data = result_info.to_raw_dict(field_list=field_list)
         else:
