@@ -623,7 +623,7 @@ class RuleQuanliangFieldValidation(BaseRule):
         "evaluation_results": "",
     }
 
-    _required_fields = [RequiredField.METADATA]
+    _required_fields = []
     dynamic_config = EvaluatorRuleArgs(key_list=list(FIELD_VALIDATORS.keys()))
 
     @classmethod
