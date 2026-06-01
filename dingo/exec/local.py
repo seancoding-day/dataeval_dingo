@@ -7,7 +7,7 @@ import time
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Generator, List, Optional
+from typing import Dict, Generator, List, Optional
 
 from tqdm import tqdm
 
@@ -28,6 +28,7 @@ class LocalExecutor(ExecProto):
         self.llm: Optional[BaseLLM] = None
         self.summary: SummaryModel = SummaryModel()
         self._full_field_written_count: int = 0
+        self._file_written_count: Dict[str, int] = {}
 
     def load_data(self) -> Generator[Data, None, None]:
         """
@@ -285,30 +286,21 @@ class LocalExecutor(ExecProto):
 
         # 如果启用 merge 模式，将所有数据写入同一个文件
         if input_args.executor.result_save.merge:
-            field_list = self._resolve_field_list(input_args)
-            if input_args.executor.result_save.raw:
-                output_data = result_info.to_raw_dict(field_list=field_list)
-            else:
-                output_data = result_info.to_dict(field_list=field_list)
-            str_json = self._json_dumps(output_data)
-
             f_n = os.path.join(path, "all_results.jsonl")
+            if not self._should_write_to_file(input_args, f_n):
+                return
+            str_json = self._build_output_json(input_args, result_info)
             with open(f_n, "a", encoding="utf-8") as f:
                 f.write(str_json + "\n")
+            self._file_written_count[f_n] = self._file_written_count.get(f_n, 0) + 1
             return
 
         if not input_args.executor.result_save.good and not result_info.eval_status:
             return
 
-        field_list = self._resolve_field_list(input_args)
-        if input_args.executor.result_save.raw:
-            output_data = result_info.to_raw_dict(field_list=field_list)
-        else:
-            output_data = result_info.to_dict(field_list=field_list)
-        str_json = self._json_dumps(output_data)
-
         # 用集合记录已经写过的(字段名, label名)组合，避免重复写入
         written_labels = set()
+        str_json: Optional[str] = None
 
         # 遍历 eval_details 的第一层（字段名组合），第二层是List[EvalDetail]
         for field_name, eval_detail_list in result_info.eval_details.items():
@@ -348,8 +340,27 @@ class LocalExecutor(ExecProto):
                         # 没有点分割，直接在字段文件夹下创建文件
                         f_n = os.path.join(field_dir, parts[0] + ".jsonl")
 
+                    if not self._should_write_to_file(input_args, f_n):
+                        continue
+                    if str_json is None:
+                        str_json = self._build_output_json(input_args, result_info)
                     with open(f_n, "a", encoding="utf-8") as f:
                         f.write(str_json + "\n")
+                    self._file_written_count[f_n] = self._file_written_count.get(f_n, 0) + 1
+
+    def _should_write_to_file(self, input_args: InputArgs, file_path: str) -> bool:
+        limit = input_args.executor.result_save.limit
+        if limit is None:
+            return True
+        return self._file_written_count.get(file_path, 0) < limit
+
+    def _build_output_json(self, input_args: InputArgs, result_info: ResultInfo) -> str:
+        field_list = self._resolve_field_list(input_args)
+        if input_args.executor.result_save.raw:
+            output_data = result_info.to_raw_dict(field_list=field_list)
+        else:
+            output_data = result_info.to_dict(field_list=field_list)
+        return self._json_dumps(output_data)
 
     def write_summary(self, path: str, input_args: InputArgs, summary: SummaryModel):
         if not input_args.executor.result_save.bad:

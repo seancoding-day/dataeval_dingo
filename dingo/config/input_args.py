@@ -77,6 +77,7 @@ class ExecutorResultSaveArgs(BaseModel):
     all_labels: bool = False
     raw: bool = False
     merge: bool = False  # 如果为True，所有数据写入同一个jsonl文件，不分文件夹
+    limit: Optional[int] = None  # 每个输出文件最多写入条数，None表示不限制
     field_list: Optional[List[str]] = None  # 仅保存指定字段；若均不存在则报错
     full_field_sample_count: int = 0  # 保留完整字段样本条数，0表示关闭
 
