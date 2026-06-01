@@ -7,6 +7,83 @@ from dingo.io.output.eval_detail import EvalDetail
 
 
 class TestLocal:
+    def test_write_single_data_limit_per_file(self, tmp_path):
+        input_data = {
+            "executor": {
+                "result_save": {
+                    "bad": True,
+                    "limit": 1,
+                }
+            },
+            "evaluator": [],
+        }
+        input_args = InputArgs(**input_data)
+        executor = LocalExecutor(input_args)
+
+        result_info = ResultInfo(
+            dingo_id="1",
+            raw_data={"content": "test"},
+            eval_status=True,
+            eval_details={
+                "content": [
+                    EvalDetail(
+                        metric="RuleColonEnd",
+                        status=True,
+                        label=["QUALITY_BAD_EFFECTIVENESS.RuleColonEnd"],
+                        reason=["bad sample"],
+                    )
+                ]
+            },
+        )
+        output_path = str(tmp_path)
+
+        executor.write_single_data(output_path, input_args, result_info)
+        executor.write_single_data(output_path, input_args, result_info)
+
+        target_file = tmp_path / "content" / "QUALITY_BAD_EFFECTIVENESS" / "RuleColonEnd.jsonl"
+        assert target_file.exists()
+        lines = target_file.read_text(encoding="utf-8").strip().splitlines()
+        assert len(lines) == 1
+
+    def test_write_single_data_limit_per_file_merge_mode(self, tmp_path):
+        input_data = {
+            "executor": {
+                "result_save": {
+                    "bad": True,
+                    "merge": True,
+                    "limit": 1,
+                }
+            },
+            "evaluator": [],
+        }
+        input_args = InputArgs(**input_data)
+        executor = LocalExecutor(input_args)
+
+        result_info = ResultInfo(
+            dingo_id="1",
+            raw_data={"content": "test"},
+            eval_status=True,
+            eval_details={
+                "content": [
+                    EvalDetail(
+                        metric="RuleColonEnd",
+                        status=True,
+                        label=["QUALITY_BAD_EFFECTIVENESS.RuleColonEnd"],
+                        reason=["bad sample"],
+                    )
+                ]
+            },
+        )
+        output_path = str(tmp_path)
+
+        executor.write_single_data(output_path, input_args, result_info)
+        executor.write_single_data(output_path, input_args, result_info)
+
+        target_file = tmp_path / "all_results.jsonl"
+        assert target_file.exists()
+        lines = target_file.read_text(encoding="utf-8").strip().splitlines()
+        assert len(lines) == 1
+
     def test_merge_result_info(self):
         existing_list = []
         new_item1 = ResultInfo(
