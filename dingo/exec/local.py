@@ -5,8 +5,6 @@ import json
 import os
 import time
 import uuid
-import ast
-from collections.abc import Mapping
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Generator, List, Optional
@@ -265,48 +263,8 @@ class LocalExecutor(ExecProto):
         return str(value)
 
     @classmethod
-    def _parse_container_string(cls, value: str):
-        text = value.strip()
-        if len(text) < 2:
-            return value
-        if not (
-            (text.startswith("[") and text.endswith("]"))
-            or (text.startswith("{") and text.endswith("}"))
-        ):
-            return value
-
-        try:
-            parsed = json.loads(text)
-        except json.JSONDecodeError:
-            try:
-                parsed = ast.literal_eval(text)
-            except (ValueError, SyntaxError):
-                return value
-
-        if isinstance(parsed, (dict, list, tuple, set)):
-            return cls._json_normalize(parsed)
-        return value
-
-    @classmethod
-    def _json_normalize(cls, value):
-        if isinstance(value, (str, int, float, bool)) or value is None:
-            if isinstance(value, str):
-                return cls._parse_container_string(value)
-            return value
-        if isinstance(value, Decimal):
-            return float(value)
-        if isinstance(value, (datetime, date)):
-            return value.isoformat()
-        if isinstance(value, Mapping):
-            return {str(k): cls._json_normalize(v) for k, v in value.items()}
-        if isinstance(value, (list, tuple, set)):
-            return [cls._json_normalize(item) for item in value]
-        return value
-
-    @classmethod
     def _json_dumps(cls, value: dict) -> str:
-        normalized = cls._json_normalize(value)
-        return json.dumps(normalized, ensure_ascii=False, default=cls._json_default)
+        return json.dumps(value, ensure_ascii=False, default=cls._json_default)
 
     def write_single_data(
         self, path: str, input_args: InputArgs, result_info: ResultInfo
@@ -316,18 +274,27 @@ class LocalExecutor(ExecProto):
 
         # 如果启用 merge 模式，将所有数据写入同一个文件
         if input_args.executor.result_save.merge:
+            field_list = input_args.executor.result_save.field_list
+            if input_args.executor.result_save.raw:
+                output_data = result_info.to_raw_dict(field_list=field_list)
+            else:
+                output_data = result_info.to_dict(field_list=field_list)
+            str_json = self._json_dumps(output_data)
+
             f_n = os.path.join(path, "all_results.jsonl")
             with open(f_n, "a", encoding="utf-8") as f:
-                # if input_args.executor.result_save.raw:
-                #     str_json = json.dumps(result_info.to_raw_dict(), ensure_ascii=False)
-                # else:
-                #     str_json = json.dumps(result_info.to_dict(), ensure_ascii=False)
-                str_json = self._json_dumps(result_info.to_raw_dict())
                 f.write(str_json + "\n")
             return
 
         if not input_args.executor.result_save.good and not result_info.eval_status:
             return
+
+        field_list = input_args.executor.result_save.field_list
+        if input_args.executor.result_save.raw:
+            output_data = result_info.to_raw_dict(field_list=field_list)
+        else:
+            output_data = result_info.to_dict(field_list=field_list)
+        str_json = self._json_dumps(output_data)
 
         # 用集合记录已经写过的(字段名, label名)组合，避免重复写入
         written_labels = set()
@@ -371,10 +338,6 @@ class LocalExecutor(ExecProto):
                         f_n = os.path.join(field_dir, parts[0] + ".jsonl")
 
                     with open(f_n, "a", encoding="utf-8") as f:
-                        if input_args.executor.result_save.raw:
-                            str_json = self._json_dumps(result_info.to_raw_dict())
-                        else:
-                            str_json = self._json_dumps(result_info.to_dict())
                         f.write(str_json + "\n")
 
     def write_summary(self, path: str, input_args: InputArgs, summary: SummaryModel):
@@ -382,7 +345,7 @@ class LocalExecutor(ExecProto):
             return
         with open(path + "/summary.json", "w", encoding="utf-8") as f:
             json.dump(
-                self._json_normalize(summary.to_dict()),
+                summary.to_dict(),
                 f,
                 indent=4,
                 ensure_ascii=False,
