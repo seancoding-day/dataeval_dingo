@@ -5,6 +5,10 @@ import json
 import os
 import time
 import uuid
+import ast
+from collections.abc import Mapping
+from datetime import date, datetime
+from decimal import Decimal
 from typing import Generator, List, Optional
 
 from tqdm import tqdm
@@ -252,6 +256,58 @@ class LocalExecutor(ExecProto):
         new_summary.finish_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
         return new_summary
 
+    @staticmethod
+    def _json_default(value):
+        if isinstance(value, Decimal):
+            return float(value)
+        if isinstance(value, (datetime, date)):
+            return value.isoformat()
+        return str(value)
+
+    @classmethod
+    def _parse_container_string(cls, value: str):
+        text = value.strip()
+        if len(text) < 2:
+            return value
+        if not (
+            (text.startswith("[") and text.endswith("]"))
+            or (text.startswith("{") and text.endswith("}"))
+        ):
+            return value
+
+        try:
+            parsed = json.loads(text)
+        except json.JSONDecodeError:
+            try:
+                parsed = ast.literal_eval(text)
+            except (ValueError, SyntaxError):
+                return value
+
+        if isinstance(parsed, (dict, list, tuple, set)):
+            return cls._json_normalize(parsed)
+        return value
+
+    @classmethod
+    def _json_normalize(cls, value):
+        if isinstance(value, (str, int, float, bool)) or value is None:
+            if isinstance(value, str):
+                return cls._parse_container_string(value)
+            return value
+        if isinstance(value, Decimal):
+            return float(value)
+        if isinstance(value, (datetime, date)):
+            return value.isoformat()
+        if isinstance(value, Mapping):
+            return {str(k): cls._json_normalize(v) for k, v in value.items()}
+        if isinstance(value, (list, tuple, set)):
+            return [cls._json_normalize(item) for item in value]
+        return value
+
+    @classmethod
+    def _json_dumps(cls, value: dict) -> str:
+        normalized = cls._json_normalize(value)
+        return json.dumps(normalized, ensure_ascii=False, default=cls._json_default)
+
     def write_single_data(
         self, path: str, input_args: InputArgs, result_info: ResultInfo
     ):
@@ -266,7 +322,7 @@ class LocalExecutor(ExecProto):
                 #     str_json = json.dumps(result_info.to_raw_dict(), ensure_ascii=False)
                 # else:
                 #     str_json = json.dumps(result_info.to_dict(), ensure_ascii=False)
-                str_json = json.dumps(result_info.to_raw_dict(), ensure_ascii=False)
+                str_json = self._json_dumps(result_info.to_raw_dict())
                 f.write(str_json + "\n")
             return
 
@@ -316,16 +372,22 @@ class LocalExecutor(ExecProto):
 
                     with open(f_n, "a", encoding="utf-8") as f:
                         if input_args.executor.result_save.raw:
-                            str_json = json.dumps(result_info.to_raw_dict(), ensure_ascii=False)
+                            str_json = self._json_dumps(result_info.to_raw_dict())
                         else:
-                            str_json = json.dumps(result_info.to_dict(), ensure_ascii=False)
+                            str_json = self._json_dumps(result_info.to_dict())
                         f.write(str_json + "\n")
 
     def write_summary(self, path: str, input_args: InputArgs, summary: SummaryModel):
         if not input_args.executor.result_save.bad:
             return
         with open(path + "/summary.json", "w", encoding="utf-8") as f:
-            json.dump(summary.to_dict(), f, indent=4, ensure_ascii=False)
+            json.dump(
+                self._json_normalize(summary.to_dict()),
+                f,
+                indent=4,
+                ensure_ascii=False,
+                default=self._json_default,
+            )
 
     def get_summary(self):
         return self.summary
