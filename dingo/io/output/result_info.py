@@ -1,5 +1,4 @@
 import ast
-import copy
 import json
 from collections.abc import Mapping
 from datetime import date, datetime
@@ -80,7 +79,7 @@ class ResultInfo(BaseModel):
         """
         output_data = {
             'dingo_id': self.dingo_id,
-            'raw_data': self._normalize_value(copy.deepcopy(self.raw_data)),
+            'raw_data': self._normalize_value(self.raw_data),
             'eval_status': self.eval_status,
             'eval_details': {
                 k: [model_res.model_dump() for model_res in v]
@@ -95,7 +94,7 @@ class ResultInfo(BaseModel):
         Returns:
             包含原始数据和dingo_result的字典
         """
-        merged_raw_data = self._normalize_value(copy.deepcopy(self.raw_data))
+        merged_raw_data = self._normalize_value(self.raw_data)
 
         def move_conflict_field(field_name: str):
             if field_name not in merged_raw_data:
