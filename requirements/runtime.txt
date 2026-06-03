@@ -26,6 +26,7 @@ openpyxl
 pyarrow
 sqlalchemy
 xlrd
+pymysql
 
 # ===== Misc =====
 diff_match_patch
