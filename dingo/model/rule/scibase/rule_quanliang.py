@@ -263,11 +263,13 @@ def check_author(author: Any) -> bool:
         orcid = item.get("orcid")
         if not isinstance(name, str):
             return True
+        if name == "":
+            return True
         if AUTHOR_SEP_RE.search(name):
             return True
         if not isinstance(orcid, str):
             return True
-        if not ORCID_URL_RE.fullmatch(orcid):
+        if orcid != "" and not ORCID_URL_RE.fullmatch(orcid):
             return True
     return False
 
