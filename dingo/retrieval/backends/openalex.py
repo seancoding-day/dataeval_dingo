@@ -122,18 +122,24 @@ class OpenAlexClient(SearchClient):
         if self.search_type == "semantic":
             target = min(target, 50)
             search_param = "search.semantic"
+            search_query = query
         else:
             target = min(target, 100)
             search_param = "search"
+            search_query = self._sanitize_regular_search_query(query)
 
         params: dict[str, Any] = {
-            search_param: query,
+            search_param: search_query,
             "per_page": target,
             "select": _DEFAULT_SELECT,
         }
         if self.api_key:
             params["api_key"] = self.api_key
         return params
+
+    @staticmethod
+    def _sanitize_regular_search_query(query: str) -> str:
+        return " ".join(query.replace("?", " ").replace("*", " ").split())
 
     def search(self, query: str, limit: int = 100) -> SearchResponse:
         self._rate_limit_wait()

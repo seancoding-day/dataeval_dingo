@@ -110,6 +110,18 @@ class TestBackendRegistry:
         assert params["per_page"] == 100
         assert params["api_key"] == "test-token"
 
+    def test_openalex_regular_search_sanitizes_wildcards(self):
+        client = create_client(
+            "openalex",
+            api_token="test-token",
+            rate_limit=0,
+        )
+        params = client._build_params(
+            "Which paper utilized MMD flows with Riesz kernels?",
+            100,
+        )
+        assert params["search"] == "Which paper utilized MMD flows with Riesz kernels"
+
     def test_create_openalex_client_semantic_search(self):
         client = create_client(
             "openalex",
@@ -122,6 +134,16 @@ class TestBackendRegistry:
         assert "search" not in params
         assert params["per_page"] == 50
         assert client.rate_limit == 1.0
+
+    def test_openalex_semantic_search_keeps_query_text(self):
+        client = create_client(
+            "openalex",
+            search_type="semantic",
+            api_token="test-token",
+            rate_limit=0,
+        )
+        params = client._build_params("Which paper used MMD flows?", 100)
+        assert params["search.semantic"] == "Which paper used MMD flows?"
 
     def test_register_custom_backend(self):
         @register_backend("test_custom")
