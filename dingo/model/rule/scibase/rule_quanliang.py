@@ -626,16 +626,15 @@ def check_access_xinghe_repository_model_version(
         return False
     if access_xinghe_repository_model_version not in XINGHE_REPOSITORY_MODEL_VERSION_VALUES:
         return True
-    if not isinstance(access_xinghe_repository_model_name, str):
-        return True
-    if access_xinghe_repository_model_name == "":
-        return True
-    if access_xinghe_repository_model_name not in XINGHE_REPOSITORY_MODEL_NAME_VALUES:
-        return True
-    return (
-        access_xinghe_repository_model_version
-        not in XINGHE_REPOSITORY_MODEL_VERSION_MAP[access_xinghe_repository_model_name]
-    )
+    if (
+        isinstance(access_xinghe_repository_model_name, str)
+        and access_xinghe_repository_model_name in XINGHE_REPOSITORY_MODEL_NAME_VALUES
+    ):
+        return (
+            access_xinghe_repository_model_version
+            not in XINGHE_REPOSITORY_MODEL_VERSION_MAP[access_xinghe_repository_model_name]
+        )
+    return False
 
 
 def _normalize_json_like_field(value: Any) -> Any:
