@@ -595,11 +595,13 @@ def check_access_xinghe_repository_origin_path(
     return access_xinghe_repository_origin_path.strip() == ""
 
 
-def check_access_xinghe_repository_model_name(access_xinghe_repository_model_name: Any) -> bool:
+def check_access_xinghe_repository_model_name(
+    access_xinghe_repository_model_name: Any, access_xinghe_repository_process_status: Any
+) -> bool:
     if not isinstance(access_xinghe_repository_model_name, str):
         return True
     if access_xinghe_repository_model_name == "":
-        return True
+        return access_xinghe_repository_process_status in (1, "1")
     return access_xinghe_repository_model_name not in XINGHE_REPOSITORY_MODEL_NAME_VALUES
 
 
@@ -730,7 +732,8 @@ FIELD_VALIDATORS = {
         record.get("access_xinghe_repository_has_fulltext"),
     ),
     "access_xinghe_repository_model_name": lambda record: check_access_xinghe_repository_model_name(
-        record.get("access_xinghe_repository_model_name")
+        record.get("access_xinghe_repository_model_name"),
+        record.get("access_xinghe_repository_process_status"),
     ),
     "access_xinghe_repository_model_version": lambda record: check_access_xinghe_repository_model_version(
         record.get("access_xinghe_repository_model_version"),
