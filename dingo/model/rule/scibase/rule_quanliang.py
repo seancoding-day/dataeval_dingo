@@ -16,6 +16,7 @@ INVISIBLE_RE = re.compile(r"[\u2000-\u200F\u202F\u205F\u3000\uFEFF\u00A0\u2060-\
 PAGE_RANGE_RE = re.compile(r"^\d+-\d+$")
 ISSN_RE = re.compile(r"^\d{4}-\d{3}[\dX]$")
 AUTHOR_SEP_RE = re.compile(r"[|;；]")
+ORCID_URL_RE = re.compile(r"^[Hh][Tt][Tt][Pp][Ss]?://orcid\.org/\d{4}-\d{4}-\d{4}-\d{3}[\dXx]$")
 
 OA_BOOL_VALUES = {"true", "false", "unknown"}
 METADATA_TYPE_VALUES = {"paper", "ebook"}
@@ -238,12 +239,24 @@ def check_language(language: Any) -> bool:
 def check_author(author: Any) -> bool:
     if author is None:
         return True
-    if not (isinstance(author, list) and all(isinstance(x, str) for x in author)):
+    if not isinstance(author, list):
         return True
     if len(author) == 0:
         return False
     for item in author:
-        if AUTHOR_SEP_RE.search(item):
+        if not isinstance(item, dict):
+            return True
+        if set(item.keys()) != {"name", "orcid"}:
+            return True
+        name = item.get("name")
+        orcid = item.get("orcid")
+        if not isinstance(name, str):
+            return True
+        if AUTHOR_SEP_RE.search(name):
+            return True
+        if not isinstance(orcid, str):
+            return True
+        if not ORCID_URL_RE.fullmatch(orcid):
             return True
     return False
 
