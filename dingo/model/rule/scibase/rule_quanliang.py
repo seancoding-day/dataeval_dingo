@@ -66,6 +66,16 @@ LICENSE_VALUES = {
 ACCESS_LICENSE_VALUES = set(LICENSE_VALUES)
 GRADE_CLASS_VALUES = {"k12", "higher-edu", "vocational-edu", "other", ""}
 GRADE_VALUES = {"小学", "初中", "高中", ""}
+XINGHE_REPOSITORY_MODEL_VERSION_MAP = {
+    "mineru": {"1.3.1", "2", "2.5"},
+    "llm-web-kit": {"4.1.1"},
+}
+XINGHE_REPOSITORY_MODEL_NAME_VALUES = set(XINGHE_REPOSITORY_MODEL_VERSION_MAP.keys())
+XINGHE_REPOSITORY_MODEL_VERSION_VALUES = {
+    version
+    for versions in XINGHE_REPOSITORY_MODEL_VERSION_MAP.values()
+    for version in versions
+}
 
 _DEFAULT_LANGUAGE_VALUES = {"zh", "en", "ja", "de", "fr", "es", "ru", "ko", "ar"}
 ASSETS_DIR = Path(__file__).resolve().parent / "assets"
@@ -585,6 +595,35 @@ def check_access_xinghe_repository_origin_path(
     return access_xinghe_repository_origin_path.strip() == ""
 
 
+def check_access_xinghe_repository_model_name(access_xinghe_repository_model_name: Any) -> bool:
+    if not isinstance(access_xinghe_repository_model_name, str):
+        return True
+    if access_xinghe_repository_model_name == "":
+        return True
+    return access_xinghe_repository_model_name not in XINGHE_REPOSITORY_MODEL_NAME_VALUES
+
+
+def check_access_xinghe_repository_model_version(
+    access_xinghe_repository_model_version: Any, access_xinghe_repository_model_name: Any
+) -> bool:
+    if not isinstance(access_xinghe_repository_model_version, str):
+        return True
+    if access_xinghe_repository_model_version == "":
+        return True
+    if access_xinghe_repository_model_version not in XINGHE_REPOSITORY_MODEL_VERSION_VALUES:
+        return True
+    if not isinstance(access_xinghe_repository_model_name, str):
+        return True
+    if access_xinghe_repository_model_name == "":
+        return True
+    if access_xinghe_repository_model_name not in XINGHE_REPOSITORY_MODEL_NAME_VALUES:
+        return True
+    return (
+        access_xinghe_repository_model_version
+        not in XINGHE_REPOSITORY_MODEL_VERSION_MAP[access_xinghe_repository_model_name]
+    )
+
+
 def _normalize_json_like_field(value: Any) -> Any:
     if not isinstance(value, str):
         return value
@@ -689,6 +728,13 @@ FIELD_VALIDATORS = {
     "access_xinghe_repository_origin_path": lambda record: check_access_xinghe_repository_origin_path(
         record.get("access_xinghe_repository_origin_path"),
         record.get("access_xinghe_repository_has_fulltext"),
+    ),
+    "access_xinghe_repository_model_name": lambda record: check_access_xinghe_repository_model_name(
+        record.get("access_xinghe_repository_model_name")
+    ),
+    "access_xinghe_repository_model_version": lambda record: check_access_xinghe_repository_model_version(
+        record.get("access_xinghe_repository_model_version"),
+        record.get("access_xinghe_repository_model_name"),
     ),
 }
 
