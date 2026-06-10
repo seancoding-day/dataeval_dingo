@@ -606,12 +606,22 @@ def check_access_xinghe_repository_model_name(
 
 
 def check_access_xinghe_repository_model_version(
-    access_xinghe_repository_model_version: Any, access_xinghe_repository_model_name: Any
+    access_xinghe_repository_model_version: Any,
+    access_xinghe_repository_model_name: Any,
+    access_xinghe_repository_process_status: Any,
 ) -> bool:
     if not isinstance(access_xinghe_repository_model_version, str):
         return True
     if access_xinghe_repository_model_version == "":
-        return True
+        if access_xinghe_repository_process_status in (1, "1"):
+            return True
+        if (
+            isinstance(access_xinghe_repository_model_name, str)
+            and access_xinghe_repository_model_name in XINGHE_REPOSITORY_MODEL_NAME_VALUES
+            and "" not in XINGHE_REPOSITORY_MODEL_VERSION_MAP[access_xinghe_repository_model_name]
+        ):
+            return True
+        return False
     if access_xinghe_repository_model_version not in XINGHE_REPOSITORY_MODEL_VERSION_VALUES:
         return True
     if not isinstance(access_xinghe_repository_model_name, str):
@@ -738,6 +748,7 @@ FIELD_VALIDATORS = {
     "access_xinghe_repository_model_version": lambda record: check_access_xinghe_repository_model_version(
         record.get("access_xinghe_repository_model_version"),
         record.get("access_xinghe_repository_model_name"),
+        record.get("access_xinghe_repository_process_status"),
     ),
 }
 
