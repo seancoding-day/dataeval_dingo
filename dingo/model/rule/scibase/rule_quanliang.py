@@ -32,6 +32,7 @@ JSON_LIST_FIELDS = {
     "references",
     "related_works",
     "citations",
+    "supplementary_material",
 }
 LICENSE_VALUES = {
     "cc-by",
@@ -518,6 +519,28 @@ def check_citations(citations: Any) -> bool:
     return False
 
 
+def check_supplementary_material(supplementary_material: Any) -> bool:
+    if supplementary_material is None:
+        return True
+    if not isinstance(supplementary_material, list):
+        return True
+    if len(supplementary_material) == 0:
+        return False
+    required_keys = {
+        "supplementary_material_name",
+        "supplementary_material_url",
+        "supplementary_material_path",
+    }
+    for item in supplementary_material:
+        if not isinstance(item, dict):
+            return True
+        if set(item.keys()) != required_keys:
+            return True
+        if not all(isinstance(item.get(key), str) for key in required_keys):
+            return True
+    return False
+
+
 def check_cited_by_api_url(cited_by_api_url: Any) -> bool:
     if cited_by_api_url is None:
         return True
@@ -655,6 +678,9 @@ FIELD_VALIDATORS = {
     "references": lambda record: check_references(record.get("references")),
     "related_works": lambda record: check_related_works(record.get("related_works")),
     "citations": lambda record: check_citations(record.get("citations")),
+    "supplementary_material": lambda record: check_supplementary_material(
+        record.get("supplementary_material")
+    ),
     "cited_by_api_url": lambda record: check_cited_by_api_url(record.get("cited_by_api_url")),
     "access_xinghe_repository_sha256": lambda record: check_access_xinghe_repository_sha256(
         record.get("access_xinghe_repository_sha256"),
