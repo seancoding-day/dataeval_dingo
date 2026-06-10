@@ -16,6 +16,7 @@ INVISIBLE_RE = re.compile(r"[\u2000-\u200F\u202F\u205F\u3000\uFEFF\u00A0\u2060-\
 PAGE_RANGE_RE = re.compile(r"^\d+-\d+$")
 ISSN_RE = re.compile(r"^\d{4}-\d{3}[\dX]$")
 AUTHOR_SEP_RE = re.compile(r"[|;；]")
+ORCID_URL_RE = re.compile(r"^[Hh][Tt][Tt][Pp][Ss]?://orcid\.org/\d{4}-\d{4}-\d{4}-\d{3}[\dXx]$")
 
 OA_BOOL_VALUES = {"true", "false", "unknown"}
 METADATA_TYPE_VALUES = {"paper", "ebook"}
@@ -30,6 +31,8 @@ JSON_LIST_FIELDS = {
     "publication_venue_issn",
     "references",
     "related_works",
+    "citations",
+    "supplementary_material",
 }
 LICENSE_VALUES = {
     "cc-by",
@@ -63,6 +66,16 @@ LICENSE_VALUES = {
 ACCESS_LICENSE_VALUES = set(LICENSE_VALUES)
 GRADE_CLASS_VALUES = {"k12", "higher-edu", "vocational-edu", "other", ""}
 GRADE_VALUES = {"小学", "初中", "高中", ""}
+XINGHE_REPOSITORY_MODEL_VERSION_MAP = {
+    "mineru": {"1.3.1", "2", "2.5"},
+    "llm-web-kit": {"4.1.1"},
+}
+XINGHE_REPOSITORY_MODEL_NAME_VALUES = set(XINGHE_REPOSITORY_MODEL_VERSION_MAP.keys())
+XINGHE_REPOSITORY_MODEL_VERSION_VALUES = {
+    version
+    for versions in XINGHE_REPOSITORY_MODEL_VERSION_MAP.values()
+    for version in versions
+}
 
 _DEFAULT_LANGUAGE_VALUES = {"zh", "en", "ja", "de", "fr", "es", "ru", "ko", "ar"}
 ASSETS_DIR = Path(__file__).resolve().parent / "assets"
@@ -159,6 +172,20 @@ def check_doi(doi: Any, metadata_type: Any) -> bool:
     return not bool(DOI_RE.fullmatch(doi))
 
 
+def _check_doi_value(doi: Any) -> bool:
+    if doi is None:
+        return True
+    if not isinstance(doi, str):
+        return True
+    if doi == "":
+        return True
+    if doi != doi.lower():
+        return True
+    if "https://doi.org/" in doi.lower():
+        return True
+    return not bool(DOI_RE.fullmatch(doi))
+
+
 def check_isbns(isbns: Any, metadata_type: Any) -> bool:
     if metadata_type not in METADATA_TYPE_VALUES:
         return False
@@ -223,12 +250,26 @@ def check_language(language: Any) -> bool:
 def check_author(author: Any) -> bool:
     if author is None:
         return True
-    if not (isinstance(author, list) and all(isinstance(x, str) for x in author)):
+    if not isinstance(author, list):
         return True
     if len(author) == 0:
         return False
     for item in author:
-        if AUTHOR_SEP_RE.search(item):
+        if not isinstance(item, dict):
+            return True
+        if set(item.keys()) != {"name", "orcid"}:
+            return True
+        name = item.get("name")
+        orcid = item.get("orcid")
+        if not isinstance(name, str):
+            return True
+        if name == "":
+            return True
+        if AUTHOR_SEP_RE.search(name):
+            return True
+        if not isinstance(orcid, str):
+            return True
+        if orcid != "" and not ORCID_URL_RE.fullmatch(orcid):
             return True
     return False
 
@@ -462,6 +503,56 @@ def check_related_works(related_works: Any) -> bool:
     return any(not URL_RE.fullmatch(item) for item in related_works)
 
 
+def check_citations(citations: Any) -> bool:
+    if citations is None:
+        return True
+    if not isinstance(citations, list):
+        return True
+    if len(citations) == 0:
+        return False
+    required_keys = {"id_type", "id", "title"}
+    for item in citations:
+        if not isinstance(item, dict):
+            return True
+        if set(item.keys()) != required_keys:
+            return True
+        id_type = item.get("id_type")
+        citation_id = item.get("id")
+        title = item.get("title")
+        if not isinstance(id_type, str) or id_type == "":
+            return True
+        if check_title(title):
+            return True
+        if id_type == "doi":
+            if _check_doi_value(citation_id):
+                return True
+        elif not isinstance(citation_id, str) or citation_id == "":
+            return True
+    return False
+
+
+def check_supplementary_material(supplementary_material: Any) -> bool:
+    if supplementary_material is None:
+        return True
+    if not isinstance(supplementary_material, list):
+        return True
+    if len(supplementary_material) == 0:
+        return False
+    required_keys = {
+        "supplementary_material_name",
+        "supplementary_material_url",
+        "supplementary_material_path",
+    }
+    for item in supplementary_material:
+        if not isinstance(item, dict):
+            return True
+        if set(item.keys()) != required_keys:
+            return True
+        if not all(isinstance(item.get(key), str) for key in required_keys):
+            return True
+    return False
+
+
 def check_cited_by_api_url(cited_by_api_url: Any) -> bool:
     if cited_by_api_url is None:
         return True
@@ -504,6 +595,46 @@ def check_access_xinghe_repository_origin_path(
     if not access_xinghe_repository_has_fulltext:
         return False
     return access_xinghe_repository_origin_path.strip() == ""
+
+
+def check_access_xinghe_repository_model_name(
+    access_xinghe_repository_model_name: Any, access_xinghe_repository_process_status: Any
+) -> bool:
+    if not isinstance(access_xinghe_repository_model_name, str):
+        return True
+    if access_xinghe_repository_model_name == "":
+        return access_xinghe_repository_process_status in (1, "1")
+    return access_xinghe_repository_model_name not in XINGHE_REPOSITORY_MODEL_NAME_VALUES
+
+
+def check_access_xinghe_repository_model_version(
+    access_xinghe_repository_model_version: Any,
+    access_xinghe_repository_model_name: Any,
+    access_xinghe_repository_process_status: Any,
+) -> bool:
+    if not isinstance(access_xinghe_repository_model_version, str):
+        return True
+    if access_xinghe_repository_model_version == "":
+        if access_xinghe_repository_process_status in (1, "1"):
+            return True
+        if (
+            isinstance(access_xinghe_repository_model_name, str)
+            and access_xinghe_repository_model_name in XINGHE_REPOSITORY_MODEL_NAME_VALUES
+            and "" not in XINGHE_REPOSITORY_MODEL_VERSION_MAP[access_xinghe_repository_model_name]
+        ):
+            return True
+        return False
+    if access_xinghe_repository_model_version not in XINGHE_REPOSITORY_MODEL_VERSION_VALUES:
+        return True
+    if (
+        isinstance(access_xinghe_repository_model_name, str)
+        and access_xinghe_repository_model_name in XINGHE_REPOSITORY_MODEL_NAME_VALUES
+    ):
+        return (
+            access_xinghe_repository_model_version
+            not in XINGHE_REPOSITORY_MODEL_VERSION_MAP[access_xinghe_repository_model_name]
+        )
+    return False
 
 
 def _normalize_json_like_field(value: Any) -> Any:
@@ -598,6 +729,10 @@ FIELD_VALIDATORS = {
     "grade": lambda record: check_grade(record.get("grade"), record.get("grade_class")),
     "references": lambda record: check_references(record.get("references")),
     "related_works": lambda record: check_related_works(record.get("related_works")),
+    "citations": lambda record: check_citations(record.get("citations")),
+    "supplementary_material": lambda record: check_supplementary_material(
+        record.get("supplementary_material")
+    ),
     "cited_by_api_url": lambda record: check_cited_by_api_url(record.get("cited_by_api_url")),
     "access_xinghe_repository_sha256": lambda record: check_access_xinghe_repository_sha256(
         record.get("access_xinghe_repository_sha256"),
@@ -606,6 +741,15 @@ FIELD_VALIDATORS = {
     "access_xinghe_repository_origin_path": lambda record: check_access_xinghe_repository_origin_path(
         record.get("access_xinghe_repository_origin_path"),
         record.get("access_xinghe_repository_has_fulltext"),
+    ),
+    "access_xinghe_repository_model_name": lambda record: check_access_xinghe_repository_model_name(
+        record.get("access_xinghe_repository_model_name"),
+        record.get("access_xinghe_repository_process_status"),
+    ),
+    "access_xinghe_repository_model_version": lambda record: check_access_xinghe_repository_model_version(
+        record.get("access_xinghe_repository_model_version"),
+        record.get("access_xinghe_repository_model_name"),
+        record.get("access_xinghe_repository_process_status"),
     ),
 }
 
