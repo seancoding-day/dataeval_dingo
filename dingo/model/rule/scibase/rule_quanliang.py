@@ -30,6 +30,7 @@ JSON_LIST_FIELDS = {
     "publication_venue_issn",
     "references",
     "related_works",
+    "citations",
 }
 LICENSE_VALUES = {
     "cc-by",
@@ -152,6 +153,20 @@ def check_doi(doi: Any, metadata_type: Any) -> bool:
         return True
     if doi == "":
         return required
+    if doi != doi.lower():
+        return True
+    if "https://doi.org/" in doi.lower():
+        return True
+    return not bool(DOI_RE.fullmatch(doi))
+
+
+def _check_doi_value(doi: Any) -> bool:
+    if doi is None:
+        return True
+    if not isinstance(doi, str):
+        return True
+    if doi == "":
+        return True
     if doi != doi.lower():
         return True
     if "https://doi.org/" in doi.lower():
@@ -462,6 +477,34 @@ def check_related_works(related_works: Any) -> bool:
     return any(not URL_RE.fullmatch(item) for item in related_works)
 
 
+def check_citations(citations: Any) -> bool:
+    if citations is None:
+        return True
+    if not isinstance(citations, list):
+        return True
+    if len(citations) == 0:
+        return False
+    required_keys = {"id_type", "id", "title"}
+    for item in citations:
+        if not isinstance(item, dict):
+            return True
+        if set(item.keys()) != required_keys:
+            return True
+        id_type = item.get("id_type")
+        citation_id = item.get("id")
+        title = item.get("title")
+        if not isinstance(id_type, str) or id_type == "":
+            return True
+        if check_title(title):
+            return True
+        if id_type == "doi":
+            if _check_doi_value(citation_id):
+                return True
+        elif not isinstance(citation_id, str) or citation_id == "":
+            return True
+    return False
+
+
 def check_cited_by_api_url(cited_by_api_url: Any) -> bool:
     if cited_by_api_url is None:
         return True
@@ -598,6 +641,7 @@ FIELD_VALIDATORS = {
     "grade": lambda record: check_grade(record.get("grade"), record.get("grade_class")),
     "references": lambda record: check_references(record.get("references")),
     "related_works": lambda record: check_related_works(record.get("related_works")),
+    "citations": lambda record: check_citations(record.get("citations")),
     "cited_by_api_url": lambda record: check_cited_by_api_url(record.get("cited_by_api_url")),
     "access_xinghe_repository_sha256": lambda record: check_access_xinghe_repository_sha256(
         record.get("access_xinghe_repository_sha256"),
