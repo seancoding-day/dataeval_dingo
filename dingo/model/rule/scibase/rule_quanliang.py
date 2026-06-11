@@ -169,19 +169,7 @@ def check_doi(doi: Any, metadata_type: Any) -> bool:
         return True
     if "https://doi.org/" in doi.lower():
         return True
-    return not bool(DOI_RE.fullmatch(doi))
-
-
-def _check_doi_value(doi: Any) -> bool:
-    if doi is None:
-        return True
-    if not isinstance(doi, str):
-        return True
-    if doi == "":
-        return True
-    if doi != doi.lower():
-        return True
-    if "https://doi.org/" in doi.lower():
+    if doi.startswith("10.0000/"):
         return True
     return not bool(DOI_RE.fullmatch(doi))
 
@@ -524,7 +512,7 @@ def check_citations(citations: Any) -> bool:
         if check_title(title):
             return True
         if id_type == "doi":
-            if _check_doi_value(citation_id):
+            if check_doi(citation_id, "paper"):
                 return True
         elif not isinstance(citation_id, str) or citation_id == "":
             return True
