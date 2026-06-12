@@ -2691,7 +2691,7 @@ class RuleDictConsistency(BaseRule):
     }
 
     _required_fields = [RequiredField.METADATA, RequiredField.CONTEXT]
-    dynamic_config = EvaluatorRuleArgs(parameters={"ignore_order": True})
+    dynamic_config = EvaluatorRuleArgs(ignore_order=True)
 
     @classmethod
     def _normalize_value(cls, value, ignore_order: bool):
@@ -2719,8 +2719,7 @@ class RuleDictConsistency(BaseRule):
         res = EvalDetail(metric=cls.__name__)
         left_dict = getattr(input_data, "metadata", None)
         right_dict = getattr(input_data, "context", None)
-        parameters = cls.dynamic_config.parameters or {}
-        ignore_order = parameters.get("ignore_order", True)
+        ignore_order = getattr(cls.dynamic_config, "ignore_order", True)
 
         if not isinstance(left_dict, dict) or not isinstance(right_dict, dict):
             res.status = True
