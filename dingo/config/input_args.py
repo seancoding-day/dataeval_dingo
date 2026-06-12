@@ -114,13 +114,12 @@ class ExecutorArgs(BaseModel):
 
 
 class EvaluatorRuleArgs(BaseModel):
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "allow"}
 
     threshold: Optional[float] = None
     pattern: Optional[str] = None
     key_list: Optional[List[str]] = None
     refer_path: Optional[List[str]] = None
-    parameters: Optional[dict] = None
 
 
 class EmbeddingConfigArgs(BaseModel):
