@@ -471,35 +471,15 @@ def check_grade(grade: Any, grade_class: Any) -> bool:
     return False
 
 
-def check_references(references: Any) -> bool:
-    if references is None:
+def _check_id_type_id_title_items(items: Any) -> bool:
+    if items is None:
         return True
-    if not (isinstance(references, list) and all(isinstance(x, str) for x in references)):
+    if not isinstance(items, list):
         return True
-    if len(references) == 0:
-        return False
-    return any(not URL_RE.fullmatch(item) for item in references)
-
-
-def check_related_works(related_works: Any) -> bool:
-    if related_works is None:
-        return True
-    if not (isinstance(related_works, list) and all(isinstance(x, str) for x in related_works)):
-        return True
-    if len(related_works) == 0:
-        return False
-    return any(not URL_RE.fullmatch(item) for item in related_works)
-
-
-def check_citations(citations: Any) -> bool:
-    if citations is None:
-        return True
-    if not isinstance(citations, list):
-        return True
-    if len(citations) == 0:
+    if len(items) == 0:
         return False
     required_keys = {"id_type", "id", "title"}
-    for item in citations:
+    for item in items:
         if not isinstance(item, dict):
             return True
         if set(item.keys()) != required_keys:
@@ -517,6 +497,18 @@ def check_citations(citations: Any) -> bool:
         elif not isinstance(citation_id, str) or citation_id == "":
             return True
     return False
+
+
+def check_references(references: Any) -> bool:
+    return _check_id_type_id_title_items(references)
+
+
+def check_related_works(related_works: Any) -> bool:
+    return _check_id_type_id_title_items(related_works)
+
+
+def check_citations(citations: Any) -> bool:
+    return _check_id_type_id_title_items(citations)
 
 
 def check_supplementary_material(supplementary_material: Any) -> bool:
