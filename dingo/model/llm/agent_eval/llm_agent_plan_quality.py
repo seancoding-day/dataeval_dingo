@@ -41,11 +41,6 @@ class LLMAgentPlanQuality(BaseLLMAgentEval):
 
     _required_fields = [RequiredField.PROMPT, RequiredField.CONTENT]
 
-    _NO_PLAN_KEYWORDS = [
-        "no plan", "no planning", "no explicit plan",
-        "did not plan", "skipped planning", "planning not found",
-    ]
-
     prompt = """You are an expert evaluator assessing the quality of an AI agent's reasoning plan.
 
 First, determine whether the trace contains any planning content (explicit steps, strategy, or reasoning about how to approach the task). If there is no planning content at all, set score to -1 as a sentinel value.
@@ -55,7 +50,9 @@ If planning content exists, evaluate it on three dimensions:
 2. **Completeness** (1-5): Does the plan cover all necessary steps to achieve the goal?
 3. **Feasibility** (1-5): Are the planned steps realistic and achievable?
 
-Compute an overall score from 0 to 10.
+Compute an overall **score** from 0 to 10 that is CONSISTENT with the three
+dimensions above (e.g. all 5s → 9-10, all 3s → 5-6, all 1s → 0-2). Do not let
+the score contradict the dimension ratings.
 
 IMPORTANT: The "reason" field MUST be in the same language as the Task Objective. If the task objective is in Chinese, respond in Chinese. If in English, respond in English.
 

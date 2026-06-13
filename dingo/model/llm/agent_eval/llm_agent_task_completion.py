@@ -38,7 +38,11 @@ Evaluate the agent's performance across three dimensions:
 2. **Accuracy** (1-5): Is the result correct and free of errors?
 3. **Completeness** (1-5): Did the agent address all aspects of the task?
 
-Then compute an overall score from 0 to 10 reflecting the combined quality.
+Then compute an overall **score** from 0 to 10 that is CONSISTENT with the three
+dimensions above — it must reflect their combined level (e.g. all 5s → 9-10,
+all 4s → 7-8, all 3s → 5-6, all 2s → 3-4, all 1s → 0-2). Do not let the score
+contradict the dimension ratings. If the run was incomplete, credit verifiable
+partial progress rather than scoring 0.
 
 Respond in the same language as the input content for the "reason" field.
 
