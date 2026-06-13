@@ -53,13 +53,46 @@ class BaseLLMAgentEval(BaseOpenAI):
     @classmethod
     def _strip_json_fences(cls, response: str) -> str:
         response = response.strip()
-        if response.startswith("```json"):
-            response = response[7:]
+        # Remove a leading code fence (```json / ```JSON / ```) of any case by
+        # dropping the fence line, then a trailing fence.
         if response.startswith("```"):
-            response = response[3:]
+            newline = response.find("\n")
+            response = response[newline + 1:] if newline != -1 else response[3:]
         if response.endswith("```"):
             response = response[:-3]
         return response.strip()
+
+    @staticmethod
+    def _extract_json_object(text: str) -> Optional[str]:
+        """Return the first balanced top-level JSON object substring, or None.
+
+        Tolerates prose before/after the object (a common LLM output pattern)
+        and brace characters inside strings.
+        """
+        start = text.find("{")
+        if start == -1:
+            return None
+        depth = 0
+        in_str = False
+        esc = False
+        for i in range(start, len(text)):
+            ch = text[i]
+            if in_str:
+                if esc:
+                    esc = False
+                elif ch == "\\":
+                    esc = True
+                elif ch == '"':
+                    in_str = False
+            elif ch == '"':
+                in_str = True
+            elif ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    return text[start:i + 1]
+        return None
 
     @classmethod
     def _parse_json_response(cls, response: str) -> dict:
@@ -67,9 +100,17 @@ class BaseLLMAgentEval(BaseOpenAI):
         try:
             return json.loads(cleaned)
         except json.JSONDecodeError:
-            raise ConvertJsonError(
-                f"Failed to parse agent eval JSON: {cleaned[:500]}"
-            )
+            pass
+        # Fall back to extracting the first balanced JSON object — handles
+        # responses with prose around the JSON or a missed/uppercase fence —
+        # so a recoverable response is not penalized as a parse failure.
+        candidate = cls._extract_json_object(cleaned) or cls._extract_json_object(response)
+        if candidate:
+            try:
+                return json.loads(candidate)
+            except json.JSONDecodeError:
+                pass
+        raise ConvertJsonError(f"Failed to parse agent eval JSON: {cleaned[:500]}")
 
     @classmethod
     def process_response(cls, response: str) -> EvalDetail:

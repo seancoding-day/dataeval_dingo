@@ -11,6 +11,7 @@ evaluation scores as input and produces:
 This is NOT an evaluator in the traditional sense — it's a diagnostic synthesizer.
 """
 
+import json
 from typing import List
 
 from dingo.io.input import Data, RequiredField
@@ -32,11 +33,11 @@ CONCLUSION_PROMPT = """You are an AI agent quality analyst. Given the evaluation
 ## Instructions
 Analyze all evaluation scores and produce a structured JSON diagnosis:
 
-1. **severity**: "critical" (any score < 0.3), "warning" (any score < 0.6), or "good" (all scores >= 0.6)
-2. **root_causes**: List the primary reasons for any failures or low scores
-3. **recommendations**: Actionable suggestions to improve the agent's performance
-4. **highlights**: What the agent did well
-5. **score**: Overall quality score from 0 to 10, weighing task completion most heavily
+1. **score**: Overall quality score from 0 to 10, weighing task completion most heavily
+2. **severity**: the overall tier, and it MUST be consistent with **score** — "critical" if score < 3, "warning" if 3 <= score < 6, "good" if score >= 6
+3. **root_causes**: List the primary reasons for any failures or low scores
+4. **recommendations**: Actionable suggestions to improve the agent's performance
+5. **highlights**: What the agent did well
 
 Output STRICTLY as JSON:
 ```json
@@ -90,22 +91,26 @@ class LLMAgentTraceConclusion(BaseLLMAgentEval):
             raw_score = 5.0
 
         normalized_score = max(0.0, min(1.0, raw_score / 10.0))
-        severity = data.get("severity", "warning")
 
         result = EvalDetail(metric=cls.__name__)
         result.score = normalized_score
 
-        if severity == "good":
+        # Derive severity from the overall score so the pass/fail status, the
+        # severity badge, and the numeric score are always consistent (the LLM's
+        # own "severity" field is advisory and can drift from its score).
+        if normalized_score >= 0.6:
+            severity = "good"
             result.status = False
             result.label = [QualityLabel.QUALITY_GOOD]
-        elif severity == "critical":
-            result.status = True
-            result.label = ["AGENT_QUALITY.TraceConclusion.CRITICAL"]
-        else:
+        elif normalized_score >= 0.3:
+            severity = "warning"
             result.status = True
             result.label = ["AGENT_QUALITY.TraceConclusion.WARNING"]
+        else:
+            severity = "critical"
+            result.status = True
+            result.label = ["AGENT_QUALITY.TraceConclusion.CRITICAL"]
 
-        import json
         result.reason = [
             data.get("summary", ""),
             json.dumps({

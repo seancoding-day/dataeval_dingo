@@ -5,6 +5,7 @@ If no error events are present in the input, returns score=1.0 (pass) immediatel
 since perfect execution with no errors requires no recovery.
 """
 
+import json
 import time
 from typing import List
 
@@ -57,7 +58,7 @@ Count:
 - **errors_encountered**: Total number of distinct errors or failures
 - **recovered_count**: Number of errors from which the agent successfully recovered
 
-Assess overall **recovery_quality** from 0 to 10:
+Assess the overall recovery **score** from 0 to 10:
 - 10: Agent recovered from all errors with optimal strategies
 - 7-9: Agent recovered from most errors with reasonable strategies
 - 4-6: Agent recovered from some errors but used suboptimal approaches
@@ -70,7 +71,6 @@ Return your evaluation as a JSON object with this exact schema:
 {
   "errors_encountered": <integer>,
   "recovered_count": <integer>,
-  "recovery_quality": <integer 0-10>,
   "score": <integer 0-10>,
   "reason": "<concise explanation of recovery behavior for each error type>"
 }
@@ -79,14 +79,26 @@ Do not include any text outside the JSON object."""
 
     @classmethod
     def _has_error_events(cls, content: str) -> bool:
-        """Check if the content contains actual error events."""
+        """Check if the content contains actual error events.
+
+        The structured payload is ``{"error_events": [...], "steps": [...]}`` —
+        whether errors occurred is the ``error_events`` list, not the wrapper
+        (which is never literally ``{}``/``[]``). Parse it so a clean run
+        short-circuits to a pass instead of spending an LLM call on an empty
+        error list. Falls back to phrase matching for free-text inputs.
+        """
         if not content or not content.strip():
             return False
+        try:
+            parsed = json.loads(content)
+            if isinstance(parsed, dict) and "error_events" in parsed:
+                return bool(parsed.get("error_events"))
+            if isinstance(parsed, list):
+                return bool(parsed)
+        except (ValueError, TypeError):
+            pass
         stripped = content.strip().lower()
-        for indicator in cls._NO_ERROR_INDICATORS:
-            if stripped == indicator:
-                return False
-        return True
+        return stripped not in cls._NO_ERROR_INDICATORS
 
     @classmethod
     def build_messages(cls, input_data: Data) -> List[dict]:
