@@ -6,7 +6,6 @@ since perfect execution with no errors requires no recovery.
 """
 
 import json
-import time
 from typing import List
 
 from dingo.io.input import Data, RequiredField
@@ -14,12 +13,6 @@ from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model import Model
 from dingo.model.llm.agent_eval.base_llm_agent_eval import BaseLLMAgentEval
 from dingo.utils import log
-from dingo.utils.exception import ConvertJsonError, ExceedMaxTokens
-
-try:
-    from pydantic import ValidationError
-except ImportError:
-    ValidationError = Exception
 
 
 @Model.llm_register("LLMAgentErrorRecovery")
@@ -120,7 +113,14 @@ Evaluate the agent's error recovery and return the JSON evaluation.{lang_hint}""
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
-        """Override eval() to handle the no-error special case."""
+        """Override eval() to handle the no-error special case.
+
+        When the trace contains no error events, recovery is vacuously perfect,
+        so we short-circuit to a pass without an LLM call. Otherwise we delegate
+        to the shared retry/parse pipeline in ``BaseOpenAI.eval``, which drives
+        this class's ``build_messages`` and inherited ``process_response`` — no
+        need to duplicate the retry loop and error fallback here.
+        """
         content = getattr(input_data, "content", "") or ""
 
         if not cls._has_error_events(content):
@@ -132,31 +132,4 @@ Evaluate the agent's error recovery and return the JSON evaluation.{lang_hint}""
             result.reason = ["No error events found in execution trace; recovery evaluation skipped."]
             return result
 
-        if cls.client is None:
-            cls.create_client()
-
-        messages = cls.build_messages(input_data)
-
-        attempts = 0
-        except_msg = ""
-        except_name = Exception.__class__.__name__
-        while attempts < 3:
-            try:
-                response = cls.send_messages(messages)
-                res: EvalDetail = cls.process_response(response)
-                return res
-            except (ValidationError, ExceedMaxTokens, ConvertJsonError) as e:
-                except_msg = str(e)
-                except_name = e.__class__.__name__
-                break
-            except Exception as e:
-                attempts += 1
-                time.sleep(1)
-                except_msg = str(e)
-                except_name = e.__class__.__name__
-
-        res = EvalDetail(metric=cls.__name__)
-        res.status = True
-        res.label = [f"QUALITY_BAD.{except_name}"]
-        res.reason = [except_msg]
-        return res
+        return super().eval(input_data)
