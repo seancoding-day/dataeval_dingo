@@ -20,8 +20,10 @@ class TestRuleQuanliangFieldValidation:
                     if not line:
                         continue
                     row = json.loads(line)
-                    RuleQuanliangFieldValidation.dynamic_config.key_list = row["key_list"]
-                    result = RuleQuanliangFieldValidation.eval(Data(**row["input"]))
+                    model = RuleQuanliangFieldValidation()
+                    model.dynamic_config = model.dynamic_config.model_copy(deep=True)
+                    model.dynamic_config.key_list = row["key_list"]
+                    result = model.eval(Data(**row["input"]))
 
                     assert result.metric == "RuleQuanliangFieldValidation"
                     assert result.status is row["expected_status"], row["case"]

@@ -7,6 +7,43 @@ from dingo.io.output.eval_detail import EvalDetail
 
 
 class TestLocal:
+    def test_rule_runtime_config_key_list_applies_in_local_executor(self):
+        input_data = {
+            "evaluator": [],
+        }
+        input_args = InputArgs(**input_data)
+        executor = LocalExecutor(input_args)
+
+        eval_list = [
+            InputArgs(
+                evaluator=[
+                    {
+                        "fields": {},
+                        "evals": [
+                            {
+                                "name": "RuleQuanliangFieldValidation",
+                                "config": {
+                                    "key_list": ["doi", "references", "related_works", "citations"]
+                                },
+                            }
+                        ],
+                    }
+                ]
+            ).evaluator[0].evals[0]
+        ]
+
+        result = executor.evaluate_single_data(
+            dingo_id="1",
+            eval_fields={},
+            eval_type="rule",
+            map_data={},
+            eval_list=eval_list,
+        )
+
+        details = result.eval_details["default"][0]
+        assert details.metric == "RuleQuanliangFieldValidation"
+        assert details.label == ["doi", "references", "related_works", "citations"]
+
     def test_write_single_data_limit_per_file(self, tmp_path):
         input_data = {
             "executor": {
