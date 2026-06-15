@@ -7,13 +7,38 @@ of agent execution traces (loops, token budget, latency anomalies).
 
 import json
 import statistics
-from typing import List, Optional
+from typing import Any, List, Optional
 
 from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model.model import Model
 from dingo.model.rule.base import BaseRule
+
+
+def _load_trace_items(content: Any, primary_key: str, secondary_key: str) -> List[dict]:
+    """Parse agent-trace ``content`` into a list of step / tool-call items.
+
+    Accepts a JSON string, an already-parsed list, or a dict wrapper. For a dict
+    payload, returns the first non-empty list among ``primary_key`` /
+    ``secondary_key`` — using ``or`` (not ``dict.get`` defaults) so a
+    present-but-null key falls through instead of yielding ``None``. Returns
+    ``[]`` for free text, JSON null, or any non-list payload, so callers can
+    iterate the result without guarding against ``None``.
+    """
+    try:
+        data = json.loads(content) if isinstance(content, str) else content
+    except (json.JSONDecodeError, TypeError):
+        return []
+
+    if isinstance(data, dict):
+        items = data.get(primary_key) or data.get(secondary_key) or []
+    elif isinstance(data, list):
+        items = data
+    else:
+        return []
+
+    return items if isinstance(items, list) else []
 
 
 @Model.rule_register("AGENT_TRACE_QUALITY", ["agent_trace_basic"])
@@ -58,28 +83,12 @@ class RuleAgentTraceLoopDetection(BaseRule):
 
     @classmethod
     def _extract_tool_names(cls, content: str) -> List[str]:
-        try:
-            data = json.loads(content) if isinstance(content, str) else content
-        except (json.JSONDecodeError, TypeError):
-            return []
-
-        items = []
-        if isinstance(data, dict):
-            # `or` (not dict.get default): a present-but-null "tool_calls" key
-            # returns None, which would break iteration — fall through to steps.
-            items = data.get("tool_calls") or data.get("steps") or []
-        elif isinstance(data, list):
-            items = data
-
-        if not isinstance(items, list):
-            return []
-
         # Parenthesize the filter: `and` binds tighter than `or`, so without
         # these parens a non-dict item would reach `item.get("name")` and raise
         # AttributeError.
         return [
             item.get("tool_name", item.get("name", ""))
-            for item in items
+            for item in _load_trace_items(content, "tool_calls", "steps")
             if isinstance(item, dict) and (item.get("tool_name") or item.get("name"))
         ]
 
@@ -222,22 +231,6 @@ class RuleAgentTraceLatencyAnomaly(BaseRule):
 
     @classmethod
     def _extract_steps(cls, content: str) -> List[dict]:
-        try:
-            data = json.loads(content) if isinstance(content, str) else content
-        except (json.JSONDecodeError, TypeError):
-            return []
-
-        items = []
-        if isinstance(data, dict):
-            # `or` (not dict.get default): a present-but-null key returns None,
-            # which would break the iteration below.
-            items = data.get("steps") or data.get("tool_calls") or []
-        elif isinstance(data, list):
-            items = data
-
-        if not isinstance(items, list):
-            return []
-
         return [
             {
                 "name": item.get("name", "unknown"),
@@ -245,7 +238,7 @@ class RuleAgentTraceLatencyAnomaly(BaseRule):
                     item.get("duration", item.get("duration_seconds"))
                 ),
             }
-            for item in items
+            for item in _load_trace_items(content, "steps", "tool_calls")
             if isinstance(item, dict)
         ]
 
