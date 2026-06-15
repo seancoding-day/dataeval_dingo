@@ -5,7 +5,6 @@ Assesses coherence, completeness, and feasibility of the agent's plan.
 If no planning content is found in the trace, defaults to passing (score=1.0).
 """
 
-import time
 from typing import List
 
 from dingo.io.input import Data, RequiredField
@@ -13,12 +12,6 @@ from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model import Model
 from dingo.model.llm.agent_eval.base_llm_agent_eval import BaseLLMAgentEval
 from dingo.utils import log
-from dingo.utils.exception import ConvertJsonError, ExceedMaxTokens
-
-try:
-    from pydantic import ValidationError
-except ImportError:
-    ValidationError = Exception
 
 
 @Model.llm_register("LLMAgentPlanQuality")
@@ -86,72 +79,31 @@ Evaluate the plan quality and return the JSON evaluation.{lang_hint}"""
         return [{"role": "user", "content": user_content}]
 
     @classmethod
-    def eval(cls, input_data: Data) -> EvalDetail:
-        """Override eval() to handle the no-planning special case."""
-        if cls.client is None:
-            cls.create_client()
+    def process_response(cls, response: str) -> EvalDetail:
+        """Handle the no-planning sentinel, else use the standard agent scoring.
 
-        messages = cls.build_messages(input_data)
+        The prompt instructs the model to return ``score = -1`` when the trace
+        contains no planning content at all; that is treated as a pass (absence
+        of planning can be acceptable for simple tasks). Any other score is
+        delegated to ``BaseLLMAgentEval.process_response`` for the standard
+        0~10 → 0.0~1.0 normalization and threshold comparison. By only
+        overriding ``process_response`` (not ``eval``), the retry loop and error
+        fallback in ``BaseOpenAI.eval`` are reused instead of duplicated.
+        """
+        data = cls._parse_json_response(response)
+        raw_score = data.get("score", 0)
+        try:
+            raw_score = float(raw_score)
+        except (TypeError, ValueError):
+            raw_score = 0.0
 
-        attempts = 0
-        except_msg = ""
-        except_name = Exception.__class__.__name__
-        while attempts < 3:
-            try:
-                response = cls.send_messages(messages)
+        if raw_score < 0:
+            log.info(f"{cls.__name__}: No planning content found in trace, defaulting to pass")
+            result = EvalDetail(metric=cls.__name__)
+            result.status = False
+            result.label = [QualityLabel.QUALITY_GOOD]
+            result.score = 1.0
+            result.reason = [data.get("reason", "No planning content found; evaluation skipped.")]
+            return result
 
-                data = cls._parse_json_response(response)
-                raw_score = data.get("score", 0)
-
-                try:
-                    raw_score = float(raw_score)
-                except (TypeError, ValueError):
-                    raw_score = 0.0
-
-                result = EvalDetail(metric=cls.__name__)
-
-                if raw_score < 0:
-                    # Sentinel value: no planning content found, treat as pass
-                    log.info(f"{cls.__name__}: No planning content found in trace, defaulting to pass")
-                    result.status = False
-                    result.label = [QualityLabel.QUALITY_GOOD]
-                    result.score = 1.0
-                    result.reason = [data.get("reason", "No planning content found; evaluation skipped.")]
-                    return result
-
-                normalized_score = max(0.0, min(1.0, raw_score / 10.0))
-                threshold = cls._get_threshold()
-                reason_text = data.get("reason", "")
-                details = {k: v for k, v in data.items() if k not in ("score", "reason")}
-
-                import json
-                result.score = normalized_score
-                if normalized_score >= threshold:
-                    result.status = False
-                    result.label = [QualityLabel.QUALITY_GOOD]
-                else:
-                    result.status = True
-                    result.label = [f"AGENT_QUALITY.{cls.__name__}"]
-
-                reason_parts = [reason_text] if reason_text else []
-                if details:
-                    reason_parts.append(json.dumps(details, ensure_ascii=False, default=str))
-                result.reason = reason_parts if reason_parts else None
-
-                return result
-
-            except (ValidationError, ExceedMaxTokens, ConvertJsonError) as e:
-                except_msg = str(e)
-                except_name = e.__class__.__name__
-                break
-            except Exception as e:
-                attempts += 1
-                time.sleep(1)
-                except_msg = str(e)
-                except_name = e.__class__.__name__
-
-        res = EvalDetail(metric=cls.__name__)
-        res.status = True
-        res.label = [f"QUALITY_BAD.{except_name}"]
-        res.reason = [except_msg]
-        return res
+        return super().process_response(response)
