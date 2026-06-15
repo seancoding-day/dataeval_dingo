@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from dingo.config.input_args import EvaluatorRuleArgs
-from dingo.io.input import Data, RequiredField
+from dingo.io.input import Data
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model.model import Model
 from dingo.model.rule.base import BaseRule
@@ -145,476 +145,541 @@ def _valid_issn(code: str) -> bool:
     return digits[7].upper() == expected
 
 
-def check_metadata_type(metadata_type: Any) -> bool:
+ValidationResult = tuple[bool, str]
+
+
+def _ok() -> ValidationResult:
+    return False, ""
+
+
+def _fail(reason: str) -> ValidationResult:
+    return True, reason
+
+
+def check_metadata_type(metadata_type: Any) -> ValidationResult:
     if metadata_type is None:
-        return True
+        return _fail("value is null")
     if not isinstance(metadata_type, str):
-        return True
+        return _fail("value must be a string")
     if metadata_type.strip() == "":
-        return True
-    return metadata_type not in METADATA_TYPE_VALUES
-
-
-def check_doi(doi: Any, metadata_type: Any) -> bool:
+        return _fail("value must be a non-empty string")
     if metadata_type not in METADATA_TYPE_VALUES:
-        return False
+        return _fail(f"unsupported value '{metadata_type}'")
+    return _ok()
+
+
+def check_doi(doi: Any, metadata_type: Any) -> ValidationResult:
+    if metadata_type not in METADATA_TYPE_VALUES:
+        return _ok()
     required = metadata_type == "paper"
     if doi is None:
-        return required
+        return _fail("value cannot be None when metadata_type='paper'") if required else _ok()
     if not isinstance(doi, str):
-        return True
+        return _fail("value must be a string")
     if doi == "":
-        return required
+        return _fail("value cannot be empty string when metadata_type='paper'") if required else _ok()
     if doi != doi.lower():
-        return True
+        return _fail("value must be lowercase")
     if "https://doi.org/" in doi.lower():
-        return True
+        return _fail("value should be DOI only, not a URL")
     if doi.startswith("10.0000/"):
-        return True
-    return not bool(DOI_RE.fullmatch(doi))
+        return _fail("placeholder DOI is not allowed")
+    if not DOI_RE.fullmatch(doi):
+        return _fail("value does not match DOI format")
+    return _ok()
 
 
-def check_isbns(isbns: Any, metadata_type: Any) -> bool:
+def check_isbns(isbns: Any, metadata_type: Any) -> ValidationResult:
     if metadata_type not in METADATA_TYPE_VALUES:
-        return False
+        return _ok()
     required = metadata_type == "ebook"
     if isbns is None:
-        return required
+        return _fail("value cannot be None when metadata_type='ebook'") if required else _ok()
     if not (isinstance(isbns, list) and all(isinstance(x, str) for x in isbns)):
-        return True
+        return _fail("value must be a list of strings")
     if len(isbns) == 0:
-        return required
+        return _fail("value cannot be empty list when metadata_type='ebook'") if required else _ok()
     for item in isbns:
         if not (_valid_isbn10(item) or _valid_isbn13(item)):
-            return True
-    return False
+            return _fail(f"invalid ISBN value '{item}'")
+    return _ok()
 
 
-def check_isbn13(isbn13: Any, metadata_type: Any) -> bool:
+def check_isbn13(isbn13: Any, metadata_type: Any) -> ValidationResult:
     if metadata_type not in METADATA_TYPE_VALUES:
-        return False
+        return _ok()
     required = metadata_type == "ebook"
     if isbn13 is None:
-        return required
+        return _fail("value cannot be None when metadata_type='ebook'") if required else _ok()
     if not isinstance(isbn13, str):
-        return True
+        return _fail("value must be a string")
     if isbn13 == "":
-        return required
-    return not _valid_isbn13(isbn13)
+        return _fail("value cannot be empty string when metadata_type='ebook'") if required else _ok()
+    if not _valid_isbn13(isbn13):
+        return _fail(f"invalid ISBN13 value '{isbn13}'")
+    return _ok()
 
 
-def check_title(title: Any) -> bool:
+def check_title(title: Any) -> ValidationResult:
     if title is None:
-        return True
+        return _fail("value is null")
     if not isinstance(title, str):
-        return True
+        return _fail("value must be a string")
     if title == "":
-        return False
-    return bool(INVISIBLE_RE.search(title))
+        return _ok()
+    if INVISIBLE_RE.search(title):
+        return _fail("contains invisible unicode characters")
+    return _ok()
 
 
-def check_abstract(abstract: Any) -> bool:
+def check_abstract(abstract: Any) -> ValidationResult:
     if abstract is None:
-        return True
+        return _fail("value is null")
     if not isinstance(abstract, str):
-        return True
+        return _fail("value must be a string")
     if abstract == "":
-        return False
-    return bool(INVISIBLE_RE.search(abstract))
+        return _ok()
+    if INVISIBLE_RE.search(abstract):
+        return _fail("contains invisible unicode characters")
+    return _ok()
 
 
-def check_language(language: Any) -> bool:
+def check_language(language: Any) -> ValidationResult:
     if language is None:
-        return True
+        return _fail("value is null")
     if not isinstance(language, str):
-        return True
+        return _fail("value must be a string")
     if language == "":
-        return False
+        return _ok()
     if not LANGUAGE_ALLOWED_VALUES:
-        return False
-    return language not in LANGUAGE_ALLOWED_VALUES
+        return _ok()
+    if language not in LANGUAGE_ALLOWED_VALUES:
+        return _fail(f"unsupported language code '{language}'")
+    return _ok()
 
 
-def check_author(author: Any) -> bool:
+def check_author(author: Any) -> ValidationResult:
     if author is None:
-        return True
+        return _fail("value is null")
     if not isinstance(author, list):
-        return True
+        return _fail("value must be a list")
     if len(author) == 0:
-        return False
-    for item in author:
+        return _ok()
+    for idx, item in enumerate(author):
         if not isinstance(item, dict):
-            return True
+            return _fail(f"item[{idx}] must be an object")
         if set(item.keys()) != {"name", "orcid"}:
-            return True
+            return _fail(f"item[{idx}] keys must be exactly {{'name','orcid'}}")
         name = item.get("name")
         orcid = item.get("orcid")
         if not isinstance(name, str):
-            return True
+            return _fail(f"item[{idx}].name must be a string")
         if name == "":
-            return True
+            return _fail(f"item[{idx}].name must be non-empty")
         if AUTHOR_SEP_RE.search(name):
-            return True
+            return _fail(f"item[{idx}].name contains invalid separator")
         if not isinstance(orcid, str):
-            return True
+            return _fail(f"item[{idx}].orcid must be a string")
         if orcid != "" and not ORCID_URL_RE.fullmatch(orcid):
-            return True
-    return False
+            return _fail(f"item[{idx}].orcid is not a valid ORCID URL")
+    return _ok()
 
 
-def check_contributors(contributors: Any) -> bool:
+def check_contributors(contributors: Any) -> ValidationResult:
     if contributors is None:
-        return True
+        return _fail("value is null")
     if not (isinstance(contributors, list) and all(isinstance(x, str) for x in contributors)):
-        return True
+        return _fail("value must be a list of strings")
     if len(contributors) == 0:
-        return False
-    for item in contributors:
+        return _ok()
+    for idx, item in enumerate(contributors):
         if AUTHOR_SEP_RE.search(item):
-            return True
-    return False
+            return _fail(f"item[{idx}] contains invalid separator")
+    return _ok()
 
 
-def check_locations(locations: Any) -> bool:
+def check_locations(locations: Any) -> ValidationResult:
     if locations is None:
-        return True
+        return _fail("value is null")
     if not isinstance(locations, list):
-        return True
+        return _fail("value must be a list")
     if len(locations) == 0:
-        return False
-    for item in locations:
+        return _ok()
+    for idx, item in enumerate(locations):
         if not isinstance(item, dict):
-            return True
+            return _fail(f"item[{idx}] must be an object")
         for key in ("type", "url", "license", "is_oa"):
             if key not in item:
-                return True
+                return _fail(f"item[{idx}] missing key '{key}'")
         if item["type"] not in LOC_TYPE_VALUES:
-            return True
+            return _fail(f"item[{idx}].type is invalid")
         if not (isinstance(item["url"], str) and URL_RE.fullmatch(item["url"])):
-            return True
+            return _fail(f"item[{idx}].url is invalid")
         if item["license"] not in LICENSE_VALUES:
-            return True
+            return _fail(f"item[{idx}].license is invalid")
         if item["is_oa"] not in OA_BOOL_VALUES:
-            return True
-    return False
+            return _fail(f"item[{idx}].is_oa is invalid")
+    return _ok()
 
 
-def check_access_is_oa(access_is_oa: Any, metadata_type: Any) -> bool:
+def check_access_is_oa(access_is_oa: Any, metadata_type: Any) -> ValidationResult:
     if metadata_type not in METADATA_TYPE_VALUES:
-        return False
+        return _ok()
     required = metadata_type == "paper"
     if access_is_oa is None:
-        return required
+        return _fail("value cannot be None when metadata_type='paper'") if required else _ok()
     if not isinstance(access_is_oa, str):
-        return True
+        return _fail("value must be a string")
     if access_is_oa == "":
-        return required
-    return access_is_oa not in OA_BOOL_VALUES
+        return _fail("value cannot be empty string when metadata_type='paper'") if required else _ok()
+    if access_is_oa not in OA_BOOL_VALUES:
+        return _fail(f"unsupported value '{access_is_oa}'")
+    return _ok()
 
 
-def check_access_oa_status(access_oa_status: Any) -> bool:
+def check_access_oa_status(access_oa_status: Any) -> ValidationResult:
     if access_oa_status is None:
-        return True
+        return _fail("value is null")
     if not isinstance(access_oa_status, str):
-        return True
-    return access_oa_status not in OA_STATUS_VALUES
+        return _fail("value must be a string")
+    if access_oa_status not in OA_STATUS_VALUES:
+        return _fail(f"unsupported value '{access_oa_status}'")
+    return _ok()
 
 
-def check_access_oa_url(access_oa_url: Any) -> bool:
+def check_access_oa_url(access_oa_url: Any) -> ValidationResult:
     if access_oa_url is None:
-        return True
+        return _fail("value is null")
     if not (isinstance(access_oa_url, list) and all(isinstance(x, str) for x in access_oa_url)):
-        return True
+        return _fail("value must be a list of strings")
     if len(access_oa_url) == 0:
-        return False
-    return any(not bool(URL_RE.fullmatch(item)) for item in access_oa_url)
+        return _ok()
+    for idx, item in enumerate(access_oa_url):
+        if not URL_RE.fullmatch(item):
+            return _fail(f"item[{idx}] is not a valid URL")
+    return _ok()
 
 
-def check_access_license(access_license: Any) -> bool:
+def check_access_license(access_license: Any) -> ValidationResult:
     if access_license is None:
-        return True
+        return _fail("value is null")
     if not isinstance(access_license, str):
-        return True
+        return _fail("value must be a string")
     if access_license == "":
-        return False
-    return access_license not in ACCESS_LICENSE_VALUES
+        return _ok()
+    if access_license not in ACCESS_LICENSE_VALUES:
+        return _fail(f"unsupported value '{access_license}'")
+    return _ok()
 
 
-def check_publication_published_date(publication_published_date: Any) -> bool:
+def check_publication_published_date(publication_published_date: Any) -> ValidationResult:
     if publication_published_date is None:
-        return True
+        return _fail("value is null")
     if not isinstance(publication_published_date, str):
-        return True
+        return _fail("value must be a string")
     if publication_published_date == "":
-        return False
-    if not bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", publication_published_date)):
-        return True
+        return _ok()
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", publication_published_date):
+        return _fail("value must match YYYY-MM-DD")
     try:
         datetime.strptime(publication_published_date, "%Y-%m-%d")
-        return False
+        return _ok()
     except ValueError:
-        return True
+        return _fail("value is not a valid calendar date")
 
 
-def check_publication_published_year(publication_published_year: Any) -> bool:
+def check_publication_published_year(publication_published_year: Any) -> ValidationResult:
     if publication_published_year is None:
-        return False
+        return _ok()
     if not isinstance(publication_published_year, int) or isinstance(publication_published_year, bool):
-        return True
-    return not (0 < publication_published_year < 2100)
+        return _fail("value must be an integer")
+    if not (0 < publication_published_year < 2100):
+        return _fail("value must be in range (0, 2100)")
+    return _ok()
 
 
-def check_publication_venue_issn(publication_venue_issn: Any) -> bool:
+def check_publication_venue_issn(publication_venue_issn: Any) -> ValidationResult:
     if publication_venue_issn is None:
-        return True
+        return _fail("value is null")
     if not (isinstance(publication_venue_issn, list) and all(isinstance(x, str) for x in publication_venue_issn)):
-        return True
+        return _fail("value must be a list of strings")
     if len(publication_venue_issn) == 0:
-        return False
-    for item in publication_venue_issn:
+        return _ok()
+    for idx, item in enumerate(publication_venue_issn):
         if not _valid_issn(item):
-            return True
-    return False
+            return _fail(f"item[{idx}] is not a valid ISSN")
+    return _ok()
 
 
-def check_publication_venue_biblio_volume(publication_venue_biblio_volume: Any) -> bool:
+def check_publication_venue_biblio_volume(publication_venue_biblio_volume: Any) -> ValidationResult:
     if publication_venue_biblio_volume is None:
-        return True
+        return _fail("value is null")
     if not isinstance(publication_venue_biblio_volume, str):
-        return True
+        return _fail("value must be a string")
     if publication_venue_biblio_volume == "":
-        return False
+        return _ok()
     try:
         int(publication_venue_biblio_volume)
-        return False
+        return _ok()
     except (TypeError, ValueError):
-        return True
+        return _fail("value must be parseable as integer")
 
 
-def check_publication_venue_biblio_issue(publication_venue_biblio_issue: Any) -> bool:
+def check_publication_venue_biblio_issue(publication_venue_biblio_issue: Any) -> ValidationResult:
     if publication_venue_biblio_issue is None:
-        return True
+        return _fail("value is null")
     if not isinstance(publication_venue_biblio_issue, str):
-        return True
+        return _fail("value must be a string")
     if publication_venue_biblio_issue == "":
-        return False
+        return _ok()
     try:
         int(publication_venue_biblio_issue)
-        return False
+        return _ok()
     except (TypeError, ValueError):
-        return True
+        return _fail("value must be parseable as integer")
 
 
-def check_publication_venue_biblio_pages(publication_venue_biblio_pages: Any) -> bool:
+def check_publication_venue_biblio_pages(publication_venue_biblio_pages: Any) -> ValidationResult:
     if publication_venue_biblio_pages is None:
-        return True
+        return _fail("value is null")
     if not isinstance(publication_venue_biblio_pages, str):
-        return True
+        return _fail("value must be a string")
     if publication_venue_biblio_pages == "":
-        return False
+        return _ok()
     if not PAGE_RANGE_RE.fullmatch(publication_venue_biblio_pages):
-        return True
+        return _fail("value must match page range format '<start>-<end>'")
     start, end = [int(x.strip()) for x in publication_venue_biblio_pages.split("-")]
-    return start <= 0 or end <= 0 or start > end
+    if start <= 0 or end <= 0:
+        return _fail("page numbers must be positive")
+    if start > end:
+        return _fail("start page cannot be greater than end page")
+    return _ok()
 
 
-def check_publication_pages(publication_pages: Any) -> bool:
+def check_publication_pages(publication_pages: Any) -> ValidationResult:
     if publication_pages is None:
-        return False
+        return _ok()
     if not isinstance(publication_pages, int) or isinstance(publication_pages, bool):
-        return True
-    return publication_pages <= 0
+        return _fail("value must be an integer")
+    if publication_pages <= 0:
+        return _fail("value must be greater than 0")
+    return _ok()
 
 
 def check_publication_venue_name_unified(
     publication_venue_name_unified: Any, publication_venue_name: Any
-) -> bool:
+) -> ValidationResult:
     if publication_venue_name_unified is None:
-        return True
+        return _fail("value is null")
     if not isinstance(publication_venue_name_unified, str):
-        return True
+        return _fail("value must be a string")
     if publication_venue_name is not None and not isinstance(publication_venue_name, str):
-        return True
+        return _fail("publication_venue_name must be a string when provided")
     expected_target = None
     if isinstance(publication_venue_name, str) and publication_venue_name != "":
         expected_target = JOURNAL_NAME_MAPPING.get(publication_venue_name, publication_venue_name)
     if publication_venue_name_unified == "":
-        return False
+        return _ok()
     if expected_target is None:
-        return True
-    return publication_venue_name_unified != expected_target
+        return _fail("cannot validate without publication_venue_name")
+    if publication_venue_name_unified != expected_target:
+        return _fail(f"expected '{expected_target}'")
+    return _ok()
 
 
-def check_grade_class(grade_class: Any) -> bool:
+def check_grade_class(grade_class: Any) -> ValidationResult:
     if grade_class is None:
-        return True
+        return _fail("value is null")
     if not isinstance(grade_class, str):
-        return True
+        return _fail("value must be a string")
     if grade_class == "":
-        return False
-    return grade_class not in GRADE_CLASS_VALUES
+        return _ok()
+    if grade_class not in GRADE_CLASS_VALUES:
+        return _fail(f"unsupported value '{grade_class}'")
+    return _ok()
 
 
-def check_grade(grade: Any, grade_class: Any) -> bool:
+def check_grade(grade: Any, grade_class: Any) -> ValidationResult:
     if grade is None:
-        return True
+        return _fail("value is null")
     if not isinstance(grade, str):
-        return True
+        return _fail("value must be a string")
     if grade_class is not None and not isinstance(grade_class, str):
-        return True
+        return _fail("grade_class must be a string when provided")
     if grade == "":
-        return False
+        return _ok()
     if grade not in GRADE_VALUES:
-        return True
+        return _fail(f"unsupported value '{grade}'")
     if grade_class != "k12" and grade != "":
-        return True
-    return False
+        return _fail("grade can be non-empty only when grade_class='k12'")
+    return _ok()
 
 
-def _check_id_type_id_title_items(items: Any) -> bool:
+def _check_id_type_id_title_items(items: Any) -> ValidationResult:
     if items is None:
-        return True
+        return _fail("value is null")
     if not isinstance(items, list):
-        return True
+        return _fail("value must be a list")
     if len(items) == 0:
-        return False
+        return _ok()
     required_keys = {"id_type", "id", "title"}
-    for item in items:
+    for idx, item in enumerate(items):
         if not isinstance(item, dict):
-            return True
+            return _fail(f"item[{idx}] must be an object")
         if set(item.keys()) != required_keys:
-            return True
+            return _fail(f"item[{idx}] keys must be exactly {{'id_type','id','title'}}")
         id_type = item.get("id_type")
         citation_id = item.get("id")
         title = item.get("title")
         if not isinstance(id_type, str) or id_type == "":
-            return True
-        if check_title(title):
-            return True
+            return _fail(f"item[{idx}].id_type must be a non-empty string")
+        title_invalid, title_reason = check_title(title)
+        if title_invalid:
+            return _fail(f"item[{idx}].title invalid: {title_reason}")
         if id_type == "doi":
-            if check_doi(citation_id, "paper"):
-                return True
+            doi_invalid, doi_reason = check_doi(citation_id, "paper")
+            if doi_invalid:
+                return _fail(f"item[{idx}].id invalid DOI: {doi_reason}")
         elif not isinstance(citation_id, str) or citation_id == "":
-            return True
-    return False
+            return _fail(f"item[{idx}].id must be a non-empty string")
+    return _ok()
 
 
-def check_references(references: Any) -> bool:
+def check_references(references: Any) -> ValidationResult:
     return _check_id_type_id_title_items(references)
 
 
-def check_related_works(related_works: Any) -> bool:
+def check_related_works(related_works: Any) -> ValidationResult:
     return _check_id_type_id_title_items(related_works)
 
 
-def check_citations(citations: Any) -> bool:
+def check_citations(citations: Any) -> ValidationResult:
     return _check_id_type_id_title_items(citations)
 
 
-def check_supplementary_material(supplementary_material: Any) -> bool:
+def check_supplementary_material(supplementary_material: Any) -> ValidationResult:
     if supplementary_material is None:
-        return True
+        return _fail("value is null")
     if not isinstance(supplementary_material, list):
-        return True
+        return _fail("value must be a list")
     if len(supplementary_material) == 0:
-        return False
+        return _ok()
     required_keys = {
         "supplementary_material_name",
         "supplementary_material_url",
         "supplementary_material_path",
     }
-    for item in supplementary_material:
+    for idx, item in enumerate(supplementary_material):
         if not isinstance(item, dict):
-            return True
+            return _fail(f"item[{idx}] must be an object")
         if set(item.keys()) != required_keys:
-            return True
-        if not all(isinstance(item.get(key), str) for key in required_keys):
-            return True
-    return False
+            return _fail(
+                f"item[{idx}] keys must be exactly "
+                "{'supplementary_material_name','supplementary_material_url','supplementary_material_path'}"
+            )
+        for key in required_keys:
+            if not isinstance(item.get(key), str):
+                return _fail(f"item[{idx}].{key} must be a string")
+    return _ok()
 
 
-def check_cited_by_api_url(cited_by_api_url: Any) -> bool:
+def check_cited_by_api_url(cited_by_api_url: Any) -> ValidationResult:
     if cited_by_api_url is None:
-        return True
+        return _fail("value is null")
     if not isinstance(cited_by_api_url, str):
-        return True
+        return _fail("value must be a string")
     if cited_by_api_url == "":
-        return False
-    return not bool(URL_RE.fullmatch(cited_by_api_url))
+        return _ok()
+    if not URL_RE.fullmatch(cited_by_api_url):
+        return _fail("value is not a valid URL")
+    return _ok()
 
 
 def check_access_xinghe_repository_sha256(
     access_xinghe_repository_sha256: Any, access_xinghe_repository_has_fulltext: Any
-) -> bool:
+) -> ValidationResult:
     if access_xinghe_repository_sha256 is None:
-        return True
+        return _fail("value is null")
     if not isinstance(access_xinghe_repository_has_fulltext, bool):
-        return True
+        return _fail("access_xinghe_repository_has_fulltext must be boolean")
     has_fulltext = access_xinghe_repository_has_fulltext
     if isinstance(access_xinghe_repository_sha256, str):
         if not has_fulltext:
-            return False
-        return access_xinghe_repository_sha256 == ""
+            return _ok()
+        if access_xinghe_repository_sha256 == "":
+            return _fail("value is required when has_fulltext=true")
+        return _ok()
     if not (
         isinstance(access_xinghe_repository_sha256, list)
         and all(isinstance(x, str) for x in access_xinghe_repository_sha256)
     ):
-        return True
+        return _fail("value must be a string or list of strings")
     if not has_fulltext:
-        return False
-    return len(access_xinghe_repository_sha256) == 0
+        return _ok()
+    if len(access_xinghe_repository_sha256) == 0:
+        return _fail("value is required when has_fulltext=true")
+    return _ok()
 
 
 def check_access_xinghe_repository_origin_path(
     access_xinghe_repository_origin_path: Any, access_xinghe_repository_has_fulltext: Any
-) -> bool:
+) -> ValidationResult:
     if not isinstance(access_xinghe_repository_origin_path, str):
-        return True
+        return _fail("value must be a string")
     if not isinstance(access_xinghe_repository_has_fulltext, bool):
-        return True
+        return _fail("access_xinghe_repository_has_fulltext must be boolean")
     if not access_xinghe_repository_has_fulltext:
-        return False
-    return access_xinghe_repository_origin_path.strip() == ""
+        return _ok()
+    if access_xinghe_repository_origin_path.strip() == "":
+        return _fail("value is required when has_fulltext=true")
+    return _ok()
 
 
 def check_access_xinghe_repository_model_name(
     access_xinghe_repository_model_name: Any, access_xinghe_repository_process_status: Any
-) -> bool:
+) -> ValidationResult:
     if not isinstance(access_xinghe_repository_model_name, str):
-        return True
+        return _fail("value must be a string")
     if access_xinghe_repository_model_name == "":
-        return access_xinghe_repository_process_status in (1, "1")
-    return access_xinghe_repository_model_name not in XINGHE_REPOSITORY_MODEL_NAME_VALUES
+        if access_xinghe_repository_process_status in (1, "1"):
+            return _fail("value is required when process_status=1")
+        return _ok()
+    if access_xinghe_repository_model_name not in XINGHE_REPOSITORY_MODEL_NAME_VALUES:
+        return _fail(f"unsupported model name '{access_xinghe_repository_model_name}'")
+    return _ok()
 
 
 def check_access_xinghe_repository_model_version(
     access_xinghe_repository_model_version: Any,
     access_xinghe_repository_model_name: Any,
     access_xinghe_repository_process_status: Any,
-) -> bool:
+) -> ValidationResult:
     if not isinstance(access_xinghe_repository_model_version, str):
-        return True
+        return _fail("value must be a string")
     if access_xinghe_repository_model_version == "":
         if access_xinghe_repository_process_status in (1, "1"):
-            return True
+            return _fail("value is required when process_status=1")
         if (
             isinstance(access_xinghe_repository_model_name, str)
             and access_xinghe_repository_model_name in XINGHE_REPOSITORY_MODEL_NAME_VALUES
             and "" not in XINGHE_REPOSITORY_MODEL_VERSION_MAP[access_xinghe_repository_model_name]
         ):
-            return True
-        return False
+            return _fail(f"value is required for model '{access_xinghe_repository_model_name}'")
+        return _ok()
     if access_xinghe_repository_model_version not in XINGHE_REPOSITORY_MODEL_VERSION_VALUES:
-        return True
+        return _fail(f"unsupported model version '{access_xinghe_repository_model_version}'")
     if (
         isinstance(access_xinghe_repository_model_name, str)
         and access_xinghe_repository_model_name in XINGHE_REPOSITORY_MODEL_NAME_VALUES
+    ) and (
+        access_xinghe_repository_model_version
+        not in XINGHE_REPOSITORY_MODEL_VERSION_MAP[access_xinghe_repository_model_name]
     ):
-        return (
-            access_xinghe_repository_model_version
-            not in XINGHE_REPOSITORY_MODEL_VERSION_MAP[access_xinghe_repository_model_name]
+        return _fail(
+            f"version '{access_xinghe_repository_model_version}' "
+            f"is not allowed for model '{access_xinghe_repository_model_name}'"
         )
-    return False
+    return _ok()
 
 
 def _normalize_json_like_field(value: Any) -> Any:
@@ -759,15 +824,21 @@ class RuleQuanliangFieldValidation(BaseRule):
         for field in selected_fields:
             if field not in FIELD_VALIDATORS:
                 bad_fields.append(field)
-                reasons.append("unsupported field")
+                reasons.append(f"{field}: unsupported field")
                 continue
             if field not in normalized:
                 bad_fields.append(field)
-                reasons.append("missing field")
+                reasons.append(f"{field}: missing field")
                 continue
-            if FIELD_VALIDATORS[field](normalized):
+            validation_result = FIELD_VALIDATORS[field](normalized)
+            if isinstance(validation_result, tuple):
+                invalid, detail_reason = validation_result
+            else:
+                invalid = bool(validation_result)
+                detail_reason = "failed field validation"
+            if invalid:
                 bad_fields.append(field)
-                reasons.append(f"{field} invalid")
+                reasons.append(f"{field}: {detail_reason or 'failed field validation'}")
 
         if bad_fields:
             res.status = True

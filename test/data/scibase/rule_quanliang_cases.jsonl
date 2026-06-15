@@ -1,4 +1,4 @@
 {"case":"good_basic","key_list":["metadata_type","doi","title"],"input":{"metadata_type":"paper","doi":"10.1234/abc.def","title":"A clean title"},"expected_status":false,"expected_labels":["QUALITY_GOOD"],"expected_reasons":[]}
-{"case":"missing_field","key_list":["doi","title"],"input":{"doi":"10.1234/abc.def"},"expected_status":true,"expected_labels":["title"],"expected_reasons":["missing field"]}
-{"case":"unsupported_field","key_list":["unknown_field","doi"],"input":{"doi":"10.1234/abc.def"},"expected_status":true,"expected_labels":["unknown_field"],"expected_reasons":["unsupported field"]}
-{"case":"invalid_value","key_list":["doi"],"input":{"metadata_type":"paper","doi":"https://doi.org/10.1234/ABC"},"expected_status":true,"expected_labels":["doi"],"expected_reasons":["doi invalid"]}
+{"case":"missing_field","key_list":["doi","title"],"input":{"doi":"10.1234/abc.def"},"expected_status":true,"expected_labels":["title"],"expected_reasons":["title: missing field"]}
+{"case":"unsupported_field","key_list":["unknown_field","doi"],"input":{"doi":"10.1234/abc.def"},"expected_status":true,"expected_labels":["unknown_field"],"expected_reasons":["unknown_field: unsupported field"]}
+{"case":"invalid_value","key_list":["doi"],"input":{"metadata_type":"paper","doi":"https://doi.org/10.1234/ABC"},"expected_status":true,"expected_labels":["doi"],"expected_reasons":["doi: value must be lowercase"]}
