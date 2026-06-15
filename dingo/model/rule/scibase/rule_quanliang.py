@@ -750,11 +750,10 @@ class RuleQuanliangFieldValidation(BaseRule):
     _required_fields = []
     dynamic_config = EvaluatorRuleArgs(key_list=list(FIELD_VALIDATORS.keys()))
 
-    @classmethod
-    def eval(cls, input_data: Data) -> EvalDetail:
-        res = EvalDetail(metric=cls.__name__)
+    def eval(self, input_data: Data) -> EvalDetail:
+        res = EvalDetail(metric=self.__class__.__name__)
         normalized = normalize_record(input_data.to_dict())
-        selected_fields = cls.dynamic_config.key_list or []
+        selected_fields = self.dynamic_config.key_list or []
         bad_fields: List[str] = []
         reasons: List[str] = []
         for field in selected_fields:

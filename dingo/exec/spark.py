@@ -236,8 +236,13 @@ class SparkExecutor(ExecProto):
 
         for e_c_i in eval_list:
             if eval_type == 'rule':
-                model = Model.rule_name_map.get(e_c_i.name)
+                model_cls = Model.rule_name_map.get(e_c_i.name)
+                model = model_cls()
                 Model.set_config_rule(model, e_c_i.config)
+                # Backward compatibility for classmethod-based rules.
+                eval_self = getattr(model.eval, "__self__", None)
+                if eval_self is model_cls:
+                    Model.set_config_rule(model_cls, e_c_i.config)
             elif eval_type == 'llm':
                 model = Model.llm_name_map.get(e_c_i.name)
                 Model.set_config_llm(model, e_c_i.config)

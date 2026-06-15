@@ -180,6 +180,11 @@ class LocalExecutor(ExecProto):
                 model_cls = Model.rule_name_map.get(e_c_i.name)
                 model = model_cls()  # 实例化类为对象，避免多线程配置覆盖
                 Model.set_config_rule(model, e_c_i.config)
+                # Backward compatibility: most rules still use @classmethod eval,
+                # which reads class-level dynamic_config instead of instance-level.
+                eval_self = getattr(model.eval, "__self__", None)
+                if eval_self is model_cls:
+                    Model.set_config_rule(model_cls, e_c_i.config)
             elif eval_type == 'llm':
                 model_cls = Model.llm_name_map.get(e_c_i.name)
                 model = model_cls()
