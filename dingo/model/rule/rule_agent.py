@@ -9,6 +9,7 @@ import json
 import statistics
 from typing import List, Optional
 
+from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model.model import Model
@@ -24,6 +25,12 @@ class RuleAgentTraceLoopDetection(BaseRule):
     A loop is detected when the same subsequence of 2+ tool names
     repeats 3 or more consecutive times.
     """
+
+    # Trace-level evaluator: declares input_data_type / eval_layer so agent
+    # orchestrators (e.g. dingo-saas) feed it the whole tool-call sequence as
+    # JSON rather than running it per-span on plain text.
+    eval_layer = "trajectory"
+    input_data_type = "agent_trace_json"
 
     _required_fields = [RequiredField.CONTENT]
 
@@ -56,17 +63,24 @@ class RuleAgentTraceLoopDetection(BaseRule):
         except (json.JSONDecodeError, TypeError):
             return []
 
+        items = []
         if isinstance(data, dict):
-            items = data.get("tool_calls", data.get("steps", []))
+            # `or` (not dict.get default): a present-but-null "tool_calls" key
+            # returns None, which would break iteration — fall through to steps.
+            items = data.get("tool_calls") or data.get("steps") or []
         elif isinstance(data, list):
             items = data
-        else:
+
+        if not isinstance(items, list):
             return []
 
+        # Parenthesize the filter: `and` binds tighter than `or`, so without
+        # these parens a non-dict item would reach `item.get("name")` and raise
+        # AttributeError.
         return [
             item.get("tool_name", item.get("name", ""))
             for item in items
-            if isinstance(item, dict) and item.get("tool_name") or item.get("name")
+            if isinstance(item, dict) and (item.get("tool_name") or item.get("name"))
         ]
 
     @classmethod
@@ -101,15 +115,22 @@ class RuleAgentTraceTokenBudget(BaseRule):
     Default budget: 500,000 tokens (configurable via dynamic_config.threshold).
     """
 
+    # Trace-level evaluator (see RuleAgentTraceLoopDetection for rationale).
+    eval_layer = "efficiency"
+    input_data_type = "agent_trace_json"
+
     _required_fields = [RequiredField.CONTENT]
-    dynamic_config = None
+    # A real EvaluatorRuleArgs (not None) so set_config_rule's model_copy() in
+    # the local/spark executors does not raise; the default also documents the
+    # 500k budget and keeps it overridable via dynamic_config.threshold.
+    dynamic_config = EvaluatorRuleArgs(threshold=500_000)
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         result = EvalDetail(metric=cls.__name__)
 
         budget = 500_000
-        if cls.dynamic_config and hasattr(cls.dynamic_config, "threshold"):
+        if cls.dynamic_config and cls.dynamic_config.threshold is not None:
             try:
                 budget = int(cls.dynamic_config.threshold)
             except (TypeError, ValueError):
@@ -160,6 +181,10 @@ class RuleAgentTraceLatencyAnomaly(BaseRule):
     A step is flagged if its duration exceeds mean + 3*stddev.
     """
 
+    # Trace-level evaluator (see RuleAgentTraceLoopDetection for rationale).
+    eval_layer = "efficiency"
+    input_data_type = "agent_trace_json"
+
     _required_fields = [RequiredField.CONTENT]
 
     @classmethod
@@ -202,11 +227,15 @@ class RuleAgentTraceLatencyAnomaly(BaseRule):
         except (json.JSONDecodeError, TypeError):
             return []
 
+        items = []
         if isinstance(data, dict):
-            items = data.get("steps", data.get("tool_calls", []))
+            # `or` (not dict.get default): a present-but-null key returns None,
+            # which would break the iteration below.
+            items = data.get("steps") or data.get("tool_calls") or []
         elif isinstance(data, list):
             items = data
-        else:
+
+        if not isinstance(items, list):
             return []
 
         return [
