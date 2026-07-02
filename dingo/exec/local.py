@@ -5,7 +5,9 @@ import json
 import os
 import time
 import uuid
-from typing import Generator, List, Optional
+from datetime import date, datetime
+from decimal import Decimal
+from typing import Dict, Generator, List, Optional
 
 from tqdm import tqdm
 
@@ -25,6 +27,8 @@ class LocalExecutor(ExecProto):
         self.input_args: InputArgs = input_args
         self.llm: Optional[BaseLLM] = None
         self.summary: SummaryModel = SummaryModel()
+        self._full_field_written_count: int = 0
+        self._file_written_count: Dict[str, int] = {}
 
     def load_data(self) -> Generator[Data, None, None]:
         """
@@ -176,6 +180,11 @@ class LocalExecutor(ExecProto):
                 model_cls = Model.rule_name_map.get(e_c_i.name)
                 model = model_cls()  # 实例化类为对象，避免多线程配置覆盖
                 Model.set_config_rule(model, e_c_i.config)
+                # Backward compatibility: most rules still use @classmethod eval,
+                # which reads class-level dynamic_config instead of instance-level.
+                eval_self = getattr(model.eval, "__self__", None)
+                if eval_self is model_cls:
+                    Model.set_config_rule(model_cls, e_c_i.config)
             elif eval_type == 'llm':
                 model_cls = Model.llm_name_map.get(e_c_i.name)
                 model = model_cls()
@@ -252,6 +261,28 @@ class LocalExecutor(ExecProto):
         new_summary.finish_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
         return new_summary
 
+    @staticmethod
+    def _json_default(value):
+        if isinstance(value, Decimal):
+            return float(value)
+        if isinstance(value, (datetime, date)):
+            return value.isoformat()
+        return str(value)
+
+    @classmethod
+    def _json_dumps(cls, value: dict) -> str:
+        return json.dumps(value, ensure_ascii=False, default=cls._json_default)
+
+    def _resolve_field_list(self, input_args: InputArgs) -> Optional[List[str]]:
+        if input_args.executor.result_save.full_field_sample_count <= 0:
+            return input_args.executor.result_save.field_list
+
+        if self._full_field_written_count < input_args.executor.result_save.full_field_sample_count:
+            self._full_field_written_count += 1
+            return None
+
+        return input_args.executor.result_save.field_list
+
     def write_single_data(
         self, path: str, input_args: InputArgs, result_info: ResultInfo
     ):
@@ -261,13 +292,12 @@ class LocalExecutor(ExecProto):
         # 如果启用 merge 模式，将所有数据写入同一个文件
         if input_args.executor.result_save.merge:
             f_n = os.path.join(path, "all_results.jsonl")
+            if not self._should_write_to_file(input_args, f_n):
+                return
+            str_json = self._build_output_json(input_args, result_info)
             with open(f_n, "a", encoding="utf-8") as f:
-                # if input_args.executor.result_save.raw:
-                #     str_json = json.dumps(result_info.to_raw_dict(), ensure_ascii=False)
-                # else:
-                #     str_json = json.dumps(result_info.to_dict(), ensure_ascii=False)
-                str_json = json.dumps(result_info.to_raw_dict(), ensure_ascii=False)
                 f.write(str_json + "\n")
+            self._file_written_count[f_n] = self._file_written_count.get(f_n, 0) + 1
             return
 
         if not input_args.executor.result_save.good and not result_info.eval_status:
@@ -275,6 +305,7 @@ class LocalExecutor(ExecProto):
 
         # 用集合记录已经写过的(字段名, label名)组合，避免重复写入
         written_labels = set()
+        str_json: Optional[str] = None
 
         # 遍历 eval_details 的第一层（字段名组合），第二层是List[EvalDetail]
         for field_name, eval_detail_list in result_info.eval_details.items():
@@ -314,18 +345,39 @@ class LocalExecutor(ExecProto):
                         # 没有点分割，直接在字段文件夹下创建文件
                         f_n = os.path.join(field_dir, parts[0] + ".jsonl")
 
+                    if not self._should_write_to_file(input_args, f_n):
+                        continue
+                    if str_json is None:
+                        str_json = self._build_output_json(input_args, result_info)
                     with open(f_n, "a", encoding="utf-8") as f:
-                        if input_args.executor.result_save.raw:
-                            str_json = json.dumps(result_info.to_raw_dict(), ensure_ascii=False)
-                        else:
-                            str_json = json.dumps(result_info.to_dict(), ensure_ascii=False)
                         f.write(str_json + "\n")
+                    self._file_written_count[f_n] = self._file_written_count.get(f_n, 0) + 1
+
+    def _should_write_to_file(self, input_args: InputArgs, file_path: str) -> bool:
+        limit = input_args.executor.result_save.limit
+        if limit is None:
+            return True
+        return self._file_written_count.get(file_path, 0) < limit
+
+    def _build_output_json(self, input_args: InputArgs, result_info: ResultInfo) -> str:
+        field_list = self._resolve_field_list(input_args)
+        if input_args.executor.result_save.raw:
+            output_data = result_info.to_raw_dict(field_list=field_list)
+        else:
+            output_data = result_info.to_dict(field_list=field_list)
+        return self._json_dumps(output_data)
 
     def write_summary(self, path: str, input_args: InputArgs, summary: SummaryModel):
         if not input_args.executor.result_save.bad:
             return
         with open(path + "/summary.json", "w", encoding="utf-8") as f:
-            json.dump(summary.to_dict(), f, indent=4, ensure_ascii=False)
+            json.dump(
+                summary.to_dict(),
+                f,
+                indent=4,
+                ensure_ascii=False,
+                default=self._json_default,
+            )
 
     def get_summary(self):
         return self.summary

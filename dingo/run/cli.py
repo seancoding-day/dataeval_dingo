@@ -83,6 +83,139 @@ def parse_args():
         help="Port to listen on (default: 8000)",
     )
 
+    # --- dingo eval-retrieval ---
+    ret_parser = subparsers.add_parser(
+        "eval-retrieval", help="Run retrieval benchmark evaluation against MTEB tasks"
+    )
+    ret_parser.add_argument(
+        "--backend", type=str, default="agentic",
+        help="Search backend name (default: agentic)",
+    )
+    ret_parser.add_argument(
+        "--tasks", nargs="+", default=["SciFact"],
+        help="MTEB task names to evaluate (default: SciFact)",
+    )
+    ret_parser.add_argument(
+        "--api-url", type=str, default="",
+        help="Search API base URL (default depends on backend)",
+    )
+    ret_parser.add_argument(
+        "--api-token", type=str, default=None,
+        help="API authentication token",
+    )
+    ret_parser.add_argument(
+        "--limit", type=int, default=100,
+        help="Number of results to retrieve per query (default: 100)",
+    )
+    ret_parser.add_argument(
+        "--retrieval-mode", type=str, default="hybrid",
+        help="Retrieval mode: hybrid, milvus, or es (default: hybrid)",
+    )
+    ret_parser.add_argument(
+        "--sub-queries", type=int, default=None,
+        help="Number of sub-queries for LLM rewrite (default: server decides)",
+    )
+    ret_parser.add_argument(
+        "--search-type", type=str, default="paper",
+        help="Meta-search type, for backend meta_search (default: paper)",
+    )
+    ret_parser.add_argument(
+        "--sort-by", type=str, default=None,
+        help="Meta-search sort field/mode",
+    )
+    ret_parser.add_argument(
+        "--freshness-boost", type=str, default=None,
+        help="Meta-search freshness boost mode, e.g. NONE, MILD, STRONG",
+    )
+    ret_parser.add_argument(
+        "--filters-json", type=str, default=None,
+        help="Meta-search filters as a JSON list string; a JSON object is accepted and wrapped into a list",
+    )
+    ret_parser.add_argument(
+        "--max-queries", type=int, default=None,
+        help="Limit number of queries for quick testing",
+    )
+    ret_parser.add_argument(
+        "--title-fuzzy-enabled", action="store_true", default=False,
+        help="Enable fuzzy title fallback matching (default: disabled)",
+    )
+    ret_parser.add_argument(
+        "--title-fuzzy-threshold", type=float, default=0.95,
+        help="Minimum title similarity to accept fuzzy match (default: 0.95)",
+    )
+    ret_parser.add_argument(
+        "--title-fuzzy-margin", type=float, default=0.01,
+        help="Minimum gap between best and second-best fuzzy score (default: 0.01)",
+    )
+    ret_parser.add_argument(
+        "--title-fuzzy-min-len", type=int, default=20,
+        help="Minimum normalized title length for fuzzy matching (default: 20)",
+    )
+    ret_parser.add_argument(
+        "--title-fuzzy-max-candidates", type=int, default=300,
+        help="Max fuzzy candidates re-ranked per hit (default: 300)",
+    )
+    ret_parser.add_argument(
+        "--timeout", type=float, default=120.0,
+        help="HTTP request timeout in seconds (default: 120)",
+    )
+    ret_parser.add_argument(
+        "--rate-limit", type=float, default=None,
+        help="Minimum seconds between API requests",
+    )
+    ret_parser.add_argument(
+        "--max-workers", type=int, default=1,
+        help="Number of concurrent search threads (default: 1)",
+    )
+    ret_parser.add_argument(
+        "-o", "--output", type=str, default="outputs/retrieval_eval",
+        help="Output directory (default: outputs/retrieval_eval)",
+    )
+    ret_parser.add_argument(
+        "--json", action="store_true", default=False,
+        help="Output result as JSON to stdout",
+    )
+
+    # --- open eval (LLM-as-Judge) ---
+    ret_parser.add_argument(
+        "--open-eval", action="store_true", default=False,
+        help="Enable LLM-as-Judge open eval grading (Exa-style pointwise)",
+    )
+    ret_parser.add_argument(
+        "--open-eval-model", type=str, default=None,
+        help="LLM model for grading (e.g. gpt-4.1, gpt-4o)",
+    )
+    ret_parser.add_argument(
+        "--open-eval-key", type=str, default=None,
+        help="API key for the grading LLM",
+    )
+    ret_parser.add_argument(
+        "--open-eval-api-url", type=str, default=None,
+        help="API base URL for the grading LLM",
+    )
+    ret_parser.add_argument(
+        "--open-eval-top-k", type=int, default=5,
+        help="Grade top-k results per query (default: 5)",
+    )
+    ret_parser.add_argument(
+        "--open-eval-aggregate", type=str, default="mean",
+        choices=["mean", "median", "ndcg"],
+        help="Score aggregation method (default: mean)",
+    )
+    ret_parser.add_argument(
+        "--open-eval-prompt-mode", type=str, default="standard",
+        choices=["standard", "detailed"],
+        help="Grading prompt: standard (minimal) or detailed (full rubric)",
+    )
+    ret_parser.add_argument(
+        "--open-eval-max-workers", type=int, default=4,
+        help="Concurrent LLM grading threads (default: 4)",
+    )
+    ret_parser.add_argument(
+        "--input-queries", type=str, default=None,
+        help="Path to JSONL query file for standalone open eval (no MTEB corpus needed)",
+    )
+
     # Backward compatibility: bare `dingo --input config.json`
     parser.add_argument(
         "-i", "--input",
@@ -244,6 +377,99 @@ def _print_info_table(info):
         print(table)
 
 
+def cmd_eval_retrieval(args):
+    """Run retrieval benchmark evaluation."""
+    from dingo.config.input_args import OpenEvalArgs, RetrievalArgs
+
+    filters = None
+    if args.filters_json:
+        try:
+            parsed_filters = json.loads(args.filters_json)
+        except json.JSONDecodeError as e:
+            if args.json:
+                _json_error("ConfigError", f"Invalid --filters-json: {e}", EXIT_CONFIG_ERROR)
+            raise
+        if isinstance(parsed_filters, dict):
+            filters = [parsed_filters]
+        elif isinstance(parsed_filters, list):
+            filters = parsed_filters
+        else:
+            message = "--filters-json must decode to a JSON list or object"
+            if args.json:
+                _json_error("ConfigError", message, EXIT_CONFIG_ERROR)
+            raise ValueError(message)
+
+    open_eval = None
+    if args.open_eval:
+        open_eval = OpenEvalArgs(
+            enabled=True,
+            model=args.open_eval_model,
+            key=args.open_eval_key,
+            api_url=args.open_eval_api_url,
+            top_k=args.open_eval_top_k,
+            aggregate=args.open_eval_aggregate,
+            max_workers=args.open_eval_max_workers,
+            prompt_mode=args.open_eval_prompt_mode,
+        )
+
+    retrieval_config = RetrievalArgs(
+        backend=args.backend,
+        api_url=args.api_url,
+        api_token=args.api_token,
+        limit=args.limit,
+        retrieval_mode=args.retrieval_mode,
+        sub_queries=args.sub_queries,
+        search_type=args.search_type,
+        sort_by=args.sort_by,
+        freshness_boost=args.freshness_boost,
+        filters=filters,
+        max_queries=args.max_queries,
+        title_fuzzy_enabled=args.title_fuzzy_enabled,
+        title_fuzzy_threshold=args.title_fuzzy_threshold,
+        title_fuzzy_margin=args.title_fuzzy_margin,
+        title_fuzzy_min_len=args.title_fuzzy_min_len,
+        title_fuzzy_max_candidates=args.title_fuzzy_max_candidates,
+        timeout=args.timeout,
+        rate_limit=args.rate_limit,
+        max_retries=3,
+        max_workers=args.max_workers,
+        open_eval=open_eval,
+        input_queries=getattr(args, "input_queries", None),
+    )
+
+    input_data = {
+        "task_name": "retrieval_eval",
+        "input_path": ",".join(args.tasks) if not args.input_queries else "__open_eval__",
+        "output_path": args.output,
+        "executor": {
+            "retrieval": retrieval_config.model_dump(),
+        },
+    }
+
+    use_json = args.json
+
+    try:
+        input_args = InputArgs(**input_data)
+    except Exception as e:
+        if use_json:
+            _json_error("ConfigError", f"Invalid config: {e}", EXIT_CONFIG_ERROR)
+        raise
+
+    try:
+        executor = Executor.exec_map["retrieval"](input_args)
+        result = executor.execute()
+    except Exception as e:
+        if use_json:
+            _json_error("EvalError", str(e), EXIT_EVAL_ERROR)
+        raise
+
+    if use_json:
+        json.dump(result.to_dict(), sys.stdout, indent=2, ensure_ascii=False)
+        sys.stdout.write("\n")
+    else:
+        print(result)
+
+
 def cmd_serve(args):
     """Start the MCP server for AI agent integration."""
     import importlib.util
@@ -290,6 +516,8 @@ def main():
 
     if args.command == "eval":
         cmd_eval(args)
+    elif args.command == "eval-retrieval":
+        cmd_eval_retrieval(args)
     elif args.command == "info":
         cmd_info(args)
     elif args.command == "serve":

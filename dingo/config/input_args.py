@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
@@ -77,6 +77,47 @@ class ExecutorResultSaveArgs(BaseModel):
     all_labels: bool = False
     raw: bool = False
     merge: bool = False  # 如果为True，所有数据写入同一个jsonl文件，不分文件夹
+    limit: Optional[int] = None  # 每个输出文件最多写入条数，None表示不限制
+    field_list: Optional[List[str]] = None  # 仅保存指定字段；若均不存在则报错
+    full_field_sample_count: int = 0  # 保留完整字段样本条数，0表示关闭
+
+
+class OpenEvalArgs(BaseModel):
+    """LLM-as-Judge open eval config (Exa-style pointwise grading)."""
+    enabled: bool = False
+    model: Optional[str] = None
+    key: Optional[str] = None
+    api_url: Optional[str] = None
+    top_k: int = 5
+    aggregate: str = "mean"
+    max_workers: int = 4
+    prompt_mode: str = "standard"
+    expected_criteria: Optional[str] = None
+
+
+class RetrievalArgs(BaseModel):
+    backend: str = "agentic"
+    api_url: str = ""
+    api_token: Optional[str] = None
+    limit: int = 100
+    retrieval_mode: str = "hybrid"
+    sub_queries: Optional[int] = None
+    search_type: str = "paper"
+    sort_by: Optional[str] = None
+    freshness_boost: Optional[str] = None
+    filters: Optional[List[Dict[str, Any]] | Dict[str, Any]] = None
+    max_queries: Optional[int] = None
+    title_fuzzy_enabled: bool = False
+    title_fuzzy_threshold: float = 0.95
+    title_fuzzy_margin: float = 0.01
+    title_fuzzy_min_len: int = 20
+    title_fuzzy_max_candidates: int = 300
+    timeout: float = 120.0
+    rate_limit: Optional[float] = None
+    max_retries: int = 3
+    max_workers: int = 1
+    open_eval: Optional[OpenEvalArgs] = None
+    input_queries: Optional[str] = None
 
 
 class ExecutorArgs(BaseModel):
@@ -89,16 +130,16 @@ class ExecutorArgs(BaseModel):
     batch_size: int = 1
     multi_turn_mode: Optional[str] = None
     result_save: ExecutorResultSaveArgs = ExecutorResultSaveArgs()
+    retrieval: Optional[RetrievalArgs] = None
 
 
 class EvaluatorRuleArgs(BaseModel):
-    model_config = {"extra": "forbid"}
+    model_config = {"extra": "allow"}
 
     threshold: Optional[float] = None
     pattern: Optional[str] = None
     key_list: Optional[List[str]] = None
     refer_path: Optional[List[str]] = None
-    parameters: Optional[dict] = None
 
 
 class EmbeddingConfigArgs(BaseModel):
@@ -151,7 +192,7 @@ class InputArgs(BaseModel):
 
     dataset: DatasetArgs = DatasetArgs()
     executor: ExecutorArgs = ExecutorArgs()
-    evaluator: List[EvalPipline]
+    evaluator: List[EvalPipline] = []
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

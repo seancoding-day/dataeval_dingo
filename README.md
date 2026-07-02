@@ -133,7 +133,10 @@ pip install dingo-python
 # With HHEM hallucination detection model (requires transformers + torch)
 pip install "dingo-python[hhem]"
 
-# With all features (HHEM + Agent)
+# With retrieval benchmark evaluation (MTEB + pytrec-eval-terrier)
+pip install "dingo-python[retrieval]"
+
+# With all features (HHEM + Agent + Retrieval)
 pip install "dingo-python[all]"
 ```
 
@@ -656,6 +659,64 @@ result = executor.execute()
 ```
 
 **Best For**: Production pipelines, distributed processing, datasets > 1M rows
+
+### Retrieval Benchmark Executor
+
+Evaluate search APIs against MTEB standard retrieval benchmarks (SciFact, SCIDOCS, etc.) with metrics like NDCG, Recall, and MRR.
+
+**CLI:**
+
+```bash
+pip install dingo-python[retrieval]
+
+dingo eval-retrieval --backend agentic --tasks SciFact \
+    --api-url https://api.sciverse.space \
+    --api-token YOUR_TOKEN --limit 100 --max-workers 8
+
+dingo eval-retrieval --backend meta_search --tasks SciFact \
+    --api-url https://api.sciverse.space \
+    --api-token YOUR_TOKEN --limit 100 --rate-limit 1.0 \
+    --freshness-boost MILD \
+    --filters-json '[{"field": "publication_published_year", "operator": "FILTER_OP_GTE", "value": 2010}]'
+
+dingo eval-retrieval --backend google_scholar --tasks SciFact \
+    --api-token YOUR_SERPAPI_KEY --limit 100 --rate-limit 1.0
+
+dingo eval-retrieval --backend openalex --tasks SciFact \
+    --api-token YOUR_OPENALEX_API_KEY --limit 100
+
+dingo eval-retrieval --backend openalex --tasks SciFact \
+    --api-token YOUR_OPENALEX_API_KEY --limit 50 \
+    --search-type semantic --rate-limit 1.0 --max-workers 1
+```
+
+**SDK:**
+
+```python
+from dingo.config import InputArgs
+from dingo.exec import Executor
+
+input_data = {
+    "input_path": "SciFact",
+    "output_path": "outputs/retrieval_eval",
+    "executor": {
+        "retrieval": {
+            "backend": "agentic",
+            "api_url": "https://api.sciverse.space",
+            "api_token": "YOUR_TOKEN",
+            "limit": 100,
+            "max_workers": 8,
+        }
+    },
+}
+
+input_args = InputArgs(**input_data)
+executor = Executor.exec_map["retrieval"](input_args)
+result = executor.execute()
+print(result)
+```
+
+**Best For**: Evaluating search/retrieval APIs against academic benchmarks, comparing retrieval backends
 
 ## Evaluation Reports
 

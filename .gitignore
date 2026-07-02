@@ -46,3 +46,20 @@ outputs/
 coverage.xml
 
 dingo_python.egg-info/*
+
+# Claude Code / AI assistant artifacts
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+claude_docs/
+
+# Benchmarks and experiment data
+benchmarks/
+meta_rater/
+
+# Downloaded models / large binary files
+downloads/
+
+# Temporary docs (plans, specs)
+docs/plans/
+docs/superpowers/

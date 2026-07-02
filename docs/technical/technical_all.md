@@ -325,7 +325,7 @@ class RuleColonEnd(BaseRule):
 
 + metric_type: 函数 rule_register 执行时赋值
 + group: 函数 rule_register 执行时赋值
-+ dynamic_config: 开放的自定义接口
++ dynamic_config: 开放的自定义接口（支持 `EvaluatorRuleArgs` 额外字段扩展，不需要 `parameters` 包裹）
 
 其次，所有的规则都需要执行注册操作，即 Model.rule_register 函数，并指明 metric_type 与 group。
 
@@ -340,6 +340,12 @@ class RuleColonEnd(BaseRule):
 
 ```python
 dynamic_config = EvaluatorRuleArgs()
+```
+
+例如需要自定义参数时，可直接写为：
+
+```python
+dynamic_config = EvaluatorRuleArgs(ignore_order=True)
 ```
 
 最后，实现 eval 类函数，需要注意接收变量与返回值的类型

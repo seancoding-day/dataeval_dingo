@@ -110,7 +110,7 @@ HuggingFace 特定配置：
 
 #### EvaluatorRuleArgs 配置 (evaluator.rule_config.[rule_name])
 
-规则配置：
+规则配置（支持额外字段，规则可按需读取自定义参数）：
 
 | Parameter | Type | Default | Required | Description |
 |-----------|------|---------|----------|-------------|
@@ -118,6 +118,7 @@ HuggingFace 特定配置：
 | pattern | str | null | No | 匹配模式字符串 |
 | key_list | list | null | No | 匹配关键词列表 |
 | refer_path | list | null | No | 参考文件路径或小模型路径 |
+| *其他字段* | any | - | No | 规则自定义扩展字段（如 `ignore_order`） |
 
 #### EvaluatorLLMArgs 配置 (evaluator.llm_config.[llm_name])
 

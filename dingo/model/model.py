@@ -124,18 +124,28 @@ class Model:
         if cls.module_loaded:
             return
         this_module_directory = os.path.dirname(os.path.abspath(__file__))
-        # rule auto register
-        for file in os.listdir(os.path.join(this_module_directory, "rule")):
-            path = os.path.join(this_module_directory, "rule", file)
-            if (
-                os.path.isfile(path)
-                and file.endswith(".py")
-                and not file == "__init__.py"
-            ):
-                try:
-                    importlib.import_module("dingo.model.rule." + file.split(".")[0])
-                except ModuleNotFoundError as e:
-                    log.debug(e)
+        # rule auto register - 递归扫描子目录
+        rule_base_dir = os.path.join(this_module_directory, "rule")
+        for root, dirs, files in os.walk(rule_base_dir):
+            dirs[:] = [d for d in dirs if d != "__pycache__"]
+
+            for file in files:
+                if file.endswith(".py") and file != "__init__.py":
+                    rel_path = os.path.relpath(root, rule_base_dir)
+                    if rel_path == ".":
+                        module_name = f"dingo.model.rule.{file[:-3]}"
+                    else:
+                        rel_module = rel_path.replace(os.sep, ".")
+                        module_name = f"dingo.model.rule.{rel_module}.{file[:-3]}"
+
+                    try:
+                        importlib.import_module(module_name)
+                    except ModuleNotFoundError as e:
+                        log.debug(e)
+                    except ImportError as e:
+                        log.debug("=" * 30 + " ImportError " + "=" * 30)
+                        log.debug(f"module {module_name} not imported because: \n{e}")
+                        log.debug("=" * 73)
 
         # llm auto register - 递归扫描子目录
         llm_base_dir = os.path.join(this_module_directory, "llm")
