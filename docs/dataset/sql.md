@@ -10,6 +10,8 @@
 - ✅ **多数据库支持**: 支持 PostgreSQL, MySQL, SQLite 等主流数据库
 - ✅ **内存友好**: 逐行处理数据，适合处理大规模数据集
 - ✅ **灵活查询**: 支持任意 SQL 查询语句（SELECT、JOIN、WHERE 等）
+- ✅ **连接更稳健**: 默认启用 `pool_pre_ping=True`，MySQL/MariaDB 默认 `pool_recycle=1800`
+- ✅ **URL 更安全**: 使用 SQLAlchemy `URL.create(...)` 构建连接，避免特殊字符导致的 URL 解析问题
 
 ## 依赖安装
 
@@ -168,6 +170,7 @@ for data in dataset.get_data():
 | `port` | str | 否 | 数据库端口 |
 | `database` | str | 是 | 数据库名称或文件路径（SQLite） |
 | `connect_args` | str | 否 | 连接参数，如 `?charset=utf8mb4`、`?sslmode=require` 等 |
+| `engine_args` | str | 否 | SQLAlchemy 引擎参数，格式同 `connect_args`，如 `pool_recycle=3600&pool_pre_ping=true` |
 
 *注：对于 SQLite，`username` 和 `host` 不是必填项；对于其他数据库，这些是必填项。
 
@@ -260,9 +263,53 @@ sql_config = DatasetSqlArgs(
 )
 ```
 
+### 4. 使用引擎参数（连接池/探活）
+
+对于需要控制 SQLAlchemy 引擎行为的场景，可以使用 `engine_args`（字符串格式，支持 `k=v&k2=v2`）：
+
+```python
+# 覆盖默认连接池回收时间，显式开启连接探活
+sql_config = DatasetSqlArgs(
+    dialect="mysql",
+    driver="pymysql",
+    username="root",
+    password="password",
+    host="localhost",
+    port="3306",
+    database="test_db",
+    connect_args="charset=utf8mb4",
+    engine_args="pool_recycle=3600&pool_pre_ping=true"
+)
+
+# 支持 ? 前缀写法
+sql_config = DatasetSqlArgs(
+    dialect="postgresql",
+    driver="psycopg2",
+    username="myuser",
+    password="mypassword",
+    host="localhost",
+    port="5432",
+    database="mydb",
+    engine_args="?pool_size=8&max_overflow=16&pool_timeout=30"
+)
+```
+
+当前 `engine_args` 支持参数：
+
+- `pool_pre_ping`（bool，默认 `true`，仅支持 `true/false`）
+- `pool_recycle`（int，MySQL/MariaDB 默认 `1800`）
+- `pool_size`（int）
+- `max_overflow`（int）
+- `pool_timeout`（int）
+
+> ⚠️ Warning: 若在 `engine_args` 里显式设置同名参数，会覆盖默认值。
+
 ## 工作原理
 
 1. **连接创建**: `SqlDataSource` 使用 SQLAlchemy 创建数据库引擎
+   - 使用 `URL.create(...)` 安全构建 URL（兼容密码中的 `@/#/:` 等特殊字符）
+   - 默认开启 `pool_pre_ping=True`；MySQL/MariaDB 默认 `pool_recycle=1800`
+   - 可通过 `engine_args` 覆盖默认引擎参数
 2. **流式查询**: 使用 `connection.execution_options(stream_results=True)` 启用服务器端游标
 3. **逐行迭代**: SQLAlchemy 自动处理数据分页，逐行返回结果
 4. **数据转换**: 每行数据通过 `jsonl` 转换器转换为 `Data` 对象
@@ -326,8 +373,20 @@ pip install pymysql          # MySQL
 - 检查数据库服务是否运行
 - 检查网络连接和防火墙设置
 - 验证主机地址和端口号
+- 在 `connect_args` 中显式增加数据库驱动超时参数（如 `read_timeout`、`write_timeout`）
 
-### 问题4: TypeError: Data() argument after ** must be a mapping
+### 问题4: (pymysql.err.OperationalError) (2013, 'Lost connection to MySQL server during query')
+
+**现象**: 查询执行中连接被重置（例如 `Connection reset by peer`）。
+
+**解决**:
+- 检查数据库和网络链路（代理/LB/NAT）是否会中断长连接
+- 将大查询拆分为分页或分片查询，减少单次长事务时长
+- 检查服务端超时参数（如 `wait_timeout`、`net_read_timeout`）
+- 确认已使用默认连接稳健配置（`pool_pre_ping=True`、MySQL 默认 `pool_recycle=1800`）
+- 按需在 `engine_args` 中调整连接池策略（如 `pool_recycle`、`pool_timeout`）
+
+### 问题5: TypeError: Data() argument after ** must be a mapping
 
 **解决**: 确保使用 `format="jsonl"` 而不是 `format="json"`
 

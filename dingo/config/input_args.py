@@ -25,6 +25,7 @@ class DatasetSqlArgs(BaseModel):
     port: str = ''
     database: str = ''
     connect_args: str = ''  # 连接参数，如 ?charset=utf8mb4
+    engine_args: str = ''  # SQLAlchemy 引擎参数，如 pool_recycle=1800&pool_pre_ping=true
 
 
 class DatasetExcelArgs(BaseModel):
