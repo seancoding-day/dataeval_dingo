@@ -2,7 +2,7 @@ from typing import Any, Dict, Generator, Optional
 from urllib.parse import parse_qsl
 
 from sqlalchemy import create_engine, text
-from sqlalchemy.engine import Engine, URL
+from sqlalchemy.engine import URL, Engine
 
 from dingo.config import InputArgs
 from dingo.data.datasource.base import DataSource
