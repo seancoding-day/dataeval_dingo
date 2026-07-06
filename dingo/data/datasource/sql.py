@@ -1,7 +1,8 @@
 from typing import Any, Dict, Generator, Optional
+from urllib.parse import parse_qsl
 
 from sqlalchemy import create_engine, text
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Engine, URL
 
 from dingo.config import InputArgs
 from dingo.data.datasource.base import DataSource
@@ -9,6 +10,14 @@ from dingo.data.datasource.base import DataSource
 
 @DataSource.register()
 class SqlDataSource(DataSource):
+    _ENGINE_ARG_TYPES = {
+        "pool_pre_ping": "bool",
+        "pool_recycle": "int",
+        "pool_size": "int",
+        "max_overflow": "int",
+        "pool_timeout": "int",
+    }
+
     def __init__(
         self,
         input_args: InputArgs = None,
@@ -33,37 +42,120 @@ class SqlDataSource(DataSource):
                 "must be set when using SQL datasource."
             )
 
-        # 构建数据库连接URL
-        # SQLite 格式: sqlite:///path/to/database.db
-        # 其他数据库格式: dialect+driver://username:password@host:port/database
-        if sql_config.dialect.lower() == "sqlite":
-            driver_part = f"+{sql_config.driver}" if sql_config.driver else ""
-            connection_url = f"{sql_config.dialect}{driver_part}:///{sql_config.database}"
-        else:
-            # 对于非 SQLite 数据库，需要用户名、密码和主机
-            if not sql_config.username or not sql_config.host:
+        dialect = sql_config.dialect.lower()
+        query_args = SqlDataSource._parse_connect_args(sql_config.connect_args)
+
+        connection_url = SqlDataSource._build_connection_url(sql_config, query_args)
+
+        engine_kwargs: Dict[str, Any] = {"pool_pre_ping": True}
+        if dialect in {"mysql", "mariadb"}:
+            engine_kwargs["pool_recycle"] = 1800
+        engine_kwargs.update(SqlDataSource._parse_engine_args(sql_config.engine_args))
+
+        engine = create_engine(connection_url, **engine_kwargs)
+        return engine
+
+    @staticmethod
+    def _build_driver_name(sql_config) -> str:
+        return (
+            f"{sql_config.dialect}+{sql_config.driver}"
+            if sql_config.driver
+            else sql_config.dialect
+        )
+
+    @staticmethod
+    def _parse_connect_args(connect_args: str) -> Dict[str, str]:
+        return SqlDataSource._parse_query_arg_string(connect_args)
+
+    @staticmethod
+    def _parse_query_arg_string(raw_arg_string: str) -> Dict[str, str]:
+        if not raw_arg_string:
+            return {}
+        normalized = raw_arg_string.strip()
+        if normalized.startswith("?"):
+            normalized = normalized[1:]
+        if not normalized:
+            return {}
+        return {
+            key: value
+            for key, value in parse_qsl(normalized, keep_blank_values=False)
+            if key
+        }
+
+    @staticmethod
+    def _parse_bool_value(raw_value: str, key: str) -> bool:
+        normalized = raw_value.strip().lower()
+        if normalized == "true":
+            return True
+        if normalized == "false":
+            return False
+        raise RuntimeError(
+            f"SQL engine arg '{key}' expects 'true' or 'false', got: {raw_value}."
+        )
+
+    @staticmethod
+    def _parse_engine_args(engine_args: str) -> Dict[str, Any]:
+        raw_engine_args = SqlDataSource._parse_query_arg_string(engine_args)
+        if not raw_engine_args:
+            return {}
+
+        parsed_engine_args: Dict[str, Any] = {}
+        for key, raw_value in raw_engine_args.items():
+            expected_type = SqlDataSource._ENGINE_ARG_TYPES.get(key)
+            if expected_type is None:
+                allowed = ", ".join(sorted(SqlDataSource._ENGINE_ARG_TYPES.keys()))
                 raise RuntimeError(
-                    f"For {sql_config.dialect}, username and host must be set."
+                    f"Unsupported SQL engine arg '{key}'. Allowed keys: {allowed}."
                 )
 
-            driver_part = f"+{sql_config.driver}" if sql_config.driver else ""
-            port_part = f":{sql_config.port}" if sql_config.port else ""
-            password_part = f":{sql_config.password}" if sql_config.password else ""
+            if expected_type == "int":
+                try:
+                    parsed_engine_args[key] = int(raw_value)
+                except ValueError as exc:
+                    raise RuntimeError(
+                        f"SQL engine arg '{key}' expects an integer value, got: {raw_value}."
+                    ) from exc
+            elif expected_type == "bool":
+                parsed_engine_args[key] = SqlDataSource._parse_bool_value(raw_value, key)
 
-            connection_url = (
-                f"{sql_config.dialect}{driver_part}://"
-                f"{sql_config.username}{password_part}@"
-                f"{sql_config.host}{port_part}/{sql_config.database}"
+        return parsed_engine_args
+
+    @staticmethod
+    def _parse_port(port: str) -> Optional[int]:
+        if not port:
+            return None
+        try:
+            return int(port)
+        except ValueError as exc:
+            raise RuntimeError("SQL connection parameter 'port' must be an integer.") from exc
+
+    @staticmethod
+    def _build_connection_url(sql_config, query_args: Dict[str, str]) -> URL:
+        driver_name = SqlDataSource._build_driver_name(sql_config)
+        query = query_args or None
+
+        if sql_config.dialect.lower() == "sqlite":
+            return URL.create(
+                drivername=driver_name,
+                database=sql_config.database,
+                query=query,
             )
 
-        # 添加连接参数（如 ?charset=utf8mb4）
-        if sql_config.connect_args:
-            # 确保参数以 ? 开头
-            args_part = sql_config.connect_args if sql_config.connect_args.startswith('?') else f"?{sql_config.connect_args}"
-            connection_url = f"{connection_url}{args_part}"
+        # 对于非 SQLite 数据库，需要用户名、密码和主机
+        if not sql_config.username or not sql_config.host:
+            raise RuntimeError(
+                f"For {sql_config.dialect}, username and host must be set."
+            )
 
-        engine = create_engine(connection_url)
-        return engine
+        return URL.create(
+            drivername=driver_name,
+            username=sql_config.username,
+            password=sql_config.password or None,
+            host=sql_config.host,
+            port=SqlDataSource._parse_port(sql_config.port),
+            database=sql_config.database,
+            query=query,
+        )
 
     @staticmethod
     def get_source_type() -> str:
