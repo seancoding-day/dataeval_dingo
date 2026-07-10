@@ -141,12 +141,9 @@ class LocalExecutor(ExecProto):
                     self.summary.total += 1
                     # Keep score updated during execution so get_summary()
                     # remains meaningful even if the task stops early.
-                    if self.summary.total > 0:
-                        self.summary.score = round(
-                            self.summary.num_good / self.summary.total * 100, 2
-                        )
-                    else:
-                        self.summary.score = 0.0
+                    self.summary.score = round(
+                        self.summary.num_good / self.summary.total * 100, 2
+                    )
 
                     self.write_single_data(
                         self.summary.output_path, self.input_args, result_info
