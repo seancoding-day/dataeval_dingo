@@ -152,7 +152,7 @@ class LocalExecutor(ExecProto):
                 self.write_summary(
                     self.summary.output_path,
                     self.input_args,
-                    self.summarize(self.summary),
+                    self.summarize(self.summary, refresh_type_ratio=False),
                 )
 
         log.debug("[Summary]: " + str(self.summary))
@@ -247,12 +247,15 @@ class LocalExecutor(ExecProto):
 
         return existing_list
 
-    def summarize(self, summary: SummaryModel) -> SummaryModel:
+    def summarize(
+        self, summary: SummaryModel, refresh_type_ratio: bool = True
+    ) -> SummaryModel:
         new_summary = copy.deepcopy(summary)
         if new_summary.total == 0:
             return new_summary
         new_summary.score = round(new_summary.num_good / new_summary.total * 100, 2)
-        new_summary = self.refresh_type_ratio(new_summary)
+        if refresh_type_ratio:
+            new_summary = self.refresh_type_ratio(new_summary)
 
         # 计算指标分数的平均值、最小值、最大值、标准差等
         new_summary.calculate_metrics_score_averages()
