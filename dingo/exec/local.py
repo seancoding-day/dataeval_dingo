@@ -115,8 +115,8 @@ class LocalExecutor(ExecProto):
                     # 统计eval_details，第一层key是字段名组合，第二层value是List[EvalDetail]
                     # 错误类型从EvalDetail.label中获取
                     for field_key, eval_detail_list in result_info.eval_details.items():
-                        if field_key not in self.summary.type_ratio:
-                            self.summary.type_ratio[field_key] = {}
+                        if field_key not in self.summary.type_count:
+                            self.summary.type_count[field_key] = {}
 
                         # 遍历 List[EvalDetail]，同时收集指标分数和标签
                         label_set = set()
@@ -131,8 +131,8 @@ class LocalExecutor(ExecProto):
                                 label_set.add(label)
 
                         for label in label_set:
-                            self.summary.type_ratio[field_key].setdefault(label, 0)
-                            self.summary.type_ratio[field_key][label] += 1
+                            self.summary.type_count[field_key].setdefault(label, 0)
+                            self.summary.type_count[field_key][label] += 1
 
                     if result_info.eval_status:
                         self.summary.num_bad += 1
@@ -144,6 +144,7 @@ class LocalExecutor(ExecProto):
                     self.summary.score = round(
                         self.summary.num_good / self.summary.total * 100, 2
                     )
+                    self._refresh_type_ratio(self.summary)
 
                     self.write_single_data(
                         self.summary.output_path, self.input_args, result_info
@@ -252,19 +253,25 @@ class LocalExecutor(ExecProto):
         if new_summary.total == 0:
             return new_summary
         new_summary.score = round(new_summary.num_good / new_summary.total * 100, 2)
-
-        # type_ratio是两层结构：第一层是字段名，第二层是具体错误类型
-        for field_name in new_summary.type_ratio:
-            for eval_details in new_summary.type_ratio[field_name]:
-                new_summary.type_ratio[field_name][eval_details] = round(
-                    new_summary.type_ratio[field_name][eval_details] / new_summary.total, 6
-                )
+        self._refresh_type_ratio(new_summary)
 
         # 计算指标分数的平均值、最小值、最大值、标准差等
         new_summary.calculate_metrics_score_averages()
 
         new_summary.finish_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
         return new_summary
+
+    @staticmethod
+    def _refresh_type_ratio(summary: SummaryModel):
+        if summary.total <= 0:
+            summary.type_ratio = {}
+            return
+
+        summary.type_ratio = {}
+        for field_name, label_counts in summary.type_count.items():
+            summary.type_ratio[field_name] = {}
+            for label, count in label_counts.items():
+                summary.type_ratio[field_name][label] = round(count / summary.total, 6)
 
     @staticmethod
     def _json_default(value):
