@@ -1,9 +1,4 @@
-from dingo.model.llm.llm_search_result_relevance import (
-    _extract_result_dois,
-    _grade_doi_result,
-    _normalize_doi,
-    is_doi_query,
-)
+from dingo.model.llm.llm_search_result_relevance import _extract_result_dois, _grade_doi_result, _normalize_doi, is_doi_query
 
 
 def test_normalize_doi_variants():
@@ -26,6 +21,12 @@ def test_extract_result_dois_from_supported_fields():
         "10.2000/xyz",
         "10.3000/location",
     ]
+
+
+def test_extract_result_dois_ignores_non_list_locations():
+    assert _extract_result_dois({"locations": True}) == []
+    assert _extract_result_dois({"locations": 1}) == []
+    assert _extract_result_dois({"locations": {"url": "https://doi.org/10.1000/test"}}) == []
 
 
 def test_doi_query_uses_exact_match():

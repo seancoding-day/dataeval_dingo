@@ -1,8 +1,6 @@
 """Rule-based search result authority grader."""
 
 from __future__ import annotations
-
-import json
 import math
 import statistics
 from dataclasses import dataclass
@@ -12,7 +10,6 @@ from dingo.config.input_args import EvaluatorLLMArgs
 from dingo.io.input import Data
 from dingo.io.output.eval_detail import EvalDetail
 from dingo.model import Model
-
 
 HIGH_AUTHORITY_VENUE_HINTS = (
     "nature",
@@ -61,6 +58,21 @@ def extract_citations(result: dict[str, Any], key: str = "citation_count") -> fl
         return float(result.get(key) or 0)
     except (TypeError, ValueError):
         return 0.0
+
+
+def _has_doi_in_locations(locations: Any) -> bool:
+    if not isinstance(locations, list):
+        return False
+    for location in locations:
+        if isinstance(location, dict):
+            values = location.values()
+        elif isinstance(location, str):
+            values = [location]
+        else:
+            continue
+        if any("doi.org" in str(value).lower() for value in values if value):
+            return True
+    return False
 
 
 @dataclass
@@ -135,7 +147,7 @@ class LLMSearchResultAuthority:
             venue_score = 0.45
             reason = "repository_or_preprint"
 
-        doi_score = 1.0 if result.get("doi") or "doi.org" in json.dumps(result.get("locations", [])) else 0.0
+        doi_score = 1.0 if result.get("doi") or _has_doi_in_locations(result.get("locations")) else 0.0
         score = (
             0.45 * citation_score
             + 0.20 * influential_score

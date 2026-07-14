@@ -35,26 +35,21 @@ INVISIBLE_CHAR_PATTERN = r"[\u2000-\u200F\u202F\u205F\u3000\uFEFF\u00A0\u2060-\u
 DOI_PATTERN = re.compile(r"(?i)(?:https?://(?:dx\.)?doi\.org/)?(10\.\d{4,9}/[^\s]+)")
 
 STANDARD_SYSTEM_PROMPT = """\
-You are a helpful assistant that grades the relevance of search results for given queries.
-Your task is to assign a relevance score between 0.0 and 1.0 to each result, based on
-how good a result is for the query.
-
-For each search result, carefully read the query and the result. Assign a value for
-each criterion as follows:
-- Provide a brief explanation of your reasoning in 20 words or fewer.
+Grade how useful a search result is for a query and assign a relevance score
+from 0.0 to 1.0.
+Read the query, title, and available content, then return these fields:
+- Brief reasoning in 20 words or fewer.
 - Assign a query_relevance score between 0.0 and 1.0.
 - Assign a result_quality score between 0.0 and 1.0.
-- Indicate if there are severe content_issues (true/false).
+- Set content_issues to true or false.
 - Assign a confidence score between 0.0 and 1.0.
 - Assign an overall score between 0.0 and 1.0.
 
-Set content_issues to true only for severe content corruption, such as garbled/mojibake text,
-raw HTML/XML or parser residue that materially hurts readability, invisible/control characters,
-or unreadable content. Do not mark normal snippets, short abstracts, missing abstracts, or
-truncated previews as content_issues when the title/snippet is still readable.
+Set content_issues=true only when mojibake, raw HTML/XML, parser residue, invisible/control
+characters, or similar corruption makes visible content materially unreadable. Missing or short
+abstracts and truncated previews are not issues when the visible title/snippet remains readable.
 
-Return only one valid JSON object. Keep reasoning short and do not use double
-quotes inside the reasoning string."""
+Return one valid JSON object only. Do not use double quotes inside reasoning."""
 
 DETAILED_SYSTEM_PROMPT = """\
 You are a helpful assistant that grades the relevance of search results for given queries.
@@ -242,7 +237,7 @@ def _repair_unescaped_quotes_in_reasoning(text: str) -> str:
 
     value_start = start_match.end()
     next_key = re.search(
-        r'"\s*,\s*"(query_relevance|result_quality|content_issues|confidence|score)"\s*:',
+        r'"\s*(?:,\s*"(?:query_relevance|result_quality|content_issues|confidence|score)"\s*:|})',
         text[value_start:],
         flags=re.DOTALL,
     )
@@ -294,7 +289,7 @@ def _parse_grade_fields_lenient(text: str) -> RelevanceGrade | None:
     issue_match = re.search(r'"content_issues"\s*:\s*(true|false)', text, flags=re.IGNORECASE)
     reasoning = ""
     reasoning_match = re.search(
-        r'"reasoning"\s*:\s*"(.*?)"\s*,\s*"(?:query_relevance|result_quality|content_issues|confidence|score)"',
+        r'"reasoning"\s*:\s*"(.*?)"\s*(?:,\s*"(?:query_relevance|result_quality|content_issues|confidence|score)"|})',
         text,
         flags=re.DOTALL,
     )
@@ -379,9 +374,11 @@ def is_doi_query(query: str) -> bool:
 
 def _extract_result_dois(result: dict[str, Any]) -> list[str]:
     candidates: list[Any] = [result.get("doi"), result.get("unique_id")]
-    for location in result.get("locations") or []:
-        if isinstance(location, dict):
-            candidates.extend([location.get("doi"), location.get("url"), location.get("landing_page_url")])
+    locations = result.get("locations")
+    if isinstance(locations, list):
+        for location in locations:
+            if isinstance(location, dict):
+                candidates.extend([location.get("doi"), location.get("url"), location.get("landing_page_url")])
 
     dois: list[str] = []
     for candidate in candidates:

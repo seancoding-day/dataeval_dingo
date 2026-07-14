@@ -102,6 +102,29 @@ class TestParseGradeResponse:
         assert grade.content_issues is False
         assert grade.confidence == 0.85
 
+    def test_repairs_unescaped_quotes_when_reasoning_is_last(self):
+        response = (
+            '{"score": 0.92, "query_relevance": 0.95, "result_quality": 0.9, '
+            '"content_issues": false, "confidence": 0.85, '
+            '"reasoning": "The query "PBPK" directly matches"}'
+        )
+
+        grade = _parse_grade_response(response)
+
+        assert grade.error == ""
+        assert grade.score == 0.92
+        assert grade.reasoning == 'The query "PBPK" directly matches'
+
+    def test_lenient_parse_when_reasoning_is_last(self):
+        response = '{"score": 0.7, "query_relevance": 0.8, "broken": ???, "reasoning": "final reason"}'
+
+        grade = _parse_grade_response(response)
+
+        assert grade.error == ""
+        assert grade.score == 0.7
+        assert grade.query_relevance == 0.8
+        assert grade.reasoning == "final reason"
+
     def test_missing_fields_default_to_zero(self):
         grade = _parse_grade_response('{"score": 0.5}')
         assert grade.score == 0.5
