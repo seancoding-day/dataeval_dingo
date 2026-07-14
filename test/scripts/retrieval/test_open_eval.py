@@ -82,6 +82,26 @@ class TestParseGradeResponse:
         assert grade.error
         assert "JSON parse failed" in grade.error
 
+    def test_json_embedded_in_text(self):
+        response = 'Here is the grade:\n{"score": 0.6, "query_relevance": 0.7, "result_quality": 0.5, "content_issues": false, "confidence": 0.8, "reasoning": "ok"}'
+        grade = _parse_grade_response(response)
+        assert grade.score == 0.6
+        assert grade.error == ""
+
+    def test_lenient_parse_unescaped_quotes_in_reasoning(self):
+        response = (
+            '{"reasoning": "The query "resilience" directly matches the result", '
+            '"query_relevance": 0.95, "result_quality": 0.9, '
+            '"content_issues": false, "confidence": 0.85, "score": 0.92}'
+        )
+        grade = _parse_grade_response(response)
+        assert grade.error == ""
+        assert grade.score == 0.92
+        assert grade.query_relevance == 0.95
+        assert grade.result_quality == 0.9
+        assert grade.content_issues is False
+        assert grade.confidence == 0.85
+
     def test_missing_fields_default_to_zero(self):
         grade = _parse_grade_response('{"score": 0.5}')
         assert grade.score == 0.5

@@ -17,11 +17,22 @@ operates on search traces rather than ``Data`` rows.
 from __future__ import annotations
 import json
 import logging
+import re
 import statistics
 from dataclasses import dataclass
 from typing import Any
 
+from dingo.config.input_args import EvaluatorLLMArgs
+from dingo.io.input import Data
+from dingo.io.output.eval_detail import EvalDetail
+from dingo.model import Model
+
 logger = logging.getLogger(__name__)
+
+HTML_TAG_PATTERN = r"<[^>]+>"
+MOJIBAKE_EVIDENCE_PATTERN = r"[閿熻В鏋撮柨鐔恍掗弸纰凤拷�]|\{\/U\}|u[0-9a-fA-F]{4}|�{2,}"
+INVISIBLE_CHAR_PATTERN = r"[\u2000-\u200F\u202F\u205F\u3000\uFEFF\u00A0\u2060-\u206F\uFEFF\xa0]"
+DOI_PATTERN = re.compile(r"(?i)(?:https?://(?:dx\.)?doi\.org/)?(10\.\d{4,9}/[^\s]+)")
 
 STANDARD_SYSTEM_PROMPT = """\
 You are a helpful assistant that grades the relevance of search results for given queries.
@@ -30,12 +41,20 @@ how good a result is for the query.
 
 For each search result, carefully read the query and the result. Assign a value for
 each criterion as follows:
-- Provide a brief explanation of your reasoning.
+- Provide a brief explanation of your reasoning in 20 words or fewer.
 - Assign a query_relevance score between 0.0 and 1.0.
 - Assign a result_quality score between 0.0 and 1.0.
-- Indicate if there are any content_issues (true/false).
+- Indicate if there are severe content_issues (true/false).
 - Assign a confidence score between 0.0 and 1.0.
-- Assign an overall score between 0.0 and 1.0."""
+- Assign an overall score between 0.0 and 1.0.
+
+Set content_issues to true only for severe content corruption, such as garbled/mojibake text,
+raw HTML/XML or parser residue that materially hurts readability, invisible/control characters,
+or unreadable content. Do not mark normal snippets, short abstracts, missing abstracts, or
+truncated previews as content_issues when the title/snippet is still readable.
+
+Return only one valid JSON object. Keep reasoning short and do not use double
+quotes inside the reasoning string."""
 
 DETAILED_SYSTEM_PROMPT = """\
 You are a helpful assistant that grades the relevance of search results for given queries.
@@ -73,9 +92,11 @@ tangentially related or irrelevant.
 2. result_quality: The authority, accuracy, and trustworthiness of the result. High-quality \
 results come from reputable sources, are well-written, and are not spammy or misleading.
 
-3. content_issues: A boolean indicating whether there are problems with the content, such as \
-truncation, missing information, or improper parsing. If the result is incomplete or garbled, \
-set this to true.
+3. content_issues: A boolean indicating severe content corruption only. Set this to true \
+when the visible title/content has garbled or mojibake text, raw HTML/XML or parser residue \
+that materially hurts readability, invisible/control characters, or unreadable text. Do NOT \
+set this to true merely because the abstract is missing, the snippet is short, or the preview \
+is truncated, if the visible title/snippet is still readable enough to judge relevance.
 
 4. confidence: How certain you are about your grading. If the result snippet is clear and \
 directly answers the query, confidence should be high. If you need external information to \
@@ -86,15 +107,18 @@ validate whether the result is a good match for the query, your confidence shoul
 
 For each search result, carefully read the query and the result. Assign a value for \
 each criterion as follows:
-- Provide a brief explanation of your reasoning.
+- Provide a brief explanation of your reasoning in 20 words or fewer.
 - Assign a query_relevance score between 0.0 and 1.0.
 - Assign a result_quality score between 0.0 and 1.0.
-- Indicate if there are any content_issues (true/false).
+- Indicate if there are severe content_issues (true/false).
 - Assign a confidence score between 0.0 and 1.0.
 - Assign an overall score between 0.0 and 1.0.
 
 Be consistent and use decimal points for fine-grained differentiation. If you are unsure \
-due to missing or unclear information, lower your confidence and make a best guess as to the score."""
+due to missing or unclear information, lower your confidence and make a best guess as to the score.
+
+Return only one valid JSON object. Keep reasoning short and do not use double quotes inside \
+the reasoning string. If you need quotation marks in reasoning, use single quotes."""
 
 
 @dataclass
@@ -179,11 +203,13 @@ def _build_user_message(
         '"result_quality": 0.0-1.0, "content_issues": true/false, '
         '"confidence": 0.0-1.0, "score": 0.0-1.0}'
     )
+    parts.append(
+        "Return JSON only. Keep reasoning under 20 words and do not use double quotes inside reasoning."
+    )
     return "\n".join(parts)
 
 
-def _parse_grade_response(response_text: str) -> RelevanceGrade:
-    """Parse LLM JSON response into a RelevanceGrade."""
+def _strip_json_fence(response_text: str) -> str:
     text = response_text.strip()
     if text.startswith("```json"):
         text = text[7:]
@@ -191,34 +217,216 @@ def _parse_grade_response(response_text: str) -> RelevanceGrade:
         text = text[3:]
     if text.endswith("```"):
         text = text[:-3]
-    text = text.strip()
+    return text.strip()
 
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError:
-        return RelevanceGrade(error=f"JSON parse failed: {text[:200]}")
 
+def _extract_json_object(text: str) -> str | None:
+    start = text.find("{")
+    end = text.rfind("}")
+    if start == -1 or end == -1 or end <= start:
+        return None
+    return text[start:end + 1].strip()
+
+
+def _repair_unescaped_quotes_in_reasoning(text: str) -> str:
+    """Escape stray double quotes inside the reasoning JSON string.
+
+    Some models emit otherwise valid JSON such as:
+    {"reasoning": "The query "PBPK" matches", "score": 0.9, ...}
+    The inner quotes break json.loads. This repair scopes the change to the
+    reasoning value and leaves the following JSON keys untouched.
+    """
+    start_match = re.search(r'("reasoning"\s*:\s*")', text)
+    if not start_match:
+        return text
+
+    value_start = start_match.end()
+    next_key = re.search(
+        r'"\s*,\s*"(query_relevance|result_quality|content_issues|confidence|score)"\s*:',
+        text[value_start:],
+        flags=re.DOTALL,
+    )
+    if not next_key:
+        return text
+
+    value_end = value_start + next_key.start()
+    value = text[value_start:value_end]
+    repaired_value = re.sub(r'(?<!\\)"', r'\\"', value)
+    return text[:value_start] + repaired_value + text[value_end:]
+
+
+def _coerce_float(value: Any) -> float:
     try:
-        if not isinstance(data, dict):
-            return RelevanceGrade(error=f"JSON is not a dictionary: {text[:200]}")
-        return RelevanceGrade(
-            score=float(data.get("score", 0.0)),
-            query_relevance=float(data.get("query_relevance", 0.0)),
-            result_quality=float(data.get("result_quality", 0.0)),
-            content_issues=bool(data.get("content_issues", False)),
-            confidence=float(data.get("confidence", 0.0)),
-            reasoning=str(data.get("reasoning", "")),
+        return float(value)
+    except (TypeError, ValueError):
+        return 0.0
+
+
+def _clamp_score(value: Any) -> float:
+    return max(0.0, min(1.0, _coerce_float(value)))
+
+
+def _grade_from_dict(data: dict[str, Any]) -> RelevanceGrade:
+    return RelevanceGrade(
+        score=_clamp_score(data.get("score", 0.0)),
+        query_relevance=_clamp_score(data.get("query_relevance", 0.0)),
+        result_quality=_clamp_score(data.get("result_quality", 0.0)),
+        content_issues=bool(data.get("content_issues", False)),
+        confidence=_clamp_score(data.get("confidence", 0.0)),
+        reasoning=str(data.get("reasoning", "")),
+    )
+
+
+def _parse_grade_fields_lenient(text: str) -> RelevanceGrade | None:
+    number_fields = {}
+    for field in ("query_relevance", "result_quality", "confidence", "score"):
+        match = re.search(
+            rf'"{field}"\s*:\s*([-+]?(?:\d+(?:\.\d*)?|\.\d+))',
+            text,
+            flags=re.IGNORECASE,
         )
-    except (ValueError, TypeError) as e:
-        return RelevanceGrade(error=f"Failed to parse grade response: {e}. Text: {text[:200]}")
+        if match:
+            number_fields[field] = _clamp_score(match.group(1))
+
+    if "score" not in number_fields and "query_relevance" not in number_fields:
+        return None
+
+    issue_match = re.search(r'"content_issues"\s*:\s*(true|false)', text, flags=re.IGNORECASE)
+    reasoning = ""
+    reasoning_match = re.search(
+        r'"reasoning"\s*:\s*"(.*?)"\s*,\s*"(?:query_relevance|result_quality|content_issues|confidence|score)"',
+        text,
+        flags=re.DOTALL,
+    )
+    if reasoning_match:
+        reasoning = " ".join(reasoning_match.group(1).split())
+
+    return RelevanceGrade(
+        score=number_fields.get("score", number_fields.get("query_relevance", 0.0)),
+        query_relevance=number_fields.get("query_relevance", 0.0),
+        result_quality=number_fields.get("result_quality", 0.0),
+        content_issues=issue_match.group(1).lower() == "true" if issue_match else False,
+        confidence=number_fields.get("confidence", 0.0),
+        reasoning=reasoning,
+    )
 
 
+def _parse_grade_response(response_text: str) -> RelevanceGrade:
+    """Parse LLM JSON response into a RelevanceGrade."""
+    text = _strip_json_fence(response_text)
+    candidates = [text]
+    extracted = _extract_json_object(text)
+    if extracted and extracted != text:
+        candidates.append(extracted)
+
+    repaired_candidates = []
+    for candidate in candidates:
+        repaired = _repair_unescaped_quotes_in_reasoning(candidate)
+        if repaired != candidate:
+            repaired_candidates.append(repaired)
+    candidates.extend(repaired_candidates)
+
+    for candidate in candidates:
+        try:
+            data = json.loads(candidate)
+        except json.JSONDecodeError:
+            continue
+
+        try:
+            if not isinstance(data, dict):
+                return RelevanceGrade(error=f"JSON is not a dictionary: {candidate[:200]}")
+            return _grade_from_dict(data)
+        except (ValueError, TypeError) as e:
+            return RelevanceGrade(error=f"Failed to parse grade response: {e}. Text: {candidate[:200]}")
+
+    lenient = _parse_grade_fields_lenient(extracted or text)
+    if lenient:
+        return lenient
+    return RelevanceGrade(error=f"JSON parse failed: {text[:200]}")
+
+
+def _content_issue_evidence(title: str, abstract: str) -> list[str]:
+    text = "\n".join([str(title or ""), str(abstract or "")])
+    issues: list[str] = []
+    if re.search(MOJIBAKE_EVIDENCE_PATTERN, text):
+        issues.append("mojibake_or_garbled_text")
+    if re.search(INVISIBLE_CHAR_PATTERN, text):
+        issues.append("invisible_or_control_char")
+    html_matches = re.findall(HTML_TAG_PATTERN, text)
+    if html_matches:
+        issues.append("html_or_xml_tag_residue")
+    if re.search(r"(/docserver/|<\?xml|<!DOCTYPE|&lt;/?[a-zA-Z][^&]*&gt;)", text, flags=re.IGNORECASE):
+        issues.append("parser_residue")
+    return issues
+
+
+def _has_severe_content_issue(title: str, abstract: str) -> bool:
+    return bool(_content_issue_evidence(title, abstract))
+
+
+def _normalize_doi(value: Any) -> str:
+    """Extract and normalize a DOI from a query or result field."""
+    text = str(value or "").strip()
+    match = DOI_PATTERN.search(text)
+    if not match:
+        return ""
+    return match.group(1).rstrip(".,;:)]}").lower()
+
+
+def is_doi_query(query: str) -> bool:
+    return bool(_normalize_doi(query))
+
+
+def _extract_result_dois(result: dict[str, Any]) -> list[str]:
+    candidates: list[Any] = [result.get("doi"), result.get("unique_id")]
+    for location in result.get("locations") or []:
+        if isinstance(location, dict):
+            candidates.extend([location.get("doi"), location.get("url"), location.get("landing_page_url")])
+
+    dois: list[str] = []
+    for candidate in candidates:
+        values = candidate if isinstance(candidate, list) else [candidate]
+        for value in values:
+            doi = _normalize_doi(value)
+            if doi and doi not in dois:
+                dois.append(doi)
+    return dois
+
+
+def _grade_doi_result(query: str, result: dict[str, Any]) -> RelevanceGrade | None:
+    """Use deterministic identifier matching when the query is a DOI."""
+    query_doi = _normalize_doi(query)
+    if not query_doi:
+        return None
+
+    result_dois = _extract_result_dois(result)
+    exact_match = query_doi in result_dois
+    score = 1.0 if exact_match else 0.0
+    result_text = ", ".join(result_dois) if result_dois else "missing"
+    return RelevanceGrade(
+        score=score,
+        query_relevance=score,
+        result_quality=1.0 if exact_match else 0.0,
+        content_issues=False,
+        confidence=1.0,
+        reasoning=(
+            f"Exact DOI match: {query_doi}."
+            if exact_match
+            else f"DOI mismatch: expected {query_doi}; result {result_text}."
+        ),
+    )
+
+
+@Model.llm_register("LLMSearchResultRelevance")
 class LLMSearchResultRelevance:
     """Exa-style pointwise search result relevance grader.
 
     Manages its own OpenAI client instance, independent of Dingo's
     ``BaseOpenAI`` evaluator hierarchy.
     """
+
+    dynamic_config = EvaluatorLLMArgs()
+    default_threshold = 0.15
 
     def __init__(
         self,
@@ -228,12 +436,18 @@ class LLMSearchResultRelevance:
         api_url: str | None = None,
         prompt_mode: str = "standard",
         expected_criteria: str | None = None,
+        max_tokens: int = 1024,
+        temperature: float = 0.0,
+        timeout: float | None = None,
     ):
         self.model = model or "gpt-4o"
         self.api_key = api_key
         self.api_url = api_url
         self.prompt_mode = prompt_mode
         self.expected_criteria = expected_criteria
+        self.max_tokens = max_tokens
+        self.temperature = temperature
+        self.timeout = timeout
         self._client = None
 
     def _get_client(self):
@@ -269,14 +483,87 @@ class LLMSearchResultRelevance:
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message},
                 ],
-                temperature=0.0,
-                max_tokens=512,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+                timeout=self.timeout,
             )
             response_text = completion.choices[0].message.content or ""
             return _parse_grade_response(response_text)
         except Exception as e:
             logger.warning("LLM grading failed for query=%r title=%r: %s", query, title, e)
             return RelevanceGrade(error=str(e))
+
+    @classmethod
+    def _config_value(cls, name: str, default: Any = None) -> Any:
+        return getattr(cls.dynamic_config, name, default)
+
+    @classmethod
+    def _build_from_config(cls) -> "LLMSearchResultRelevance":
+        return cls(
+            model=cls.dynamic_config.model,
+            api_key=cls.dynamic_config.key,
+            api_url=cls.dynamic_config.api_url,
+            prompt_mode=str(cls._config_value("prompt_mode", "detailed") or "detailed"),
+            expected_criteria=cls._config_value("expected_criteria", None),
+            max_tokens=int(cls._config_value("max_tokens", 1024) or 1024),
+            temperature=float(cls._config_value("temperature", 0.0) or 0.0),
+            timeout=cls._config_value("timeout", None),
+        )
+
+    @staticmethod
+    def _extract_title(result: dict[str, Any]) -> str:
+        return str(result.get("title") or result.get("display_name") or "")
+
+    @staticmethod
+    def _extract_abstract(result: dict[str, Any]) -> str:
+        return str(result.get("abstract") or result.get("summary") or result.get("content") or "")
+
+    @classmethod
+    def eval(cls, input_data: Data) -> EvalDetail:
+        """Executor entry point: evaluate one flattened query-result pair."""
+        result = getattr(input_data, "search_result", None)
+        if not isinstance(result, dict):
+            result = input_data.to_dict()
+        query = str(getattr(input_data, "query", "") or result.get("_eval_query") or result.get("query") or "")
+
+        title = cls._extract_title(result)
+        abstract = cls._extract_abstract(result)
+        grade = _grade_doi_result(query, result)
+        if grade is None:
+            grader = cls._build_from_config()
+            grade = grader.grade(
+                query=query,
+                title=title,
+                abstract=abstract,
+            )
+        threshold = float(cls._config_value("threshold", cls.default_threshold) or cls.default_threshold)
+        content_issue_evidence = _content_issue_evidence(title, abstract) if grade.content_issues else []
+        effective_content_issues = bool(content_issue_evidence)
+
+        labels: list[str] = []
+        if grade.error:
+            labels.append("Relevance.Error_Parse")
+        if grade.score < threshold:
+            labels.append("Relevance.Error_Relevance_Low")
+        if effective_content_issues:
+            labels.append("Relevance.Error_Content_Issues")
+
+        status = bool(labels)
+        if not labels:
+            labels = ["QUALITY_GOOD"]
+
+        reason = grade.to_dict()
+        reason["raw_content_issues"] = grade.content_issues
+        reason["content_issues"] = effective_content_issues
+        reason["content_issue_evidence"] = content_issue_evidence
+
+        return EvalDetail(
+            metric=cls.__name__,
+            status=status,
+            score=round(grade.score, 5),
+            label=labels,
+            reason=[reason],
+        )
 
 
 def aggregate_grades(

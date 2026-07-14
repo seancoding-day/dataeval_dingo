@@ -1,0 +1,32 @@
+# Search Result Relevance Executor Notes
+
+`examples/retrieval/sdk_eval_relevancy.py` evaluates each query-result pair with `LLMSearchResultRelevance` through Dingo `LocalExecutor`.
+
+## Content Issues
+
+`Relevance.Error_Content_Issues` now uses a strict standard. It is intended for severe visible content corruption, not for ordinary search-result incompleteness.
+
+The LLM prompt asks `content_issues=true` only when the visible title/content has severe problems such as:
+
+- mojibake or garbled text
+- raw HTML/XML tag residue
+- parser residue that materially hurts readability
+- invisible or control characters
+- unreadable text
+
+The evaluator also applies a deterministic evidence filter after the LLM response. Even if the LLM returns `content_issues=true`, the final executor label `Relevance.Error_Content_Issues` is emitted only when the result text contains supporting evidence.
+
+The following should not by itself trigger `Relevance.Error_Content_Issues`:
+
+- missing abstract
+- short snippet
+- truncated preview
+- title-only result, if the title is still readable enough to judge relevance
+
+In `EvalDetail.reason`, the output keeps both:
+
+- `raw_content_issues`: the original LLM boolean
+- `content_issues`: the post-filtered boolean used for final labels
+- `content_issue_evidence`: the matched evidence list
+
+This keeps the LLM signal available for analysis while preventing ordinary truncation or sparse metadata from making an otherwise relevant result bad.
