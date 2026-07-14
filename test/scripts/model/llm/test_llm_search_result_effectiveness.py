@@ -1,10 +1,4 @@
-from dingo.model.llm.llm_search_result_effectiveness import (
-    LLMSearchResultEffectiveness,
-    _filter_llm_field_issues,
-    _issues_to_labels,
-    _looks_like_utf8_latin1_mojibake,
-    _rule_abnormal_char_issues,
-)
+from dingo.model.llm.llm_search_result_effectiveness import LLMSearchResultEffectiveness, _filter_llm_field_issues, _issues_to_labels, _looks_like_utf8_latin1_mojibake, _rule_abnormal_char_issues
 
 
 def _mojibake(value: str) -> str:

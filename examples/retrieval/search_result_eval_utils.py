@@ -1,7 +1,6 @@
 """Utilities for search result JSONL evaluation examples."""
 
 from __future__ import annotations
-
 import argparse
 import csv
 import json

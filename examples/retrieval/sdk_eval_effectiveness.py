@@ -12,10 +12,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from search_result_eval_utils import add_common_args, get_title, load_query_result_jsonl  # noqa: E402
+from search_result_eval_utils import add_common_args, get_title, load_query_result_jsonl
 
-from dingo.config import InputArgs  # noqa: E402
-from dingo.exec import Executor  # noqa: E402
+from dingo.config import InputArgs
+from dingo.exec import Executor
 
 EVALUATOR_NAME = "LLMSearchResultEffectiveness"
 
