@@ -638,4 +638,3 @@ Import-Csv outputs/search_result_relevancy_97q/query_scores.csv |
 3. 内容有效性当前不按 `metadata_type` 放宽字段要求，因此 ebook 缺少 abstract、keywords、venue 时会低分。
 4. 内容有效性使用 `RuleSpecialCharacter` / `RuleInvisibleChar` / `RuleMojibake` 做快速初筛，再用 LLM 二次确认 HTML 泄漏、乱码、不可见字符和严重特殊字符噪声；正常公式、LaTeX、单位符号不应被扣分。
 5. 权威性低不一定表示结果不相关，可能只是 citation、DOI、venue 元数据不足。
-

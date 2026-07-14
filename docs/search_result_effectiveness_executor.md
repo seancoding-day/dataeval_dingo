@@ -128,4 +128,3 @@ Effectiveness =
 ```
 
 Field scores are based on missing-field checks, length/information-density checks, and abnormal-character handling. `RuleSpecialCharacter` and `RuleInvisibleChar` are fast candidates. When LLM quality judgment is enabled, those candidates are penalized only after LLM confirmation.
-

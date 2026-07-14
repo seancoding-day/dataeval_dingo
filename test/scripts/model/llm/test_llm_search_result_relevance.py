@@ -1,9 +1,4 @@
-from dingo.model.llm.llm_search_result_relevance import (
-    _extract_result_dois,
-    _grade_doi_result,
-    _normalize_doi,
-    is_doi_query,
-)
+from dingo.model.llm.llm_search_result_relevance import _extract_result_dois, _grade_doi_result, _normalize_doi, is_doi_query
 
 
 def test_normalize_doi_variants():
