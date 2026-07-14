@@ -1,7 +1,6 @@
 """Rule-based search result authority grader."""
 
 from __future__ import annotations
-import json
 import math
 import statistics
 from dataclasses import dataclass
@@ -59,6 +58,28 @@ def extract_citations(result: dict[str, Any], key: str = "citation_count") -> fl
         return float(result.get(key) or 0)
     except (TypeError, ValueError):
         return 0.0
+
+
+def _has_doi_in_locations(locations: Any) -> bool:
+    """Return whether a valid locations list contains a DOI URL or value."""
+    if not isinstance(locations, list):
+        return False
+
+    for location in locations:
+        if isinstance(location, dict):
+            values = (
+                location.get("doi"),
+                location.get("url"),
+                location.get("landing_page_url"),
+            )
+        elif isinstance(location, str):
+            values = (location,)
+        else:
+            continue
+
+        if any("doi.org/" in str(value or "").lower() for value in values):
+            return True
+    return False
 
 
 @dataclass
@@ -133,7 +154,7 @@ class LLMSearchResultAuthority:
             venue_score = 0.45
             reason = "repository_or_preprint"
 
-        doi_score = 1.0 if result.get("doi") or "doi.org" in json.dumps(result.get("locations", [])) else 0.0
+        doi_score = 1.0 if result.get("doi") or _has_doi_in_locations(result.get("locations")) else 0.0
         score = (
             0.45 * citation_score
             + 0.20 * influential_score

@@ -19,11 +19,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from search_result_eval_utils import add_common_args, get_title, load_query_result_jsonl, rank_discounted_mean, summarize, write_classified_jsonl, write_csv, write_json
+from search_result_eval_utils import add_common_args, get_title, load_query_result_jsonl, rank_discounted_mean, summarize, write_classified_jsonl, write_csv, write_json  # noqa: E402
 
-from dingo.config import InputArgs
-from dingo.exec import Executor
-from dingo.model.llm.llm_search_result_relevance import is_doi_query
+from dingo.config import InputArgs  # noqa: E402
+from dingo.exec import Executor  # noqa: E402
+from dingo.model.llm.llm_search_result_relevance import is_doi_query  # noqa: E402
 
 WEIGHTS = {
     "relevance": 0.7,
