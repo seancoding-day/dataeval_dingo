@@ -29,6 +29,19 @@ Each flattened input row contains:
 | `title` | Result title or display name |
 | `search_result` | Full result payload passed to evaluator |
 
+## Test Data
+
+The repository includes `test/data/test_search_result.jsonl` with three queries and nine results. It covers normal papers (`BiMLP`), search-highlight HTML (`海带`), and sparse ebook metadata (`pam`). Authority evaluation is rule-based, so this smoke test does not require an LLM API:
+
+```powershell
+python examples/retrieval/sdk_eval_authority.py `
+  --input-jsonl test/data/test_search_result.jsonl `
+  --output-dir outputs/search_result_authority_smoke `
+  --top-k 3 `
+  --threshold 0.15 `
+  --save-good
+```
+
 ## Commands
 
 Run authority evaluation:

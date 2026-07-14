@@ -30,3 +30,25 @@ In `EvalDetail.reason`, the output keeps both:
 - `content_issue_evidence`: the matched evidence list
 
 This keeps the LLM signal available for analysis while preventing ordinary truncation or sparse metadata from making an otherwise relevant result bad.
+
+## Test Data
+
+The repository includes `test/data/test_search_result.jsonl` for local smoke tests. It contains three queries and nine results:
+
+| Query | Covered scenario |
+|---|---|
+| `BiMLP` | Normal academic paper results |
+| `海带` | Search-highlight HTML in result metadata |
+| `pam` | Sparse ebook results |
+
+With the OpenAI-compatible environment variables configured, run:
+
+```powershell
+python examples/retrieval/sdk_eval_relevancy.py `
+  --input-jsonl test/data/test_search_result.jsonl `
+  --output-dir outputs/search_result_relevancy_smoke `
+  --top-k 3 `
+  --llm-max-tokens 1024 `
+  --threshold 0.15 `
+  --save-good
+```

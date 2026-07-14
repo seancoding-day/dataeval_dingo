@@ -27,6 +27,22 @@ Each flattened input row contains:
 | `title` | Result title or display name |
 | `search_result` | Full result payload passed to evaluator |
 
+## Test Data
+
+The repository includes `test/data/test_search_result.jsonl` with three queries and nine results. It covers normal papers (`BiMLP`), search-highlight HTML (`海带`), and sparse ebook metadata (`pam`).
+
+Smoke test with LLM second judgment enabled:
+
+```powershell
+python examples/retrieval/sdk_eval_effectiveness.py `
+  --input-jsonl test/data/test_search_result.jsonl `
+  --output-dir outputs/search_result_effectiveness_smoke `
+  --top-k 3 `
+  --llm-max-tokens 1024 `
+  --threshold 0.15 `
+  --save-good
+```
+
 ## Commands
 
 Fast rule-only run:

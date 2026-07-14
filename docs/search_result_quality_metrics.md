@@ -428,6 +428,34 @@ overall =
 
 以下命令均在项目根目录执行。
 
+### 内置测试数据
+
+仓库提供了 `test/data/test_search_result.jsonl`，用于在提交代码前快速验证单指标和综合评测流程。该文件包含3条 query、9条 result：
+
+| Query | 场景 |
+|---|---|
+| `BiMLP` | 正常学术论文结果 |
+| `海带` | 元数据中包含检索高亮 HTML |
+| `pam` | 字段稀疏的 ebook 结果 |
+
+综合 smoke test：
+
+```powershell
+python examples/retrieval/sdk_eval_search_result.py `
+  --input-jsonl test/data/test_search_result.jsonl `
+  --output-dir outputs/search_result_quality_smoke `
+  --top-k 3 `
+  --llm-max-tokens 1024 `
+  --effectiveness-llm-max-tokens 1024 `
+  --relevance-threshold 0.15 `
+  --effectiveness-threshold 0.15 `
+  --authority-threshold 0.15 `
+  --overall-threshold 0.15 `
+  --save-good
+```
+
+相关性、有效性和综合 smoke test 需要预先设置 OpenAI-compatible 环境变量；权威性是纯规则评测，不需要 LLM API。
+
 综合脚本按评测对象拆分分类目录：
 
 ```text
