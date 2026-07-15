@@ -1,7 +1,9 @@
 """Rule-based search result authority grader."""
 
 from __future__ import annotations
+import html
 import math
+import re
 import statistics
 from dataclasses import dataclass
 from typing import Any
@@ -11,27 +13,86 @@ from dingo.io.input import Data
 from dingo.io.output.eval_detail import EvalDetail
 from dingo.model import Model
 
-HIGH_AUTHORITY_VENUE_HINTS = (
-    "nature",
-    "science",
-    "cell",
-    "nejm",
-    "lancet",
-    "jama",
-    "acm",
-    "ieee",
+PRESTIGIOUS_VENUE_PATTERNS = (
+    r"^nature(?:$|\s)",
+    r"^npj(?:$|\s)",
+    r"^communications (?:biology|chemistry|earth & environment|materials|physics)$",
+    r"^scientific (?:reports|data)$",
+    r"^science$",
+    r"^science (?:advances|immunology|robotics|signaling|translational medicine)$",
+    r"^cell$",
+    r"^cell (?:reports|metabolism|systems|stem cell|chemical biology|host & microbe|genomics)$",
+    r"^(?:cancer|molecular|developmental) cell$",
+    r"^(?:the )?lancet(?:$|\s)",
+    r"^(?:the )?new england journal of medicine$",
+    r"^nejm(?:$|\s)",
+    r"^jama(?:$|\s)",
+    r"^(?:the )?bmj$",
+    r"^(?:proceedings of the national academy of sciences(?: of the united states of america)?|pnas)$",
+    r"^journal of the american chemical society$",
+    r"^physical review letters$",
+    r"^angewandte chemie(?: international edition)?$",
+    r"^(?:neurips|icml|iclr|cvpr|acl|emnlp|aaai|ijcai|sigir)$",
+    r"^advances in neural information processing systems$",
+)
+
+RECOGNIZED_VENUE_PATTERNS = (
+    r"\bieee\b",
+    r"\bacm\b",
+    r"^plos(?:$|\s)",
+    r"^frontiers in ",
+    r"^bmj(?:$|\s)",
+)
+
+RECOGNIZED_PUBLISHER_HINTS = (
+    "nature portfolio",
+    "springer nature",
     "springer",
     "elsevier",
     "wiley",
-    "neurips",
-    "icml",
-    "iclr",
-    "cvpr",
-    "acl",
-    "emnlp",
-    "aaai",
-    "ijcai",
-    "sigir",
+    "taylor & francis",
+    "routledge",
+    "sage publishing",
+    "oxford university press",
+    "cambridge university press",
+    "institute of electrical and electronics engineers",
+    "association for computing machinery",
+    "american chemical society",
+    "royal society of chemistry",
+    "institute of physics",
+    "iop publishing",
+    "american physical society",
+    "american institute of physics",
+    "frontiers media",
+    "public library of science",
+    "bmj publishing",
+    "wolters kluwer",
+    "lippincott williams & wilkins",
+    "american geophysical union",
+    "royal society",
+    "american association for the advancement of science",
+    "de gruyter",
+    "crc press",
+    "chapman & hall",
+    "world scientific",
+    "academic press",
+    "humana press",
+    "emerald publishing",
+)
+
+REPOSITORY_VENUE_HINTS = (
+    "arxiv",
+    "biorxiv",
+    "medrxiv",
+    "chemrxiv",
+    "ssrn",
+    "zenodo",
+    "figshare",
+    "mendeley data",
+    "open science framework",
+    "osf preprints",
+    "research square",
+    "repository",
 )
 
 
@@ -40,7 +101,31 @@ def _clamp(value: float, low: float = 0.0, high: float = 1.0) -> float:
 
 
 def _normalize_text(text: Any) -> str:
-    return " ".join(str(text or "").lower().split())
+    value = html.unescape(str(text or ""))
+    value = re.sub(r"<[^>]+>", " ", value)
+    return " ".join(value.lower().split())
+
+
+def _venue_aliases(venue: str) -> list[str]:
+    aliases = [part.strip(" .,:;-") for part in venue.split("|") if part.strip(" .,:;-")]
+    return aliases or [venue]
+
+
+def _matches_venue_patterns(venue: str, patterns: tuple[str, ...]) -> bool:
+    return any(re.search(pattern, alias) for alias in _venue_aliases(venue) for pattern in patterns)
+
+
+def _extract_publishers(result: dict[str, Any]) -> str:
+    value = result.get("publication_publisher") or result.get("publisher") or ""
+    if isinstance(value, list):
+        return _normalize_text(" | ".join(str(item) for item in value if item))
+    return _normalize_text(value)
+
+
+def _has_venue_issn(result: dict[str, Any]) -> bool:
+    value = result.get("publication_venue_issn") or result.get("issn") or []
+    values = value if isinstance(value, list) else [value]
+    return any(re.fullmatch(r"\d{4}-?\d{3}[\dXx]", str(item or "").strip()) for item in values)
 
 
 def extract_venue(result: dict[str, Any]) -> str:
@@ -136,6 +221,7 @@ class LLMSearchResultAuthority:
     def grade(self, *, result: dict[str, Any]) -> AuthorityGrade:
         venue = _normalize_text(extract_venue(result))
         venue_type = _normalize_text(result.get("publication_venue_type") or "")
+        publishers = _extract_publishers(result)
         citations = extract_citations(result, "citation_count")
         influential = extract_citations(result, "influential_citation_count")
 
@@ -144,15 +230,30 @@ class LLMSearchResultAuthority:
 
         venue_score = 0.25
         reason = "unknown_or_low_signal_venue"
-        if any(hint in venue for hint in HIGH_AUTHORITY_VENUE_HINTS):
-            venue_score = 0.85
-            reason = "high_authority_venue_hint"
-        elif "journal" in venue_type or "conference" in venue_type:
-            venue_score = 0.65
-            reason = "journal_or_conference"
-        elif "repository" in venue_type or "preprint" in venue:
+        is_repository = "repository" in venue_type or "preprint" in venue_type or any(
+            hint in venue for hint in REPOSITORY_VENUE_HINTS
+        )
+        is_academic_book = "book series" in venue_type or "ebook platform" in venue_type or "ebooks" in venue
+        if is_repository:
             venue_score = 0.45
             reason = "repository_or_preprint"
+        elif is_academic_book:
+            venue_score = 0.55
+            reason = "academic_book_series"
+        elif _matches_venue_patterns(venue, PRESTIGIOUS_VENUE_PATTERNS):
+            venue_score = 0.85
+            reason = "prestigious_venue_family"
+        elif _matches_venue_patterns(venue, RECOGNIZED_VENUE_PATTERNS) or any(
+            hint in publishers for hint in RECOGNIZED_PUBLISHER_HINTS
+        ):
+            venue_score = 0.75
+            reason = "recognized_scholarly_publisher_or_venue"
+        elif "journal" in venue_type or "conference" in venue_type or _has_venue_issn(result):
+            venue_score = 0.65
+            reason = "structured_journal_or_conference"
+        elif venue:
+            venue_score = 0.40
+            reason = "named_venue"
 
         doi_score = 1.0 if result.get("doi") or _has_doi_in_locations(result.get("locations")) else 0.0
         score = (

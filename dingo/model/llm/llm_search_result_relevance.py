@@ -19,6 +19,7 @@ import json
 import logging
 import re
 import statistics
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -472,23 +473,39 @@ class LLMSearchResultRelevance:
             expected_criteria=expected_criteria or self.expected_criteria,
         )
 
-        try:
-            client = self._get_client()
-            completion = client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_message},
-                ],
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-                timeout=self.timeout,
+        client = self._get_client()
+        last_grade = RelevanceGrade(error="LLM grading failed")
+        for attempt in range(3):
+            try:
+                completion = client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_message},
+                    ],
+                    temperature=self.temperature,
+                    max_tokens=self.max_tokens,
+                    timeout=self.timeout,
+                )
+                response_text = completion.choices[0].message.content or ""
+                last_grade = _parse_grade_response(response_text)
+                if not last_grade.error:
+                    return last_grade
+                error: Exception | str = last_grade.error
+            except Exception as exc:
+                error = exc
+                last_grade = RelevanceGrade(error=str(exc))
+
+            logger.warning(
+                "LLM grading attempt %s/3 failed for query=%r title=%r: %s",
+                attempt + 1,
+                query,
+                title,
+                error,
             )
-            response_text = completion.choices[0].message.content or ""
-            return _parse_grade_response(response_text)
-        except Exception as e:
-            logger.warning("LLM grading failed for query=%r title=%r: %s", query, title, e)
-            return RelevanceGrade(error=str(e))
+            if attempt < 2:
+                time.sleep(attempt + 1)
+        return last_grade
 
     @classmethod
     def _config_value(cls, name: str, default: Any = None) -> Any:

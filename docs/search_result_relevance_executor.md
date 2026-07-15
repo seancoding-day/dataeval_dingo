@@ -43,7 +43,12 @@ The repository includes `test/data/test_search_result.jsonl` for local smoke tes
 
 With the OpenAI-compatible environment variables configured, run:
 
+For full-dataset evaluation, prefer a low-latency Flash model such as `deepseek-v4-flash`. A Pro model is better reserved for reviewing a small number of ambiguous samples because pointwise relevance evaluation makes approximately `query count x top-k` LLM calls. Keep the model and prompt fixed and use temperature `0` when comparing search versions.
+
 ```powershell
+$env:OPENAI_MODEL="deepseek-v4-flash"
+$env:OPENAI_TEMPERATURE="0"
+
 python examples/retrieval/sdk_eval_relevancy.py `
   --input-jsonl test/data/test_search_result.jsonl `
   --output-dir outputs/search_result_relevancy_smoke `

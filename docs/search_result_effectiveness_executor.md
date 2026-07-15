@@ -59,11 +59,13 @@ python examples/retrieval/sdk_eval_effectiveness.py `
 
 Run with LLM second judgment for abnormal-character candidates:
 
+For full runs, use a low-latency Flash model such as `deepseek-v4-flash`. The LLM is only used to review rule-selected suspicious fields, but a slow Pro model can still substantially increase runtime. Reserve Pro models for small-sample diagnosis, and use temperature `0` for reproducible comparisons.
+
 ```powershell
 $env:OPENAI_API_KEY="..."
 $env:OPENAI_BASE_URL="http://35.220.164.252:3888/v1/"
 $env:OPENAI_MODEL="deepseek-v4-flash"
-$env:OPENAI_TEMPERATURE="0.7"
+$env:OPENAI_TEMPERATURE="0"
 
 python examples/retrieval/sdk_eval_effectiveness.py `
   --input-jsonl outputs/meta_search_97_query_results.jsonl `
@@ -121,7 +123,7 @@ Error labels:
 | `search_result/Effectiveness/Error_Title_Miss.jsonl` | Missing title |
 | `search_result/Effectiveness/Error_Abstract_Miss.jsonl` | Missing abstract |
 | `search_result/Effectiveness/Error_Keywords_Miss.jsonl` | Missing keywords |
-| `search_result/Effectiveness/Error_Venue_Miss.jsonl` | Missing publication venue/source |
+| `search_result/Effectiveness/Error_Author_Miss.jsonl` | Missing author metadata |
 | `search_result/Effectiveness/Error_HTML_Tag.jsonl` | LLM-confirmed HTML tag pollution |
 | `search_result/Effectiveness/Error_Mojibake.jsonl` | LLM-confirmed mojibake |
 | `search_result/Effectiveness/Error_Invisible_Char.jsonl` | LLM-confirmed invisible characters |
@@ -133,14 +135,16 @@ Error labels:
 
 ## Scoring
 
-The metric score is unchanged:
+The metric score is:
 
 ```text
 Effectiveness =
-  title_score * 0.25
-+ abstract_score * 0.45
-+ keywords_score * 0.15
-+ venue_score * 0.15
+  title_score * 0.30
++ abstract_score * 0.50
++ keywords_score * 0.10
++ author_score * 0.10
 ```
 
-Field scores are based on missing-field checks, length/information-density checks, and abnormal-character handling. `RuleSpecialCharacter` and `RuleInvisibleChar` are fast candidates. When LLM quality judgment is enabled, those candidates are penalized only after LLM confirmation.
+`author_score` checks whether at least one recognizable author name is present. A valid single-author paper receives full author completeness credit; the metric does not reward a larger author count.
+
+Title, abstract, keywords, and author use missing-field checks and contribute to the score. Venue presence and quality are evaluated by the authority metric, so a missing venue does not reduce effectiveness or emit `Error_Venue_Miss`. All five text fields, including a venue when present, still use abnormal-character handling. HTML tags and the Unicode replacement character (`�`) always trigger LLM review, even when they occupy less than the general abnormal-character threshold. `RuleSpecialCharacter` and `RuleInvisibleChar` are fast candidates. When LLM quality judgment is enabled, those candidates are penalized only after LLM confirmation.

@@ -147,18 +147,30 @@ Venue scoring:
 
 | Condition | `venue_score` | Reason |
 |---|---:|---|
-| Venue name contains a high-authority hint | `0.85` | `high_authority_venue_hint` |
-| `publication_venue_type` contains journal or conference | `0.65` | `journal_or_conference` |
-| `publication_venue_type` contains repository, or venue contains preprint | `0.45` | `repository_or_preprint` |
+| Known repository or preprint source | `0.45` | `repository_or_preprint` |
+| Explicit academic book series or ebook platform | `0.55` | `academic_book_series` |
+| Venue matches a prestigious journal/conference family | `0.85` | `prestigious_venue_family` |
+| Venue or publisher matches a recognized scholarly organization | `0.75` | `recognized_scholarly_publisher_or_venue` |
+| Journal/conference type or valid ISSN is present | `0.65` | `structured_journal_or_conference` |
+| A venue name is present without stronger structured signals | `0.40` | `named_venue` |
 | Unknown or low-signal source | `0.25` | `unknown_or_low_signal_venue` |
 
-High-authority venue hints include:
+Explicit source types run first. Repository detection prevents names such as `Open Science Framework` from being promoted merely because they contain a prestigious-looking word, while book series and ebook platforms remain at the book-source tier even when their publisher is recognized.
+
+Prestigious venue families include:
 
 ```text
-nature, science, cell, nejm, lancet, jama,
-acm, ieee, springer, elsevier, wiley,
-neurips, icml, iclr, cvpr, acl, emnlp, aaai, ijcai, sigir
+Nature and Nature subject journals, Nature Communications,
+npj journals, Communications journals, Scientific Reports/Data,
+the official Science journal family, selected Cell Press flagships,
+NEJM, Lancet, JAMA, The BMJ, PNAS, JACS, PRL, and major AI conferences
 ```
+
+The matcher uses anchored family patterns instead of unrestricted substrings. For example, `Science Translational Medicine` matches the Science family, while `Chemical Engineering Science` does not. HTML highlight tags are removed before matching.
+
+Recognized publisher metadata includes established scholarly publishers and societies such as Springer Nature, Elsevier, Wiley, Oxford University Press, Cambridge University Press, IEEE, ACM, ACS, RSC, IOP, BMJ, PLOS, the Royal Society, De Gruyter, CRC Press, and World Scientific. Publisher recognition is deliberately scored below an explicitly prestigious venue because publisher reputation alone does not make every title a flagship journal.
+
+The ISSN and venue-type fallback is the main protection against an incomplete whitelist: a journal does not need to appear in a hard-coded title list to receive a structured scholarly venue score.
 
 DOI scoring:
 

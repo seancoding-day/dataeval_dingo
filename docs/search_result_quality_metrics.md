@@ -18,7 +18,7 @@
 - 内容有效性判断“这条结果记录是否有足够信息可读可用”。
 - 权威性判断“这条结果是否有论文影响力、来源、DOI 等可信信号”。
 
-例如，用户搜索 `Wallace Chafe`，rank1 返回标题也是 `Wallace Chafe`，相关性可能较好；但如果该结果没有 abstract、keywords、publication venue，则内容有效性会较低。
+例如，用户搜索 `Wallace Chafe`，rank1 返回标题也是 `Wallace Chafe`，相关性可能较好；但如果该结果没有 abstract、keywords、author，则内容有效性会较低。Publication venue 的缺失由权威性指标负责。
 
 ## 2. 输入格式
 
@@ -92,7 +92,7 @@ QUALITY_GOOD.SEARCH_RESULT_OVERALL_PASS
 Effectiveness/Error_Title_Miss.jsonl
 Effectiveness/Error_Abstract_Miss.jsonl
 Effectiveness/Error_Keywords_Miss.jsonl
-Effectiveness/Error_Venue_Miss.jsonl
+Effectiveness/Error_Author_Miss.jsonl
 Effectiveness/Error_HTML_Tag.jsonl
 Effectiveness/Error_Mojibake.jsonl
 Effectiveness/Error_Invisible_Char.jsonl
@@ -197,13 +197,28 @@ QUALITY_BAD.SEARCH_RESULT_RELEVANCE_PARSE_ERROR
 | `OPENAI_BASE_URL` | 空 | OpenAI compatible endpoint |
 | `OPENAI_TEMPERATURE` | 0.0 | LLM temperature |
 
+### 5.6 LLM 模型选择建议
+
+全量检索评测需要逐条判断 query-result 对，LLM 调用量通常接近 `query 数 × top-k`。建议优先使用低延迟的 Flash 类模型，例如：
+
+```text
+OPENAI_MODEL=deepseek-v4-flash
+```
+
+- **全量评测和日常回归**：推荐 Flash 类模型，可显著缩短相关性判断时间，并降低长时间批处理中的超时风险。
+- **疑难样本复核**：Pro 类模型更适合抽取少量低分、边界或争议样本进行人工辅助复核，不建议直接用于数百至数千条 result 的常规全量评测。
+- **新旧版本对比**：两次评测必须固定相同模型、prompt、`max_tokens` 和 temperature；建议设置 `OPENAI_TEMPERATURE=0`，减少 LLM 随机波动。
+- **并发设置**：建议从 `--llm-workers 2` 至 `4` 开始，根据模型服务的限流和稳定性逐步调整。并发过高可能增加 5xx、超时或空响应。
+
+模型名称由实际 OpenAI-compatible 服务决定，`deepseek-v4-flash` 仅作为当前环境的推荐示例，不是 Dingo 的强制依赖。
+
 ## 6. 内容有效性 Effectiveness
 
 ### 6.1 业务逻辑
 
 内容有效性判断的是一条检索结果记录是否“可读、完整、可用于用户判断”，不判断它是否与 query 相关。
 
-当前不按 `metadata_type` 做差异化处理。也就是说，`paper`、`ebook`、未来新增类型都用同一套字段完整性标准。这有利于持续观察数据库元数据补全质量：如果 ebook 未来补全 abstract、keywords、venue，有效性分数会自然提升。
+当前不按 `metadata_type` 做差异化处理。也就是说，`paper`、`ebook`、未来新增类型都使用相同的 title、abstract、keywords、author 完整性标准。Venue 是否存在及其来源可信度统一交给权威性指标，避免对 ebook 等类型重复惩罚。
 
 ### 6.2 字段权重
 
@@ -211,25 +226,25 @@ QUALITY_BAD.SEARCH_RESULT_RELEVANCE_PARSE_ERROR
 
 ```text
 Effectiveness =
-  title_score * 0.25
-+ abstract_score * 0.45
-+ keywords_score * 0.15
-+ venue_score * 0.15
+  title_score * 0.30
++ abstract_score * 0.50
++ keywords_score * 0.10
++ author_score * 0.10
 ```
 
 | 子项 | 权重 | 业务含义 |
 |---|---:|---|
-| `title_score` | 0.25 | 标题是否存在、长度是否合理、是否可读 |
-| `abstract_score` | 0.45 | 摘要是否存在、信息量是否充足、是否可读 |
-| `keywords_score` | 0.15 | 关键词是否存在、是否提供主题信息 |
-| `venue_score` | 0.15 | 期刊/会议/来源名称是否存在、是否可读 |
+| `title_score` | 0.30 | 标题是否存在、长度是否合理、是否可读 |
+| `abstract_score` | 0.50 | 摘要是否存在、信息量是否充足、是否可读 |
+| `keywords_score` | 0.10 | 关键词是否存在、是否提供主题信息 |
+| `author_score` | 0.10 | 是否至少存在一个可识别的作者姓名；不按作者数量额外加分 |
 
 字段为空时，该字段直接得 0 分。
 
 示例：如果 result 只有标题，其他字段为空，且 `title_score=0.32948`：
 
 ```text
-0.32948 * 0.25 + 0 + 0 + 0 = 0.08237
+0.32948 * 0.30 + 0 + 0 + 0 = 0.09884
 ```
 
 ### 6.3 字段评分逻辑
@@ -237,7 +252,8 @@ Effectiveness =
 每个字段先做基础质量判断：
 
 - 为空：0 分。
-- 字段内容异常先由规则筛选，再由 LLM 判断：如果存在 HTML 泄漏、乱码、不可见字符、严重特殊字符噪声等，会按 LLM 字段质量分降低该字段分数。乱码筛选包括 UTF-8 被误按 Latin-1 解码产生的 `Ð...`、`Ñ...` 序列及 C1 控制字符。
+- title、abstract、keywords、author 四个字段参与有效性评分并进行缺失检查。venue 不参与有效性加权，也不会因为缺失产生问题；其来源可信度由权威性指标负责。
+- title、abstract、keywords、venue、author 五个字段都会进行异常检查。venue 有值时仍检查 HTML 泄漏、乱码、不可见字符和严重特殊字符噪声。HTML 标签和 Unicode 替换字符 `�` 出现即进入 LLM 二次确认；其他异常字符按规则阈值筛选。乱码筛选还包括 UTF-8 被误按 Latin-1 解码产生的 `Ð...`、`Ñ...` 序列及 C1 控制字符。
 - 长度太短：低分。
 - 长度和信息量达到要求：接近或等于 1 分。
 
@@ -252,6 +268,10 @@ venue
 source
 ```
 
+`author` 兼容 `author`、`authors` 字段以及字符串、对象、对象列表等常见结构。存在至少一个含中文或英文字母、长度不少于 2 个字符的作者姓名时，作者基础分为 1；作者数量不会提高分数。
+
+对比不同检索后端时，需要把后端原始作者信息统一映射到 `author` 或 `authors`。未映射作者字段会被视为缺失并使单条 result 的有效性总分降低 `0.10`。
+
 ### 6.4 Issues 类型
 
 | issue | 含义 |
@@ -259,8 +279,8 @@ source
 | `missing_title` | 标题为空 |
 | `missing_abstract` | 摘要为空 |
 | `missing_keywords` | 关键词为空 |
-| `missing_venue` | 期刊/会议/来源名为空 |
-| `title:html_tag` / `abstract:html_tag` / `venue:html_tag` | LLM 判断字段中有 HTML/XML 标签泄漏 |
+| `missing_author` | 作者为空 |
+| `title:html_tag` / `abstract:html_tag` / `venue:html_tag` / `author:html_tag` | LLM 判断字段中有 HTML/XML 标签泄漏 |
 | `*:mojibake` | LLM 判断字段存在乱码或编码错误 |
 | `*:invisible_char` | LLM 判断字段存在不可见/控制字符 |
 | `*:unreadable_text` | LLM 判断字段整体不可读 |
@@ -272,7 +292,7 @@ source
 - `RuleSpecialCharacter` 和 `RuleInvisibleChar` 只用于快速召回疑似异常字段，不直接作为最终扣分依据。
 - LaTeX、化学符号、单位、希腊字母、`|` 分隔符等正常学术表达不应被 LLM 判为问题。
 - HTML 高亮标签、明显 mojibake、不可见字符、严重乱码会由 LLM 输出字段级 issue，并降低对应字段分数。
-- 分析 bad 样本时建议结合原始 title、abstract、venue 和 `llm_quality_reason` 进行人工抽查。
+- 分析 bad 样本时建议结合原始 title、abstract、keywords、venue、author 和 `llm_quality_reason` 进行人工抽查。
 
 ### 6.5 可调参数
 
@@ -350,18 +370,28 @@ source
 
 | 条件 | `venue_score` | reason |
 |---|---:|---|
-| venue 名称包含高权威来源提示词 | 0.85 | `high_authority_venue_hint` |
-| `publication_venue_type` 是 journal 或 conference | 0.65 | `journal_or_conference` |
-| repository 或 preprint | 0.45 | `repository_or_preprint` |
+| 已知 repository 或 preprint（优先判断） | 0.45 | `repository_or_preprint` |
+| 明确的学术 book series 或 ebook platform（优先判断） | 0.55 | `academic_book_series` |
+| 明确命中权威期刊/会议家族 | 0.85 | `prestigious_venue_family` |
+| 命中正规学术出版机构或来源组织 | 0.75 | `recognized_scholarly_publisher_or_venue` |
+| `publication_venue_type` 是 journal/conference，或存在有效 ISSN | 0.65 | `structured_journal_or_conference` |
+| 只有非空来源名称 | 0.40 | `named_venue` |
 | 未知或低信号来源 | 0.25 | `unknown_or_low_signal_venue` |
 
-高权威来源提示词包括：
+权威期刊家族使用带边界的规则匹配，包括：
 
 ```text
-nature, science, cell, nejm, lancet, jama,
-acm, ieee, springer, elsevier, wiley,
-neurips, icml, iclr, cvpr, acl, emnlp, aaai, ijcai, sigir
+Nature 及 Nature 学科子刊、Nature Communications、npj 系列、
+Communications 系列、Scientific Reports/Data、Science 官方期刊家族、
+部分 Cell Press 旗舰刊、NEJM、Lancet、JAMA、The BMJ、PNAS、
+JACS、PRL 以及主要 AI 会议
 ```
+
+匹配前会移除 HTML 高亮标签，并按 `|` 拆分中英文来源别名。规则不再使用无限制的普通子串：`Science Translational Medicine` 会命中 Science 家族，而 `Chemical Engineering Science` 不会。
+
+正规出版机构包括 Springer Nature、Elsevier、Wiley、Oxford University Press、Cambridge University Press、IEEE、ACM、ACS、RSC、IOP、BMJ、PLOS、Royal Society、De Gruyter、CRC Press、World Scientific 等。出版商只能提供正规学术来源信号，因此分数低于明确命中的旗舰期刊。
+
+ISSN 和 journal/conference 类型是防止白名单漏判的主要兜底：专业期刊即使不在硬编码刊名列表中，只要具有结构化来源信息，也能获得 0.65，而不是被直接判成低信号来源。
 
 ### 7.5 DOI 评分
 
@@ -491,7 +521,7 @@ python examples/retrieval/sdk_eval_search_result.py `
 export OPENAI_API_KEY="<your_api_key>"
 export OPENAI_BASE_URL="<your_openai_compatible_base_url>"
 export OPENAI_MODEL="deepseek-v4-flash"
-export OPENAI_TEMPERATURE="0.7"
+export OPENAI_TEMPERATURE="0"
 
 python examples/retrieval/sdk_eval_relevancy.py \
   --input-jsonl outputs/meta_search_97_query_results.jsonl \
@@ -510,7 +540,7 @@ Windows PowerShell 示例：
 $env:OPENAI_API_KEY="<your_api_key>"
 $env:OPENAI_BASE_URL="<your_openai_compatible_base_url>"
 $env:OPENAI_MODEL="deepseek-v4-flash"
-$env:OPENAI_TEMPERATURE="0.7"
+$env:OPENAI_TEMPERATURE="0"
 
 python examples/retrieval/sdk_eval_relevancy.py `
   --input-jsonl outputs/meta_search_97_query_results.jsonl `
@@ -529,7 +559,7 @@ python examples/retrieval/sdk_eval_relevancy.py `
 export OPENAI_API_KEY="<your_api_key>"
 export OPENAI_BASE_URL="<your_openai_compatible_base_url>"
 export OPENAI_MODEL="deepseek-v4-flash"
-export OPENAI_TEMPERATURE="0.7"
+export OPENAI_TEMPERATURE="0"
 
 python examples/retrieval/sdk_eval_effectiveness.py \
   --input-jsonl outputs/meta_search_97_query_results.jsonl \
@@ -559,6 +589,7 @@ python examples/retrieval/sdk_eval_authority.py \
 export OPENAI_API_KEY="<your_api_key>"
 export OPENAI_BASE_URL="<your_openai_compatible_base_url>"
 export OPENAI_MODEL="deepseek-v4-flash"
+export OPENAI_TEMPERATURE="0"
 
 python examples/retrieval/sdk_eval_search_result.py \
   --input-jsonl outputs/meta_search_97_query_results.jsonl \
@@ -663,6 +694,6 @@ Import-Csv outputs/search_result_relevancy_97q/query_scores.csv |
 
 1. 相关性使用 LLM，temperature 大于 0 时，同一批数据重跑可能有轻微分数波动。
 2. LLM 相关性结果可能出现 JSON 解析失败，脚本会记录 `SEARCH_RESULT_RELEVANCE_PARSE_ERROR`。
-3. 内容有效性当前不按 `metadata_type` 放宽字段要求，因此 ebook 缺少 abstract、keywords、venue 时会低分。
+3. 内容有效性当前不按 `metadata_type` 放宽 title、abstract、keywords、author 的字段要求；venue 缺失不再降低有效性分数，由权威性指标统一判断。
 4. 内容有效性使用 `RuleSpecialCharacter` / `RuleInvisibleChar` / `RuleMojibake` 做快速初筛，再用 LLM 二次确认 HTML 泄漏、乱码、不可见字符和严重特殊字符噪声；正常公式、LaTeX、单位符号不应被扣分。
 5. 权威性低不一定表示结果不相关，可能只是 citation、DOI、venue 元数据不足。

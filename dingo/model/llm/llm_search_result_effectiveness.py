@@ -15,6 +15,7 @@ import json
 import logging
 import re
 import statistics
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -40,9 +41,11 @@ HTML_TAG_PATTERN = r"<[^>]+>"
 MOJIBAKE_EVIDENCE_PATTERN = r"[閿熻В鏋撮柨鐔恍掗弸纰凤拷�]|\{\/U\}|u[0-9a-fA-F]{4}"
 UTF8_LATIN1_SEQUENCE_PATTERN = re.compile(r"[\u00C2\u00C3\u00D0\u00D1][\u0080-\u00BF]")
 C1_CONTROL_PATTERN = re.compile(r"[\u0080-\u009F]")
+UNICODE_REPLACEMENT_CHARACTER = "\ufffd"
 
 
-LLM_FIELD_QUALITY_SYSTEM_PROMPT = """You are a strict but practical data quality evaluator for academic search result metadata.
+LLM_FIELD_QUALITY_SYSTEM_PROMPT = """You are a strict but practical data quality evaluator for
+academic search result metadata.
 
 Judge whether each supplied metadata field is readable and clean enough to show to users.
 Focus on real text-quality problems:
@@ -58,14 +61,16 @@ Do NOT penalize normal academic content:
 - punctuation, pipes used as separators, parentheses, slashes, hyphens
 - mixed Chinese/English titles, journal names, abbreviations, DOI-like text
 
-Return compact JSON only. Do not use markdown. Keep each reason within 12 words and do not use double quotes inside reasons.
+Return compact JSON only. Do not use markdown. Keep each reason within 12 words
+and do not use double quotes inside reasons.
 Schema:
 {
   "fields": {
     "title": {"score": 0.0-1.0, "issues": ["..."], "reason": "..."},
     "abstract": {"score": 0.0-1.0, "issues": ["..."], "reason": "..."},
     "keywords": {"score": 0.0-1.0, "issues": ["..."], "reason": "..."},
-    "venue": {"score": 0.0-1.0, "issues": ["..."], "reason": "..."}
+    "venue": {"score": 0.0-1.0, "issues": ["..."], "reason": "..."},
+    "author": {"score": 0.0-1.0, "issues": ["..."], "reason": "..."}
   },
   "overall_issues": ["..."],
   "reason": "short overall reason"
@@ -147,7 +152,11 @@ def _looks_like_utf8_latin1_mojibake(text: str) -> bool:
 
 def _has_mojibake_evidence(text: str) -> bool:
     value = str(text or "")
-    return bool(re.search(MOJIBAKE_EVIDENCE_PATTERN, value)) or _looks_like_utf8_latin1_mojibake(value)
+    return (
+        UNICODE_REPLACEMENT_CHARACTER in value
+        or bool(re.search(MOJIBAKE_EVIDENCE_PATTERN, value))
+        or _looks_like_utf8_latin1_mojibake(value)
+    )
 
 
 def _rule_abnormal_char_issues(text: str) -> list[str]:
@@ -159,15 +168,16 @@ def _rule_abnormal_char_issues(text: str) -> list[str]:
     special_matches: list[str] = []
     for pattern in RULE_SPECIAL_CHARACTER_PATTERNS:
         special_matches.extend(re.findall(pattern, value))
-    if len(special_matches) / len(value) >= RULE_ABNORMAL_CHAR_THRESHOLD:
+    has_html_tag = bool(re.search(HTML_TAG_PATTERN, value))
+    if has_html_tag or len(special_matches) / len(value) >= RULE_ABNORMAL_CHAR_THRESHOLD:
         issues.append("RuleSpecialCharacter")
 
-    has_latin1_mojibake = _looks_like_utf8_latin1_mojibake(value)
-    if has_latin1_mojibake:
+    has_mojibake = _has_mojibake_evidence(value)
+    if has_mojibake:
         issues.append("RuleMojibake")
 
     invisible_matches = re.findall(RULE_INVISIBLE_CHAR_PATTERN, value)
-    if not has_latin1_mojibake and len(invisible_matches) / len(value) >= RULE_ABNORMAL_CHAR_THRESHOLD:
+    if not has_mojibake and len(invisible_matches) / len(value) >= RULE_ABNORMAL_CHAR_THRESHOLD:
         issues.append("RuleInvisibleChar")
     return issues
 
@@ -218,7 +228,7 @@ def _extract_json_object(text: str) -> str:
     start = value.find("{")
     end = value.rfind("}")
     if start >= 0 and end > start:
-        return value[start : end + 1]
+        return value[start:end + 1]
     return value
 
 
@@ -248,7 +258,7 @@ EFFECTIVENESS_LABEL_MAP = {
     "missing_title": "Effectiveness.Error_Title_Miss",
     "missing_abstract": "Effectiveness.Error_Abstract_Miss",
     "missing_keywords": "Effectiveness.Error_Keywords_Miss",
-    "missing_venue": "Effectiveness.Error_Venue_Miss",
+    "missing_author": "Effectiveness.Error_Author_Miss",
     "html_tag": "Effectiveness.Error_HTML_Tag",
     "mojibake": "Effectiveness.Error_Mojibake",
     "invisible_char": "Effectiveness.Error_Invisible_Char",
@@ -332,6 +342,38 @@ def extract_venue(result: dict[str, Any]) -> str:
     )
 
 
+def extract_authors(result: dict[str, Any]) -> list[str]:
+    """Extract author names from common search API response shapes."""
+    value = result.get("author") or result.get("authors") or []
+    if isinstance(value, str):
+        return [item.strip() for item in re.split(r"[;|]", value) if item.strip()]
+    if isinstance(value, dict):
+        value = [value]
+    if not isinstance(value, list):
+        return []
+
+    authors: list[str] = []
+    for item in value:
+        if isinstance(item, dict):
+            name = item.get("name") or item.get("display_name") or item.get("author_name")
+            if name:
+                authors.append(str(name).strip())
+        elif item not in (None, ""):
+            authors.append(str(item).strip())
+    return [author for author in authors if author]
+
+
+def _author_quality(authors: list[str]) -> float:
+    if not authors:
+        return 0.0
+    valid_count = sum(
+        1
+        for author in authors
+        if len(author.strip()) >= 2 and re.search(r"[A-Za-z\u4e00-\u9fff]", author)
+    )
+    return _clamp(valid_count / len(authors))
+
+
 @dataclass
 class LLMFieldQuality:
     """LLM readability and corruption judgment for one search result."""
@@ -340,6 +382,7 @@ class LLMFieldQuality:
     abstract_score: float = 1.0
     keywords_score: float = 1.0
     venue_score: float = 1.0
+    author_score: float = 1.0
     issues: list[str] | None = None
     reason: str = ""
     error: str = ""
@@ -350,6 +393,7 @@ class LLMFieldQuality:
             "abstract": self.abstract_score,
             "keywords": self.keywords_score,
             "venue": self.venue_score,
+            "author": self.author_score,
         }.get(field, 1.0)
 
 
@@ -367,7 +411,7 @@ def _parse_llm_field_quality_response(text: str) -> LLMFieldQuality:
     issues: list[str] = []
     scores: dict[str, float] = {}
     reasons: list[str] = []
-    for field in ("title", "abstract", "keywords", "venue"):
+    for field in ("title", "abstract", "keywords", "venue", "author"):
         field_data = fields.get(field) or {}
         if not isinstance(field_data, dict):
             field_data = {}
@@ -386,6 +430,7 @@ def _parse_llm_field_quality_response(text: str) -> LLMFieldQuality:
         abstract_score=scores["abstract"],
         keywords_score=scores["keywords"],
         venue_score=scores["venue"],
+        author_score=scores["author"],
         issues=issues,
         reason=str(data.get("reason") or "; ".join(reasons))[:500],
     )
@@ -400,6 +445,7 @@ class EffectivenessGrade:
     abstract_score: float = 0.0
     keywords_score: float = 0.0
     venue_score: float = 0.0
+    author_score: float = 0.0
     issues: list[str] | None = None
     llm_quality_reason: str = ""
     llm_quality_error: str = ""
@@ -411,6 +457,7 @@ class EffectivenessGrade:
             "abstract_score": round(self.abstract_score, 5),
             "keywords_score": round(self.keywords_score, 5),
             "venue_score": round(self.venue_score, 5),
+            "author_score": round(self.author_score, 5),
             "issues": self.issues or [],
             "llm_quality_reason": self.llm_quality_reason,
             "llm_quality_error": self.llm_quality_error,
@@ -425,6 +472,7 @@ class EffectivenessSummary:
     mean_abstract_score: float = 0.0
     mean_keywords_score: float = 0.0
     mean_venue_score: float = 0.0
+    mean_author_score: float = 0.0
     graded_pairs: int = 0
 
     def to_dict(self) -> dict[str, Any]:
@@ -435,13 +483,18 @@ class EffectivenessSummary:
             "effectiveness_mean_abstract_score": round(self.mean_abstract_score, 5),
             "effectiveness_mean_keywords_score": round(self.mean_keywords_score, 5),
             "effectiveness_mean_venue_score": round(self.mean_venue_score, 5),
+            "effectiveness_mean_author_score": round(self.mean_author_score, 5),
             "effectiveness_graded_pairs": self.graded_pairs,
         }
 
 
 @Model.llm_register("LLMSearchResultEffectiveness")
 class LLMSearchResultEffectiveness:
-    """Effectiveness scorer for title, abstract, keywords, and venue."""
+    """Effectiveness scorer for title, abstract, keywords, and authors.
+
+    Venue text is still scanned for corruption, but venue presence and quality
+    belong to the authority metric and do not affect the effectiveness score.
+    """
 
     dynamic_config = EvaluatorLLMArgs()
     default_threshold = 0.15
@@ -485,6 +538,7 @@ class LLMSearchResultEffectiveness:
         abstract: str,
         keywords: list[str],
         venue: str,
+        authors: list[str],
         candidate_fields: set[str] | None = None,
     ) -> str:
         all_fields = {
@@ -492,6 +546,7 @@ class LLMSearchResultEffectiveness:
             "abstract": abstract,
             "keywords": " | ".join(keywords),
             "venue": venue,
+            "author": " | ".join(authors),
         }
         selected = candidate_fields or set(all_fields)
         payload = {
@@ -512,36 +567,53 @@ class LLMSearchResultEffectiveness:
         abstract: str,
         keywords: list[str],
         venue: str,
+        authors: list[str],
         candidate_fields: set[str] | None = None,
     ) -> LLMFieldQuality:
         if not self.enable_llm_quality:
             return LLMFieldQuality()
-        try:
-            client = self._get_client()
-            completion = client.chat.completions.create(
-                model=self.model,
-                messages=[
-                    {"role": "system", "content": LLM_FIELD_QUALITY_SYSTEM_PROMPT},
-                    {
-                        "role": "user",
-                        "content": self._build_llm_quality_user_message(
-                            title=title,
-                            abstract=abstract,
-                            keywords=keywords,
-                            venue=venue,
-                            candidate_fields=candidate_fields,
-                        ),
-                    },
-                ],
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-                timeout=self.timeout,
+        client = self._get_client()
+        last_result = LLMFieldQuality(error="LLM field quality judgment failed")
+        for attempt in range(3):
+            try:
+                completion = client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system", "content": LLM_FIELD_QUALITY_SYSTEM_PROMPT},
+                        {
+                            "role": "user",
+                            "content": self._build_llm_quality_user_message(
+                                title=title,
+                                abstract=abstract,
+                                keywords=keywords,
+                                venue=venue,
+                                authors=authors,
+                                candidate_fields=candidate_fields,
+                            ),
+                        },
+                    ],
+                    temperature=self.temperature,
+                    max_tokens=self.max_tokens,
+                    timeout=self.timeout,
+                )
+                response_text = completion.choices[0].message.content or ""
+                last_result = _parse_llm_field_quality_response(response_text)
+                if not last_result.error:
+                    return last_result
+                error: Exception | str = last_result.error
+            except Exception as exc:
+                error = exc
+                last_result = LLMFieldQuality(error=str(exc))
+
+            logger.warning(
+                "LLM field quality attempt %s/3 failed for title=%r: %s",
+                attempt + 1,
+                title,
+                error,
             )
-            response_text = completion.choices[0].message.content or ""
-            return _parse_llm_field_quality_response(response_text)
-        except Exception as e:
-            logger.warning("LLM field quality judgment failed for title=%r: %s", title, e)
-            return LLMFieldQuality(error=str(e))
+            if attempt < 2:
+                time.sleep(attempt + 1)
+        return last_result
 
     def grade(
         self,
@@ -550,6 +622,7 @@ class LLMSearchResultEffectiveness:
         abstract: str = "",
         keywords: list[str] | str | None = None,
         venue: str = "",
+        authors: list[str] | str | None = None,
         result: dict[str, Any] | None = None,
     ) -> EffectivenessGrade:
         if result is not None:
@@ -557,11 +630,17 @@ class LLMSearchResultEffectiveness:
             abstract = str(result.get("abstract") or abstract or "")
             keywords = extract_keywords(result) if keywords is None else keywords
             venue = extract_venue(result) or venue
+            authors = extract_authors(result) if authors is None else authors
 
         keyword_items = (
             [item.strip() for item in re.split(r"[,;|]", keywords) if item.strip()]
             if isinstance(keywords, str)
             else [str(item).strip() for item in (keywords or []) if str(item).strip()]
+        )
+        author_items = (
+            [item.strip() for item in re.split(r"[;|]", authors) if item.strip()]
+            if isinstance(authors, str)
+            else [str(item).strip() for item in (authors or []) if str(item).strip()]
         )
 
         title_score = _field_quality(title, min_chars=6, good_chars=35)
@@ -578,6 +657,8 @@ class LLMSearchResultEffectiveness:
         if venue and not re.search(r"[A-Za-z\u4e00-\u9fff]", venue):
             venue_score *= 0.4
 
+        author_score = _author_quality(author_items)
+
         issues: list[str] = []
         if not str(title or "").strip():
             issues.append("missing_title")
@@ -585,14 +666,15 @@ class LLMSearchResultEffectiveness:
             issues.append("missing_abstract")
         if not keyword_items:
             issues.append("missing_keywords")
-        if not str(venue or "").strip():
-            issues.append("missing_venue")
+        if not author_items:
+            issues.append("missing_author")
 
         field_values = {
             "title": str(title or ""),
             "abstract": str(abstract or ""),
             "keywords": " | ".join(keyword_items),
             "venue": str(venue or ""),
+            "author": " | ".join(author_items),
         }
         rule_candidate_issues = {
             field: _rule_abnormal_char_issues(value)
@@ -612,6 +694,7 @@ class LLMSearchResultEffectiveness:
                 abstract=str(abstract or ""),
                 keywords=keyword_items,
                 venue=str(venue or ""),
+                authors=author_items,
                 candidate_fields=set(rule_candidate_issues),
             )
 
@@ -647,15 +730,16 @@ class LLMSearchResultEffectiveness:
         abstract_score = apply_confirmed_field_issue("abstract", abstract_score)
         keywords_score = apply_confirmed_field_issue("keywords", keywords_score)
         venue_score = apply_confirmed_field_issue("venue", venue_score)
+        author_score = apply_confirmed_field_issue("author", author_score)
 
         if rule_candidate_issues and self.enable_llm_quality and llm_quality.error:
             issues.append("llm_quality_parse_error")
 
         score = (
-            0.25 * title_score
-            + 0.45 * abstract_score
-            + 0.15 * keywords_score
-            + 0.15 * venue_score
+            0.30 * title_score
+            + 0.50 * abstract_score
+            + 0.10 * keywords_score
+            + 0.10 * author_score
         )
         return EffectivenessGrade(
             score=_clamp(score),
@@ -663,6 +747,7 @@ class LLMSearchResultEffectiveness:
             abstract_score=_clamp(abstract_score),
             keywords_score=_clamp(keywords_score),
             venue_score=_clamp(venue_score),
+            author_score=_clamp(author_score),
             issues=issues,
             llm_quality_reason=llm_quality.reason,
             llm_quality_error=llm_quality.error,
@@ -723,5 +808,6 @@ def aggregate_grades(grades: list[EffectivenessGrade]) -> EffectivenessSummary:
         mean_abstract_score=statistics.mean(g.abstract_score for g in grades),
         mean_keywords_score=statistics.mean(g.keywords_score for g in grades),
         mean_venue_score=statistics.mean(g.venue_score for g in grades),
+        mean_author_score=statistics.mean(g.author_score for g in grades),
         graded_pairs=len(grades),
     )

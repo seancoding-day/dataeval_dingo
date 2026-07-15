@@ -19,7 +19,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from search_result_eval_utils import add_common_args, get_title, load_query_result_jsonl, rank_discounted_mean, summarize, write_classified_jsonl, write_csv, write_json  # noqa: E402
+from search_result_eval_utils import add_common_args, get_title, load_query_result_jsonl, rank_discounted_mean, summarize, write_classified_jsonl, write_csv, write_json  # noqa: E402,E501
 
 from dingo.config import InputArgs  # noqa: E402
 from dingo.exec import Executor  # noqa: E402
@@ -35,7 +35,7 @@ EFFECTIVENESS_LABEL_TO_ISSUE = {
     "Effectiveness.Error_Title_Miss": "missing_title",
     "Effectiveness.Error_Abstract_Miss": "missing_abstract",
     "Effectiveness.Error_Keywords_Miss": "missing_keywords",
-    "Effectiveness.Error_Venue_Miss": "missing_venue",
+    "Effectiveness.Error_Author_Miss": "missing_author",
     "Effectiveness.Error_HTML_Tag": "html_tag",
     "Effectiveness.Error_Mojibake": "mojibake",
     "Effectiveness.Error_Invisible_Char": "invisible_char",
