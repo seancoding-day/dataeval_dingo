@@ -145,6 +145,8 @@ Effectiveness =
 + author_score * 0.10
 ```
 
-`author_score` checks whether at least one recognizable author name is present. A valid single-author paper receives full author completeness credit; the metric does not reward a larger author count.
+Each non-empty title, abstract, keywords list, or author list receives full presence credit before corruption checks. Character length, token count, keyword count, and author count do not affect the base score. A confirmed HTML, mojibake, invisible-character, unreadable-text, or special-character issue can still reduce the affected field score.
 
-Title, abstract, keywords, and author use missing-field checks and contribute to the score. Venue presence and quality are evaluated by the authority metric, so a missing venue does not reduce effectiveness or emit `Error_Venue_Miss`. All five text fields, including a venue when present, still use abnormal-character handling. HTML tags and the Unicode replacement character (`�`) always trigger LLM review, even when they occupy less than the general abnormal-character threshold. `RuleSpecialCharacter` and `RuleInvisibleChar` are fast candidates. When LLM quality judgment is enabled, those candidates are penalized only after LLM confirmation.
+`author_score` checks whether at least one non-empty author value is present. A single author receives full presence credit; the metric does not reward a larger author count or penalize a short name.
+
+Title, abstract, keywords, and author use presence checks and contribute to the score. Venue presence and quality are evaluated by the authority metric, so a missing venue does not reduce effectiveness or emit `Error_Venue_Miss`. All five text fields, including a venue when present, still use abnormal-character handling. HTML tags and the Unicode replacement character (`�`) always trigger LLM review, even when they occupy less than the general abnormal-character threshold. `RuleSpecialCharacter` and `RuleInvisibleChar` are fast candidates. When LLM quality judgment is enabled, those candidates are penalized only after LLM confirmation.

@@ -98,19 +98,9 @@ def _clamp(value: float, low: float = 0.0, high: float = 1.0) -> float:
     return max(low, min(high, value))
 
 
-def _token_count(text: str) -> int:
-    return len(re.findall(r"[\w\u4e00-\u9fff]+", text or ""))
-
-
-def _field_quality(text: Any, *, min_chars: int, good_chars: int) -> float:
-    value = str(text or "").strip()
-    if not value:
-        return 0.0
-    if len(value) < min_chars:
-        return 0.25
-    if len(value) >= good_chars:
-        return 1.0
-    return _clamp(0.35 + 0.65 * (len(value) - min_chars) / max(1, good_chars - min_chars))
+def _presence_quality(value: Any) -> float:
+    """Score field presence without using content length as a quality proxy."""
+    return 1.0 if str(value or "").strip() else 0.0
 
 
 def _suspicious_latin1_mojibake_count(text: str) -> int:
@@ -361,17 +351,6 @@ def extract_authors(result: dict[str, Any]) -> list[str]:
         elif item not in (None, ""):
             authors.append(str(item).strip())
     return [author for author in authors if author]
-
-
-def _author_quality(authors: list[str]) -> float:
-    if not authors:
-        return 0.0
-    valid_count = sum(
-        1
-        for author in authors
-        if len(author.strip()) >= 2 and re.search(r"[A-Za-z\u4e00-\u9fff]", author)
-    )
-    return _clamp(valid_count / len(authors))
 
 
 @dataclass
@@ -643,21 +622,11 @@ class LLMSearchResultEffectiveness:
             else [str(item).strip() for item in (authors or []) if str(item).strip()]
         )
 
-        title_score = _field_quality(title, min_chars=6, good_chars=35)
-        if _token_count(title) <= 2 and len(str(title).strip()) < 15:
-            title_score *= 0.65
-
-        abstract_score = _field_quality(abstract, min_chars=80, good_chars=700)
-        if abstract and _token_count(abstract) < 25:
-            abstract_score *= 0.7
-
-        keywords_score = _clamp(len(keyword_items) / 5.0) if keyword_items else 0.0
-
-        venue_score = _field_quality(venue, min_chars=3, good_chars=30)
-        if venue and not re.search(r"[A-Za-z\u4e00-\u9fff]", venue):
-            venue_score *= 0.4
-
-        author_score = _author_quality(author_items)
+        title_score = _presence_quality(title)
+        abstract_score = _presence_quality(abstract)
+        keywords_score = 1.0 if keyword_items else 0.0
+        venue_score = _presence_quality(venue)
+        author_score = 1.0 if author_items else 0.0
 
         issues: list[str] = []
         if not str(title or "").strip():

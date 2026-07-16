@@ -82,6 +82,39 @@ def test_author_is_scored_without_rewarding_author_count():
     assert _issues_to_labels(missing_author.issues) == ["Effectiveness.Error_Author_Miss"]
 
 
+def test_nonempty_fields_are_not_penalized_for_length_or_item_count():
+    grader = LLMSearchResultEffectiveness(enable_llm_quality=False)
+
+    grade = grader.grade(
+        title="D",
+        abstract="短",
+        keywords=["AI"],
+        venue="J",
+        authors=["Q"],
+    )
+
+    assert grade.title_score == 1.0
+    assert grade.abstract_score == 1.0
+    assert grade.keywords_score == 1.0
+    assert grade.venue_score == 1.0
+    assert grade.author_score == 1.0
+    assert grade.score == 1.0
+    assert grade.issues == []
+
+
+def test_longer_content_does_not_receive_more_effectiveness_credit():
+    grader = LLMSearchResultEffectiveness(enable_llm_quality=False)
+    short = grader.grade(title="D", abstract="A", keywords=["K"], authors=["Q"])
+    long = grader.grade(
+        title="A comprehensive academic title",
+        abstract="A complete and readable abstract. " * 100,
+        keywords=["one", "two", "three", "four", "five"],
+        authors=["Alice", "Bob"],
+    )
+
+    assert short.score == long.score == 1.0
+
+
 def test_missing_venue_is_diagnostic_only_and_does_not_reduce_score():
     grader = LLMSearchResultEffectiveness(enable_llm_quality=False)
     common = {
