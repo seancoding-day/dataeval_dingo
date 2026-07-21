@@ -1,10 +1,9 @@
 """Search result effectiveness grader.
 
-This grader scores whether a returned search result has enough usable
-bibliographic content for a user to judge and consume it. Missing-field and
-basic information-density checks are deterministic. Readability and corruption
-checks can be delegated to an LLM judge to avoid over-penalizing normal academic
-formulas, units, and symbols.
+This grader scores whether a returned search result has usable bibliographic
+content for a user to judge and consume it. Field-presence checks are
+deterministic. Readability and corruption checks can be delegated to an LLM
+judge to avoid over-penalizing normal academic formulas, units, and symbols.
 
 It intentionally does not judge topical relevance; use
 ``LLMSearchResultRelevance`` for that.
@@ -27,17 +26,20 @@ from dingo.model import Model
 logger = logging.getLogger(__name__)
 
 
+# Require a tag name immediately after ``<`` (or ``</``). This avoids treating
+# navigation text such as ``< Previous page | Next page >`` as HTML markup.
+HTML_TAG_PATTERN = r"</?[A-Za-z][A-Za-z0-9:-]*(?:\s+[^<>]*?)?\s*/?>"
+
 RULE_SPECIAL_CHARACTER_PATTERNS = (
     r"u200e",
     r"&#247;|\? :",
     r"[锟解枴閿熻В鏋碷�]|\{\/U\}",
     r"U\+26[0-F][0-D]|U\+273[3-4]|U\+1F[3-6][0-4][0-F]|U\+1F6[8-F][0-F]",
     r"<\|.*?\|>",
-    r"<[^>]+>",
+    HTML_TAG_PATTERN,
 )
 RULE_INVISIBLE_CHAR_PATTERN = r"[\u0080-\u009F\u2000-\u200F\u202F\u205F\u3000\uFEFF\u00A0\u2060-\u206F\uFEFF\xa0]"
 RULE_ABNORMAL_CHAR_THRESHOLD = 0.01
-HTML_TAG_PATTERN = r"<[^>]+>"
 MOJIBAKE_EVIDENCE_PATTERN = r"[閿熻В鏋撮柨鐔恍掗弸纰凤拷�]|\{\/U\}|u[0-9a-fA-F]{4}"
 UTF8_LATIN1_SEQUENCE_PATTERN = re.compile(r"[\u00C2\u00C3\u00D0\u00D1][\u0080-\u00BF]")
 C1_CONTROL_PATTERN = re.compile(r"[\u0080-\u009F]")

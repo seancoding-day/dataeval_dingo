@@ -115,6 +115,45 @@ def test_longer_content_does_not_receive_more_effectiveness_credit():
     assert short.score == long.score == 1.0
 
 
+def test_preview_navigation_text_is_not_treated_as_html():
+    abstract = (
+        "Preview this article: Meaning and the Structure of Language, by Wallace Chafe, "
+        "Page 1 of 1 < Previous page | Next page > "
+        "/docserver/preview/fulltext/ce/33/8/collegeenglish18315-1.gif"
+    )
+
+    assert "RuleSpecialCharacter" not in _rule_abnormal_char_issues(abstract)
+
+    # LLM quality is enabled deliberately: this text should bypass the LLM
+    # because it is not an abnormal-character candidate.
+    grade = LLMSearchResultEffectiveness(enable_llm_quality=True).grade(
+        title="Meaning and the Structure of Language, by Wallace Chafe",
+        abstract=abstract,
+        keywords=["Linguistics"],
+        venue="College English",
+        authors=["Frank Heny"],
+    )
+
+    assert grade.score == 1.0
+    assert grade.issues == []
+
+
+@pytest.mark.parametrize(
+    "markup",
+    [
+        "<span class='highlight'>language</span>",
+        "<i>language</i>",
+        "H<sub>2</sub>O",
+        "<scp>AM</scp>",
+    ],
+)
+def test_real_academic_html_tags_remain_detectable(markup: str):
+    assert "RuleSpecialCharacter" in _rule_abnormal_char_issues(markup)
+    assert _filter_llm_field_issues("title", markup, ["title:html_tag"]) == [
+        "title:html_tag"
+    ]
+
+
 def test_missing_venue_is_diagnostic_only_and_does_not_reduce_score():
     grader = LLMSearchResultEffectiveness(enable_llm_quality=False)
     common = {
