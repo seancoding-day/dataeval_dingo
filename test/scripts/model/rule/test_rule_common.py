@@ -1,6 +1,10 @@
+import pytest
+
+from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
 from dingo.io.output.eval_detail import QualityLabel
 from dingo.model.rule.rule_common import RuleDocFormulaRepeat, RulePIIDetection, RuleUnsafeWords
+from dingo.model.rule.rule_guobiao import RuleDataTypeConsistency, RuleTextPerplexity
 
 
 class TestRuleDocFormulaRepeat:
@@ -22,6 +26,152 @@ class TestRuleDocFormulaRepeat:
         assert 'av' not in tmp.reason
         assert 'b' not in tmp.reason
         assert 'java' in tmp.reason
+
+
+class TestRuleTextPerplexity:
+    @staticmethod
+    def _mock_model(monkeypatch, perplexity):
+        monkeypatch.setattr(
+            RuleTextPerplexity,
+            "_check_dependencies",
+            classmethod(lambda cls: None),
+        )
+        monkeypatch.setattr(
+            RuleTextPerplexity,
+            "_get_model_components",
+            classmethod(lambda cls, model_name: (object(), object())),
+        )
+        monkeypatch.setattr(
+            RuleTextPerplexity,
+            "_calculate_perplexity",
+            classmethod(
+                lambda cls, content, tokenizer, model, stride: perplexity
+            ),
+        )
+
+    def test_high_perplexity_is_bad(self, monkeypatch):
+        self._mock_model(monkeypatch, 125.5)
+        monkeypatch.setattr(
+            RuleTextPerplexity,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                threshold=100.0,
+                model="test-model",
+                stride=64,
+            ),
+        )
+
+        res = RuleTextPerplexity.eval(
+            Data(data_id="ppl-high", content="A valid piece of text.")
+        )
+
+        assert res.status is True
+        assert res.label == ["QUALITY_BAD_FLUENCY.RuleTextPerplexity"]
+        assert "125.5000" in res.reason[0]
+        assert "test-model" in res.reason[0]
+
+    def test_low_perplexity_is_good(self, monkeypatch):
+        self._mock_model(monkeypatch, 42.25)
+        monkeypatch.setattr(
+            RuleTextPerplexity,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                threshold=100.0,
+                model="test-model",
+                stride=64,
+            ),
+        )
+
+        res = RuleTextPerplexity.eval(
+            Data(data_id="ppl-low", content="A fluent piece of text.")
+        )
+
+        assert res.status is False
+        assert res.label == [QualityLabel.QUALITY_GOOD]
+        assert "42.2500" in res.reason[0]
+
+    def test_empty_content_is_bad_without_loading_model(self, monkeypatch):
+        monkeypatch.setattr(
+            RuleTextPerplexity,
+            "_check_dependencies",
+            classmethod(lambda cls: None),
+        )
+
+        def fail_if_called(cls, model_name):
+            raise AssertionError("model should not be loaded for empty content")
+
+        monkeypatch.setattr(
+            RuleTextPerplexity,
+            "_get_model_components",
+            classmethod(fail_if_called),
+        )
+
+        res = RuleTextPerplexity.eval(Data(data_id="ppl-empty", content="  "))
+
+        assert res.status is True
+        assert res.label == ["QUALITY_BAD_FLUENCY.RuleTextPerplexity"]
+        assert "empty content" in res.reason[0]
+
+    def test_missing_dependencies_raise_clear_error(self, monkeypatch):
+        monkeypatch.setattr(
+            "dingo.model.rule.rule_common.importlib.util.find_spec",
+            lambda package: None if package == "transformers" else object(),
+        )
+
+        try:
+            RuleTextPerplexity.eval(
+                Data(data_id="ppl-dependency", content="A piece of text.")
+            )
+        except ImportError as exc:
+            assert "transformers" in str(exc)
+            assert "dingo-python[hhem]" in str(exc)
+        else:
+            raise AssertionError("expected ImportError for missing transformers")
+
+
+class TestRuleDataTypeConsistency:
+    @staticmethod
+    def _mock_match_score(monkeypatch, score):
+        monkeypatch.setattr(
+            RuleDataTypeConsistency,
+            "_calculate_match_score",
+            classmethod(lambda cls, *args: score),
+        )
+        monkeypatch.setattr(
+            RuleDataTypeConsistency,
+            "dynamic_config",
+            EvaluatorRuleArgs(threshold=0.6, model="test-model", device=-1),
+        )
+
+    def test_content_matching_declared_type_is_good(self, monkeypatch):
+        self._mock_match_score(monkeypatch, 0.85)
+        result = RuleDataTypeConsistency.eval(
+            Data(data_id="type-match", type="medical", content="Clinical treatment")
+        )
+
+        assert result.status is False
+        assert result.score == 0.85
+        assert result.label == [QualityLabel.QUALITY_GOOD]
+
+    def test_content_not_matching_declared_type_is_bad(self, monkeypatch):
+        self._mock_match_score(monkeypatch, 0.25)
+        result = RuleDataTypeConsistency.eval(
+            Data(data_id="type-mismatch", type="medical", content="Stock prices")
+        )
+
+        assert result.status is True
+        assert result.score == 0.25
+        assert result.label == [
+            "QUALITY_BAD_TYPE_CONSISTENCY.RuleDataTypeConsistency"
+        ]
+
+    def test_missing_type_is_bad(self):
+        result = RuleDataTypeConsistency.eval(
+            Data(data_id="type-missing", content="Ordinary text")
+        )
+
+        assert result.status is True
+        assert "missing or empty" in result.reason[0]
 
 
 class TestRulePIIDetection:
