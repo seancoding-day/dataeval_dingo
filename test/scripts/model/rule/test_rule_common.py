@@ -1,6 +1,8 @@
+import pytest
 from dingo.io import Data
 from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io.output.eval_detail import QualityLabel
+from dingo.model.rule.rule_guobiao import RuleDataTypeConsistency
 from dingo.model.rule.rule_common import (
     RuleDocFormulaRepeat,
     RulePIIDetection,
@@ -130,6 +132,50 @@ class TestRuleTextPerplexity:
         else:
             raise AssertionError("expected ImportError for missing transformers")
 
+
+class TestRuleDataTypeConsistency:
+    @staticmethod
+    def _mock_match_score(monkeypatch, score):
+        monkeypatch.setattr(
+            RuleDataTypeConsistency,
+            "_calculate_match_score",
+            classmethod(lambda cls, *args: score),
+        )
+        monkeypatch.setattr(
+            RuleDataTypeConsistency,
+            "dynamic_config",
+            EvaluatorRuleArgs(threshold=0.6, model="test-model", device=-1),
+        )
+
+    def test_content_matching_declared_type_is_good(self, monkeypatch):
+        self._mock_match_score(monkeypatch, 0.85)
+        result = RuleDataTypeConsistency.eval(
+            Data(data_id="type-match", type="medical", content="Clinical treatment")
+        )
+
+        assert result.status is False
+        assert result.score == 0.85
+        assert result.label == [QualityLabel.QUALITY_GOOD]
+
+    def test_content_not_matching_declared_type_is_bad(self, monkeypatch):
+        self._mock_match_score(monkeypatch, 0.25)
+        result = RuleDataTypeConsistency.eval(
+            Data(data_id="type-mismatch", type="medical", content="Stock prices")
+        )
+
+        assert result.status is True
+        assert result.score == 0.25
+        assert result.label == [
+            "QUALITY_BAD_TYPE_CONSISTENCY.RuleDataTypeConsistency"
+        ]
+
+    def test_missing_type_is_bad(self):
+        result = RuleDataTypeConsistency.eval(
+            Data(data_id="type-missing", content="Ordinary text")
+        )
+
+        assert result.status is True
+        assert "missing or empty" in result.reason[0]
 
 class TestRulePIIDetection:
     """PII 检测规则测试"""

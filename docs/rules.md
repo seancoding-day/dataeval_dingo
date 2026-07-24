@@ -21,6 +21,7 @@ The specific rules for each quality metric are as follows:
 | RuleContentShort | EFFECTIVENESS | Check whether content is too short. | |
 | RuleContentShortMultiLan | EFFECTIVENESS | Check whether multilingual content is too short. | |
 | RuleCurlyBracket | UNDERSTANDABILITY | check whether the ratio of the number of {,} and the number of characters < 0.025     | [Redpajama](https://www.together.ai/blog/redpajama-data-v2) [C4](https://arxiv.org/abs/1910.10683)                                                                                                                  |
+| RuleDataTypeConsistency | TYPE_CONSISTENCY | Use a local zero-shot classifier to check whether content belongs to the type declared in `data.type`. | 2025 High-quality dataset classification guide |
 | RuleDictConsistency | EFFECTIVENESS | Compare two dictionary fields and report mismatched keys. | |
 | RuleDocFormulaRepeat | SIMILARITY | Check whether formulas repeat in a document. | |
 | RuleDocRepeat | SIMILARITY        | check whether content repeats                                                         | [Redpajama](https://www.together.ai/blog/redpajama-data-v2) [MAP-en](https://arxiv.org/abs/2405.19327) [FineWeb](https://huggingface.co/datasets/HuggingFaceFW/fineweb)  [Gopher](https://arxiv.org/abs/2112.11446) |
