@@ -168,7 +168,6 @@ class RuleTextPerplexity(BaseRule):
         stride=512,
     )
 
-
     _model_name = None
     _tokenizer = None
     _model = None

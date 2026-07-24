@@ -2,11 +2,13 @@ import pytest
 from dingo.io import Data
 from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io.output.eval_detail import QualityLabel
-from dingo.model.rule.rule_guobiao import RuleDataTypeConsistency
+from dingo.model.rule.rule_guobiao import (
+    RuleDataTypeConsistency,
+    RuleTextPerplexity,
+)
 from dingo.model.rule.rule_common import (
     RuleDocFormulaRepeat,
     RulePIIDetection,
-    RuleTextPerplexity,
     RuleUnsafeWords,
 )
 
@@ -176,6 +178,7 @@ class TestRuleDataTypeConsistency:
 
         assert result.status is True
         assert "missing or empty" in result.reason[0]
+
 
 class TestRulePIIDetection:
     """PII 检测规则测试"""
