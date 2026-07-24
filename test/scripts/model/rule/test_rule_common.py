@@ -4,6 +4,10 @@ from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io.output.eval_detail import QualityLabel
 from dingo.model.rule.rule_guobiao import (
     RuleDataTypeConsistency,
+    RuleDocApplicationCompleteness,
+    RuleDocBasicInfoCompleteness,
+    RuleDocConstructionProcessCompleteness,
+    RuleDocContentFeatureCompleteness,
     RuleTextPerplexity,
 )
 from dingo.model.rule.rule_common import (
@@ -355,3 +359,71 @@ class TestRulePIIDetection:
         data_low = Data(data_id="14", content="IP：192.168.1.1")
         res_low = RulePIIDetection.eval(data_low)
         assert "Low Risk" in str(res_low.reason)
+
+
+class TestRuleDatasetDocCompleteness:
+    def test_basic_info_completeness_good(self):
+        content = (
+            "本数据集说明包含数据集规模与样本数量，给出格式规范和文件结构，"
+            "提供访问渠道，并说明技术支持联系方式。"
+        )
+        res = RuleDocBasicInfoCompleteness.eval(
+            Data(data_id="doc-basic-good", content=content)
+        )
+        assert res.status is False
+        assert res.label == [QualityLabel.QUALITY_GOOD]
+        assert res.score == 1.0
+
+    def test_basic_info_completeness_bad(self):
+        content = "仅提到样本数量和文件结构，未说明访问渠道。"
+        res = RuleDocBasicInfoCompleteness.eval(
+            Data(data_id="doc-basic-bad", content=content)
+        )
+        assert res.status is True
+        assert res.label == [
+            "QUALITY_BAD_COMPLETENESS.RuleDocBasicInfoCompleteness"
+        ]
+        assert res.score < 0.8
+
+    def test_content_feature_completeness_good(self):
+        content = (
+            "文档包含模态类型、数据分布情况、标签类别统计、样本示例以及局限性说明。"
+        )
+        res = RuleDocContentFeatureCompleteness.eval(
+            Data(data_id="doc-content-good", content=content)
+        )
+        assert res.status is False
+        assert res.label == [QualityLabel.QUALITY_GOOD]
+        assert res.score == 1.0
+
+    def test_construction_process_completeness_good(self):
+        content = (
+            "建设过程包括数据来源、采集方法、加工处理流程、标注规范和版本控制记录。"
+        )
+        res = RuleDocConstructionProcessCompleteness.eval(
+            Data(data_id="doc-process-good", content=content)
+        )
+        assert res.status is False
+        assert res.label == [QualityLabel.QUALITY_GOOD]
+        assert res.score == 1.0
+
+    def test_application_completeness_good(self):
+        content = (
+            "应用说明提供使用许可、目标应用场景、评估方法、基准测试结果与典型应用案例。"
+        )
+        res = RuleDocApplicationCompleteness.eval(
+            Data(data_id="doc-application-good", content=content)
+        )
+        assert res.status is False
+        assert res.label == [QualityLabel.QUALITY_GOOD]
+        assert res.score == 1.0
+
+    def test_empty_content_is_bad(self):
+        res = RuleDocApplicationCompleteness.eval(
+            Data(data_id="doc-empty", content="   ")
+        )
+        assert res.status is True
+        assert res.label == [
+            "QUALITY_BAD_COMPLETENESS.RuleDocApplicationCompleteness"
+        ]
+        assert "missing or empty" in res.reason[0]
