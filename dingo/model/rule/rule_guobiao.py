@@ -127,6 +127,7 @@ class RuleDataTypeConsistency(BaseRule):
         score = cls._calculate_match_score(
             content, declared_type, model_name, device
         )
+        res.score = score
 
         if score >= threshold:
             res.label = [QualityLabel.QUALITY_GOOD]
