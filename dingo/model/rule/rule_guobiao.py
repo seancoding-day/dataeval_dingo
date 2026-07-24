@@ -454,7 +454,7 @@ class _RuleDatasetDocCompletenessBase(BaseRule):
             raise ValueError(
                 f"{cls.__name__} dynamic_config.threshold must be in (0, 1]"
             )
-        
+
         semantic_threshold = getattr(
             cls.dynamic_config,
             "semantic_threshold",
@@ -474,15 +474,15 @@ class _RuleDatasetDocCompletenessBase(BaseRule):
             raise ValueError(
                 f"{cls.__name__} dynamic_config.aspect_keywords must be a non-empty dict"
             )
-        
+
         model_name = getattr(cls.dynamic_config, "model", cls._default_model)
         if not isinstance(model_name, str) or not model_name.strip():
             raise ValueError(
                 f"{cls.__name__} dynamic_config.model must be a non-empty string"
             )
-        
+
         device = getattr(cls.dynamic_config, "device", cls._default_device)
-        
+
         dimension_name = getattr(
             cls.dynamic_config, "dimension_name", cls._default_dimension_name
         )
