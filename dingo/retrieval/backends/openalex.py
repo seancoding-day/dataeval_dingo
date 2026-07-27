@@ -50,7 +50,8 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_SELECT = (
     "id,doi,display_name,title,abstract_inverted_index,publication_year,"
-    "relevance_score,cited_by_count"
+    "relevance_score,cited_by_count,type,language,authorships,keywords,"
+    "primary_location,open_access"
 )
 
 
@@ -70,6 +71,8 @@ class OpenAlexClient(SearchClient):
         **_kwargs: Any,
     ) -> None:
         self.base_url = api_url.rstrip("/")
+        if self.base_url.endswith("/works"):
+            self.base_url = self.base_url[: -len("/works")]
         self.api_key = api_token or os.environ.get("OPENALEX_API_KEY")
         self.timeout = timeout
         self.search_type = (search_type or "search").strip().lower()
