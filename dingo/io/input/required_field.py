@@ -7,3 +7,4 @@ class RequiredField(Enum):
     CONTEXT = "context"
     IMAGE = "image"
     METADATA = "metadata"
+    TYPE = "type"

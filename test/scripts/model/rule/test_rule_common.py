@@ -1,6 +1,11 @@
+import pytest
+
+from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
 from dingo.io.output.eval_detail import QualityLabel
 from dingo.model.rule.rule_common import RuleDocFormulaRepeat, RulePIIDetection, RuleUnsafeWords
+from dingo.model.rule.rule_guobiao import (RuleDataTypeConsistency, RuleDocApplicationCompleteness, RuleDocBasicInfoCompleteness, RuleDocConstructionProcessCompleteness,
+                                           RuleDocContentFeatureCompleteness, RuleTextPerplexity, _RuleDatasetDocCompletenessBase)
 
 
 class TestRuleDocFormulaRepeat:
@@ -22,6 +27,152 @@ class TestRuleDocFormulaRepeat:
         assert 'av' not in tmp.reason
         assert 'b' not in tmp.reason
         assert 'java' in tmp.reason
+
+
+class TestRuleTextPerplexity:
+    @staticmethod
+    def _mock_model(monkeypatch, perplexity):
+        monkeypatch.setattr(
+            RuleTextPerplexity,
+            "_check_dependencies",
+            classmethod(lambda cls: None),
+        )
+        monkeypatch.setattr(
+            RuleTextPerplexity,
+            "_get_model_components",
+            classmethod(lambda cls, model_name: (object(), object())),
+        )
+        monkeypatch.setattr(
+            RuleTextPerplexity,
+            "_calculate_perplexity",
+            classmethod(
+                lambda cls, content, tokenizer, model, stride: perplexity
+            ),
+        )
+
+    def test_high_perplexity_is_bad(self, monkeypatch):
+        self._mock_model(monkeypatch, 125.5)
+        monkeypatch.setattr(
+            RuleTextPerplexity,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                threshold=100.0,
+                model="test-model",
+                stride=64,
+            ),
+        )
+
+        res = RuleTextPerplexity.eval(
+            Data(data_id="ppl-high", content="A valid piece of text.")
+        )
+
+        assert res.status is True
+        assert res.label == ["QUALITY_BAD_FLUENCY.RuleTextPerplexity"]
+        assert "125.5000" in res.reason[0]
+        assert "test-model" in res.reason[0]
+
+    def test_low_perplexity_is_good(self, monkeypatch):
+        self._mock_model(monkeypatch, 42.25)
+        monkeypatch.setattr(
+            RuleTextPerplexity,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                threshold=100.0,
+                model="test-model",
+                stride=64,
+            ),
+        )
+
+        res = RuleTextPerplexity.eval(
+            Data(data_id="ppl-low", content="A fluent piece of text.")
+        )
+
+        assert res.status is False
+        assert res.label == [QualityLabel.QUALITY_GOOD]
+        assert "42.2500" in res.reason[0]
+
+    def test_empty_content_is_bad_without_loading_model(self, monkeypatch):
+        monkeypatch.setattr(
+            RuleTextPerplexity,
+            "_check_dependencies",
+            classmethod(lambda cls: None),
+        )
+
+        def fail_if_called(cls, model_name):
+            raise AssertionError("model should not be loaded for empty content")
+
+        monkeypatch.setattr(
+            RuleTextPerplexity,
+            "_get_model_components",
+            classmethod(fail_if_called),
+        )
+
+        res = RuleTextPerplexity.eval(Data(data_id="ppl-empty", content="  "))
+
+        assert res.status is True
+        assert res.label == ["QUALITY_BAD_FLUENCY.RuleTextPerplexity"]
+        assert "empty content" in res.reason[0]
+
+    def test_missing_dependencies_raise_clear_error(self, monkeypatch):
+        monkeypatch.setattr(
+            "dingo.model.rule.rule_guobiao.importlib.util.find_spec",
+            lambda package: None if package == "transformers" else object(),
+        )
+
+        try:
+            RuleTextPerplexity.eval(
+                Data(data_id="ppl-dependency", content="A piece of text.")
+            )
+        except ImportError as exc:
+            assert "transformers" in str(exc)
+            assert "dingo-python[hhem]" in str(exc)
+        else:
+            raise AssertionError("expected ImportError for missing transformers")
+
+
+class TestRuleDataTypeConsistency:
+    @staticmethod
+    def _mock_match_score(monkeypatch, score):
+        monkeypatch.setattr(
+            RuleDataTypeConsistency,
+            "_calculate_match_score",
+            classmethod(lambda cls, *args: score),
+        )
+        monkeypatch.setattr(
+            RuleDataTypeConsistency,
+            "dynamic_config",
+            EvaluatorRuleArgs(threshold=0.6, model="test-model", device=-1),
+        )
+
+    def test_content_matching_declared_type_is_good(self, monkeypatch):
+        self._mock_match_score(monkeypatch, 0.85)
+        result = RuleDataTypeConsistency.eval(
+            Data(data_id="type-match", type="medical", content="Clinical treatment")
+        )
+
+        assert result.status is False
+        assert result.score == 0.85
+        assert result.label == [QualityLabel.QUALITY_GOOD]
+
+    def test_content_not_matching_declared_type_is_bad(self, monkeypatch):
+        self._mock_match_score(monkeypatch, 0.25)
+        result = RuleDataTypeConsistency.eval(
+            Data(data_id="type-mismatch", type="medical", content="Stock prices")
+        )
+
+        assert result.status is True
+        assert result.score == 0.25
+        assert result.label == [
+            "QUALITY_BAD_TYPE_CONSISTENCY.RuleDataTypeConsistency"
+        ]
+
+    def test_missing_type_is_bad(self):
+        result = RuleDataTypeConsistency.eval(
+            Data(data_id="type-missing", content="Ordinary text")
+        )
+
+        assert result.status is True
+        assert "missing or empty" in result.reason[0]
 
 
 class TestRulePIIDetection:
@@ -199,3 +350,114 @@ class TestRulePIIDetection:
         data_low = Data(data_id="14", content="IP：192.168.1.1")
         res_low = RulePIIDetection.eval(data_low)
         assert "Low Risk" in str(res_low.reason)
+
+
+class TestRuleDatasetDocCompleteness:
+    @staticmethod
+    def _mock_aspect_matching(monkeypatch):
+        def mock_match(
+            cls,
+            content,
+            normalized_content,
+            aspect_keywords,
+            model_name,
+            device,
+            semantic_threshold,
+        ):
+            del cls, content, model_name, device, semantic_threshold
+            matched = {}
+            missing = []
+            for aspect_name, keywords in aspect_keywords.items():
+                evidence_keyword = next(
+                    (
+                        keyword
+                        for keyword in keywords
+                        if keyword.lower() in normalized_content
+                    ),
+                    None,
+                )
+                if evidence_keyword:
+                    matched[aspect_name] = {
+                        "score": 1.0,
+                        "keyword": evidence_keyword,
+                    }
+                else:
+                    missing.append(aspect_name)
+            return matched, missing
+
+        monkeypatch.setattr(
+            _RuleDatasetDocCompletenessBase,
+            "_match_aspects",
+            classmethod(mock_match),
+        )
+
+    def test_basic_info_completeness_good(self, monkeypatch):
+        self._mock_aspect_matching(monkeypatch)
+        content = (
+            "本数据集说明包含数据集规模与样本数量，给出格式规范和文件结构，"
+            "提供访问渠道，并说明技术支持联系方式。"
+        )
+        res = RuleDocBasicInfoCompleteness.eval(
+            Data(data_id="doc-basic-good", content=content)
+        )
+        assert res.status is False
+        assert res.label == [QualityLabel.QUALITY_GOOD]
+        assert res.score == 1.0
+
+    def test_basic_info_completeness_bad(self, monkeypatch):
+        self._mock_aspect_matching(monkeypatch)
+        content = "仅提到样本数量和文件结构，未说明访问渠道。"
+        res = RuleDocBasicInfoCompleteness.eval(
+            Data(data_id="doc-basic-bad", content=content)
+        )
+        assert res.status is True
+        assert res.label == [
+            "QUALITY_BAD_COMPLETENESS.RuleDocBasicInfoCompleteness"
+        ]
+        assert res.score < 0.8
+
+    def test_content_feature_completeness_good(self, monkeypatch):
+        self._mock_aspect_matching(monkeypatch)
+        content = (
+            "文档包含模态类型、数据分布情况、标签类别统计、样本示例以及局限性说明。"
+        )
+        res = RuleDocContentFeatureCompleteness.eval(
+            Data(data_id="doc-content-good", content=content)
+        )
+        assert res.status is False
+        assert res.label == [QualityLabel.QUALITY_GOOD]
+        assert res.score == 1.0
+
+    def test_construction_process_completeness_good(self, monkeypatch):
+        self._mock_aspect_matching(monkeypatch)
+        content = (
+            "建设过程包括数据来源、采集方法、加工处理流程、标注规范和版本控制记录。"
+        )
+        res = RuleDocConstructionProcessCompleteness.eval(
+            Data(data_id="doc-process-good", content=content)
+        )
+        assert res.status is False
+        assert res.label == [QualityLabel.QUALITY_GOOD]
+        assert res.score == 1.0
+
+    def test_application_completeness_good(self, monkeypatch):
+        self._mock_aspect_matching(monkeypatch)
+        content = (
+            "应用说明提供使用许可、目标应用场景、评估方法、基准测试结果与典型应用案例。"
+        )
+        res = RuleDocApplicationCompleteness.eval(
+            Data(data_id="doc-application-good", content=content)
+        )
+        assert res.status is False
+        assert res.label == [QualityLabel.QUALITY_GOOD]
+        assert res.score == 1.0
+
+    def test_empty_content_is_bad(self):
+        res = RuleDocApplicationCompleteness.eval(
+            Data(data_id="doc-empty", content="   ")
+        )
+        assert res.status is True
+        assert res.label == [
+            "QUALITY_BAD_COMPLETENESS.RuleDocApplicationCompleteness"
+        ]
+        assert "missing or empty" in res.reason[0]

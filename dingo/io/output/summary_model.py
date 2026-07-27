@@ -16,7 +16,8 @@ class SummaryModel(BaseModel):
     num_good: int = 0
     num_bad: int = 0
     total: int = 0
-    type_ratio: Dict[str, Dict[str, int]] = {}
+    type_count: Dict[str, Dict[str, int]] = Field(default_factory=dict)
+    type_ratio: Dict[str, Dict[str, float]] = Field(default_factory=dict)
 
     # 新增：指标分数统计（用于RAG等评估场景）
     # 结构：{field_key: {metric_name: {scores, score_average, ...}}}
@@ -117,6 +118,7 @@ class SummaryModel(BaseModel):
             'num_good': self.num_good,
             'num_bad': self.num_bad,
             'total': self.total,
+            'type_count': self.type_count,
             'type_ratio': self.type_ratio,
         }
 
