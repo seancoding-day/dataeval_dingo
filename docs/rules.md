@@ -21,8 +21,13 @@ The specific rules for each quality metric are as follows:
 | RuleContentShort | EFFECTIVENESS | Check whether content is too short. | |
 | RuleContentShortMultiLan | EFFECTIVENESS | Check whether multilingual content is too short. | |
 | RuleCurlyBracket | UNDERSTANDABILITY | check whether the ratio of the number of {,} and the number of characters < 0.025     | [Redpajama](https://www.together.ai/blog/redpajama-data-v2) [C4](https://arxiv.org/abs/1910.10683)                                                                                                                  |
+| RuleDataTimeRange | TIMELINESS | Check whether `data.dt` is within the configured `dt_start` and `dt_end` time range. | 2025 High-quality dataset quality evaluation specification |
 | RuleDataTypeConsistency | TYPE_CONSISTENCY | Use a local zero-shot classifier to check whether content belongs to the type declared in `data.type`. | 2025 High-quality dataset classification guide |
 | RuleDictConsistency | EFFECTIVENESS | Compare two dictionary fields and report mismatched keys. | |
+| RuleDocApplicationCompleteness | COMPLETENESS | Check whether dataset documentation covers licensing, target scenarios, evaluation methods, benchmark results, and typical cases. | 2025 High-quality dataset quality evaluation specification |
+| RuleDocBasicInfoCompleteness | COMPLETENESS | Check whether dataset documentation covers dataset scale, format specification, file structure, access channel, and technical support. | 2025 High-quality dataset quality evaluation specification |
+| RuleDocConstructionProcessCompleteness | COMPLETENESS | Check whether dataset documentation covers data sources, collection methods, processing pipeline, annotation specification, and version control. | 2025 High-quality dataset quality evaluation specification |
+| RuleDocContentFeatureCompleteness | COMPLETENESS | Check whether dataset documentation covers modality type, data distribution, label statistics, sample examples, and limitations. | 2025 High-quality dataset quality evaluation specification |
 | RuleDocFormulaRepeat | SIMILARITY | Check whether formulas repeat in a document. | |
 | RuleDocRepeat | SIMILARITY        | check whether content repeats                                                         | [Redpajama](https://www.together.ai/blog/redpajama-data-v2) [MAP-en](https://arxiv.org/abs/2405.19327) [FineWeb](https://huggingface.co/datasets/HuggingFaceFW/fineweb)  [Gopher](https://arxiv.org/abs/2112.11446) |
 | RuleDoi | EFFECTIVENESS | Validate DOI metadata. | |
