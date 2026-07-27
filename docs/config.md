@@ -30,7 +30,7 @@
 | Parameter | Type | Default | Required | Description |
 |-----------|------|---------|----------|-------------|
 | source | str | "hugging_face" | Yes | 数据源类型，可选值：['hugging_face', 'local'] |
-| format | str | "json" | Yes | 数据格式，可选值：['json', 'jsonl', 'plaintext', 'listjson', 'csv', 'parquet', 'mineru', 'mineru_v2'] |
+| format | str | "json" | Yes | 数据格式，可选值：['json', 'jsonl', 'plaintext', 'listjson', 'csv', 'parquet', 'md', 'mineru', 'mineru_v2'] |
 | field | object | - | Yes | 字段映射配置 |
 | hf_config | object | - | No | HuggingFace 特定配置 |
 | mineru_config | object | - | No | MinerU 格式特定配置（仅 mineru / mineru_v2 格式使用） |
@@ -46,6 +46,7 @@ MinerU 格式特定配置，用于过滤 block 类型：
 MinerU 支持的 block 类型包括：`text`, `title`, `image`, `table`, `equation`, `code`, `list`, `header`, `page_footer`, `page_footnote`, `chart` 等。
 
 **格式说明：**
+- `md`：读取单个 `.md` 文件或目录下全部 `.md` 文件；每个文件构造成一条 `Data`，包含 `id`（文件名）和 `content`（全文字符串）
 - `mineru`：对应 MinerU 的 `content_list.json`，顶层为 block 数组
 - `mineru_v2`：对应 MinerU 的 `content_list_v2.json`，顶层为页面数组，每页包含 block 数组
 
