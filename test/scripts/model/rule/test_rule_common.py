@@ -5,7 +5,7 @@ from dingo.io import Data
 from dingo.io.output.eval_detail import QualityLabel
 from dingo.model.rule.rule_common import RuleDocFormulaRepeat, RulePIIDetection, RuleUnsafeWords
 from dingo.model.rule.rule_guobiao import (RuleDataTypeConsistency, RuleDocApplicationCompleteness, RuleDocBasicInfoCompleteness, RuleDocConstructionProcessCompleteness,
-                                           RuleDocContentFeatureCompleteness, RuleTextPerplexity, _RuleDatasetDocCompletenessBase)
+                                           RuleDocContentFeatureCompleteness, RuleDataTimeRange, RuleTextPerplexity, _RuleDatasetDocCompletenessBase)
 
 
 class TestRuleDocFormulaRepeat:
@@ -173,6 +173,82 @@ class TestRuleDataTypeConsistency:
 
         assert result.status is True
         assert "missing or empty" in result.reason[0]
+
+
+class TestRuleDataTimeRange:
+    def test_dt_in_range_is_good(self, monkeypatch):
+        monkeypatch.setattr(
+            RuleDataTimeRange,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                dt_start="2025-01-01",
+                dt_end="2025-12-31 23:59:59",
+            ),
+        )
+
+        result = RuleDataTimeRange.eval(
+            Data(
+                data_id="time-good",
+                dt="2025-03-01 08:30:00",
+            )
+        )
+        assert result.status is False
+        assert result.label == [QualityLabel.QUALITY_GOOD]
+
+    def test_created_time_out_of_range_is_bad(self, monkeypatch):
+        monkeypatch.setattr(
+            RuleDataTimeRange,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                dt_start="2025-01-01",
+                dt_end="2025-12-31 23:59:59",
+            ),
+        )
+
+        result = RuleDataTimeRange.eval(
+            Data(
+                data_id="time-created-out",
+                dt="2024-12-31 23:59:59",
+            )
+        )
+        assert result.status is True
+        assert result.label == ["QUALITY_BAD_TIMELINESS.RuleDataTimeRange"]
+        assert "earlier than allowed start" in result.reason[0]
+
+    def test_dt_invalid_format_is_bad(self, monkeypatch):
+        monkeypatch.setattr(
+            RuleDataTimeRange,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                dt_start="2025-01-01",
+                dt_end="2025-12-31 23:59:59",
+            ),
+        )
+
+        result = RuleDataTimeRange.eval(
+            Data(
+                data_id="time-dt-format",
+                dt="2025年03月01日",
+            )
+        )
+        assert result.status is True
+        assert result.label == ["QUALITY_BAD_TIMELINESS.RuleDataTimeRange"]
+        assert "unsupported datetime format" in result.reason[0]
+
+    def test_missing_time_field_is_bad(self, monkeypatch):
+        monkeypatch.setattr(
+            RuleDataTimeRange,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                dt_start="2025-01-01",
+                dt_end="2025-12-31 23:59:59",
+            ),
+        )
+
+        result = RuleDataTimeRange.eval(Data(data_id="time-missing"))
+        assert result.status is True
+        assert result.label == ["QUALITY_BAD_TIMELINESS.RuleDataTimeRange"]
+        assert "dt is missing" in result.reason[0]
 
 
 class TestRulePIIDetection:

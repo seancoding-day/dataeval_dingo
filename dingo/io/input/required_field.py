@@ -8,3 +8,4 @@ class RequiredField(Enum):
     IMAGE = "image"
     METADATA = "metadata"
     TYPE = "type"
+    DT = "dt"

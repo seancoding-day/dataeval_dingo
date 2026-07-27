@@ -1,6 +1,7 @@
 import importlib.util
 import math
 import re
+from datetime import datetime, timezone
 
 from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io.input import Data, RequiredField
@@ -142,6 +143,139 @@ class RuleDataTypeConsistency(BaseRule):
                 f"Content does not match declared type {declared_type} "
                 f"(score: {score:.4f}, threshold: {threshold:.4f})"
             ]
+        return res
+
+
+@Model.rule_register("QUALITY_BAD_TIMELINESS", ["guobiao"])
+class RuleDataTimeRange(BaseRule):
+    """Check whether creation/update time fields are within configured ranges."""
+
+    _metric_info = {
+        "category": "National Standard Data Quality Metrics",
+        "quality_dimension": "TIMELINESS",
+        "metric_name": "RuleDataTimeRange",
+        "description": (
+            "Checks whether created and updated timestamps are within configured "
+            "time ranges"
+        ),
+        "paper_title": "High-quality dataset quality evaluation specification",
+        "paper_url": "",
+        "paper_authors": "SAC/TC609",
+        "evaluation_results": "",
+    }
+
+    _required_fields = [RequiredField.DT]
+    dynamic_config = EvaluatorRuleArgs(
+        dt_start=None,
+        dt_end=None,
+    )
+
+    @classmethod
+    def _parse_datetime(cls, value, field_name):
+        if isinstance(value, datetime):
+            if value.tzinfo is None:
+                return value
+            return value.astimezone(timezone.utc).replace(tzinfo=None)
+
+        if isinstance(value, str):
+            text = value.strip()
+            if not text:
+                raise ValueError(f"{field_name} is empty")
+
+            iso_text = text.replace("Z", "+00:00")
+            try:
+                parsed = datetime.fromisoformat(iso_text)
+                if parsed.tzinfo is None:
+                    return parsed
+                return parsed.astimezone(timezone.utc).replace(tzinfo=None)
+            except ValueError:
+                raise ValueError(
+                    f"{field_name} has unsupported datetime format: {value!r}"
+                ) from None
+
+        raise ValueError(
+            f"{field_name} has unsupported datetime format: {value!r}"
+        )
+
+    @classmethod
+    def _validate_time_range(
+        cls,
+        dt_value,
+        start_value,
+        end_value,
+    ):
+        parsed_dt = cls._parse_datetime(dt_value, "time_value")
+        parsed_dt_start = (
+            cls._parse_datetime(start_value, "start_time")
+            if start_value is not None
+            else None
+        )
+        parsed_dt_end = (
+            cls._parse_datetime(end_value, "end_time")
+            if end_value is not None
+            else None
+        )
+
+        if (
+            parsed_dt_start is not None
+            and parsed_dt_end is not None
+            and parsed_dt_start > parsed_dt_end
+        ):
+            raise ValueError("time range is invalid: start is later than end")
+
+        if parsed_dt_start is not None and parsed_dt < parsed_dt_start:
+            return False, parsed_dt, parsed_dt_start, parsed_dt_end
+        if parsed_dt_end is not None and parsed_dt > parsed_dt_end:
+            return False, parsed_dt, parsed_dt_start, parsed_dt_end
+        return True, parsed_dt, parsed_dt_start, parsed_dt_end
+
+    @classmethod
+    def eval(cls, input_data: Data) -> EvalDetail:
+        res = EvalDetail(metric=cls.__name__)
+
+        dt_start = getattr(cls.dynamic_config, "dt_start", None)
+        dt_end = getattr(cls.dynamic_config, "dt_end", None)
+
+        if dt_start is None and dt_end is None:
+            raise ValueError(
+                "RuleDataTimeRange requires at least one configured range boundary in dynamic_config"
+            )
+
+        dt_value = getattr(input_data, "dt", None)
+        if dt_value is None:
+            res.status = True
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = ["dt is missing"]
+            return res
+
+        try:
+            is_valid, parsed_dt, parsed_dt_start, parsed_dt_end = cls._validate_time_range(
+                dt_value=dt_value,
+                start_value=dt_start,
+                end_value=dt_end,
+            )
+        except ValueError as exc:
+            res.status = True
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = [f"dt: {exc}"]
+            return res
+
+        if not is_valid:
+            res.status = True
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            if parsed_dt_start is not None and parsed_dt < parsed_dt_start:
+                res.reason = [
+                    f"dt {parsed_dt.isoformat(sep=' ')} is earlier than "
+                    f"allowed start {parsed_dt_start.isoformat(sep=' ')}"
+                ]
+            else:
+                res.reason = [
+                    f"dt {parsed_dt.isoformat(sep=' ')} is later than "
+                    f"allowed end {parsed_dt_end.isoformat(sep=' ')}"
+                ]
+            return res
+
+        res.label = [QualityLabel.QUALITY_GOOD]
         return res
 
 
