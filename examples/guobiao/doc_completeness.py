@@ -9,7 +9,7 @@ available locally.
 
 from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
-from dingo.model.rule.rule_guobiao import RuleDocBasicInfoCompleteness
+from dingo.model.rule.rule_guobiao import Rule_TC609_0101_DocBasicInfoCompleteness
 
 
 def main():
@@ -18,10 +18,10 @@ def main():
         content="本数据集说明文档包含数据集规模与样本数量说明，提供格式规范、文件结构、访问渠道和技术支持方式。"
     )
 
-    RuleDocBasicInfoCompleteness.dynamic_config = EvaluatorRuleArgs(
+    Rule_TC609_0101_DocBasicInfoCompleteness.dynamic_config = EvaluatorRuleArgs(
         threshold=0.8,
     )
-    result = RuleDocBasicInfoCompleteness.eval(data)
+    result = Rule_TC609_0101_DocBasicInfoCompleteness.eval(data)
     print(result)
 
 

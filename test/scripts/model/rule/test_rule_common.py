@@ -4,8 +4,9 @@ from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
 from dingo.io.output.eval_detail import QualityLabel
 from dingo.model.rule.rule_common import RuleDocFormulaRepeat, RulePIIDetection, RuleUnsafeWords
-from dingo.model.rule.rule_guobiao import (RuleDataTypeConsistency, RuleDocApplicationCompleteness, RuleDocBasicInfoCompleteness, RuleDocConstructionProcessCompleteness,
-                                           RuleDocContentFeatureCompleteness, RuleTextPerplexity, _RuleDatasetDocCompletenessBase)
+from dingo.model.rule.rule_guobiao import (Rule_TC609_0101_DocBasicInfoCompleteness, Rule_TC609_0102_DocContentFeatureCompleteness, Rule_TC609_0103_DocConstructionProcessCompleteness,
+                                           Rule_TC609_0104_DocApplicationCompleteness, Rule_TC609_0207_DataTypeConsistency, Rule_TC609_0303_DataTimeRange, Rule_TC609_02080101_TextPerplexity,
+                                           _RuleDatasetDocCompletenessBase)
 
 
 class TestRuleDocFormulaRepeat:
@@ -29,21 +30,21 @@ class TestRuleDocFormulaRepeat:
         assert 'java' in tmp.reason
 
 
-class TestRuleTextPerplexity:
+class TestRule_TC609_02080101_TextPerplexity:
     @staticmethod
     def _mock_model(monkeypatch, perplexity):
         monkeypatch.setattr(
-            RuleTextPerplexity,
+            Rule_TC609_02080101_TextPerplexity,
             "_check_dependencies",
             classmethod(lambda cls: None),
         )
         monkeypatch.setattr(
-            RuleTextPerplexity,
+            Rule_TC609_02080101_TextPerplexity,
             "_get_model_components",
             classmethod(lambda cls, model_name: (object(), object())),
         )
         monkeypatch.setattr(
-            RuleTextPerplexity,
+            Rule_TC609_02080101_TextPerplexity,
             "_calculate_perplexity",
             classmethod(
                 lambda cls, content, tokenizer, model, stride: perplexity
@@ -53,7 +54,7 @@ class TestRuleTextPerplexity:
     def test_high_perplexity_is_bad(self, monkeypatch):
         self._mock_model(monkeypatch, 125.5)
         monkeypatch.setattr(
-            RuleTextPerplexity,
+            Rule_TC609_02080101_TextPerplexity,
             "dynamic_config",
             EvaluatorRuleArgs(
                 threshold=100.0,
@@ -62,19 +63,19 @@ class TestRuleTextPerplexity:
             ),
         )
 
-        res = RuleTextPerplexity.eval(
+        res = Rule_TC609_02080101_TextPerplexity.eval(
             Data(data_id="ppl-high", content="A valid piece of text.")
         )
 
         assert res.status is True
-        assert res.label == ["QUALITY_BAD_FLUENCY.RuleTextPerplexity"]
+        assert res.label == ["QUALITY_BAD_FLUENCY.Rule_TC609_02080101_TextPerplexity"]
         assert "125.5000" in res.reason[0]
         assert "test-model" in res.reason[0]
 
     def test_low_perplexity_is_good(self, monkeypatch):
         self._mock_model(monkeypatch, 42.25)
         monkeypatch.setattr(
-            RuleTextPerplexity,
+            Rule_TC609_02080101_TextPerplexity,
             "dynamic_config",
             EvaluatorRuleArgs(
                 threshold=100.0,
@@ -83,7 +84,7 @@ class TestRuleTextPerplexity:
             ),
         )
 
-        res = RuleTextPerplexity.eval(
+        res = Rule_TC609_02080101_TextPerplexity.eval(
             Data(data_id="ppl-low", content="A fluent piece of text.")
         )
 
@@ -93,7 +94,7 @@ class TestRuleTextPerplexity:
 
     def test_empty_content_is_bad_without_loading_model(self, monkeypatch):
         monkeypatch.setattr(
-            RuleTextPerplexity,
+            Rule_TC609_02080101_TextPerplexity,
             "_check_dependencies",
             classmethod(lambda cls: None),
         )
@@ -102,15 +103,15 @@ class TestRuleTextPerplexity:
             raise AssertionError("model should not be loaded for empty content")
 
         monkeypatch.setattr(
-            RuleTextPerplexity,
+            Rule_TC609_02080101_TextPerplexity,
             "_get_model_components",
             classmethod(fail_if_called),
         )
 
-        res = RuleTextPerplexity.eval(Data(data_id="ppl-empty", content="  "))
+        res = Rule_TC609_02080101_TextPerplexity.eval(Data(data_id="ppl-empty", content="  "))
 
         assert res.status is True
-        assert res.label == ["QUALITY_BAD_FLUENCY.RuleTextPerplexity"]
+        assert res.label == ["QUALITY_BAD_FLUENCY.Rule_TC609_02080101_TextPerplexity"]
         assert "empty content" in res.reason[0]
 
     def test_missing_dependencies_raise_clear_error(self, monkeypatch):
@@ -120,7 +121,7 @@ class TestRuleTextPerplexity:
         )
 
         try:
-            RuleTextPerplexity.eval(
+            Rule_TC609_02080101_TextPerplexity.eval(
                 Data(data_id="ppl-dependency", content="A piece of text.")
             )
         except ImportError as exc:
@@ -130,23 +131,23 @@ class TestRuleTextPerplexity:
             raise AssertionError("expected ImportError for missing transformers")
 
 
-class TestRuleDataTypeConsistency:
+class TestRule_TC609_0207_DataTypeConsistency:
     @staticmethod
     def _mock_match_score(monkeypatch, score):
         monkeypatch.setattr(
-            RuleDataTypeConsistency,
+            Rule_TC609_0207_DataTypeConsistency,
             "_calculate_match_score",
             classmethod(lambda cls, *args: score),
         )
         monkeypatch.setattr(
-            RuleDataTypeConsistency,
+            Rule_TC609_0207_DataTypeConsistency,
             "dynamic_config",
             EvaluatorRuleArgs(threshold=0.6, model="test-model", device=-1),
         )
 
     def test_content_matching_declared_type_is_good(self, monkeypatch):
         self._mock_match_score(monkeypatch, 0.85)
-        result = RuleDataTypeConsistency.eval(
+        result = Rule_TC609_0207_DataTypeConsistency.eval(
             Data(data_id="type-match", type="medical", content="Clinical treatment")
         )
 
@@ -156,23 +157,99 @@ class TestRuleDataTypeConsistency:
 
     def test_content_not_matching_declared_type_is_bad(self, monkeypatch):
         self._mock_match_score(monkeypatch, 0.25)
-        result = RuleDataTypeConsistency.eval(
+        result = Rule_TC609_0207_DataTypeConsistency.eval(
             Data(data_id="type-mismatch", type="medical", content="Stock prices")
         )
 
         assert result.status is True
         assert result.score == 0.25
         assert result.label == [
-            "QUALITY_BAD_TYPE_CONSISTENCY.RuleDataTypeConsistency"
+            "QUALITY_BAD_TYPE_CONSISTENCY.Rule_TC609_0207_DataTypeConsistency"
         ]
 
     def test_missing_type_is_bad(self):
-        result = RuleDataTypeConsistency.eval(
+        result = Rule_TC609_0207_DataTypeConsistency.eval(
             Data(data_id="type-missing", content="Ordinary text")
         )
 
         assert result.status is True
         assert "missing or empty" in result.reason[0]
+
+
+class TestRule_TC609_0303_DataTimeRange:
+    def test_dt_in_range_is_good(self, monkeypatch):
+        monkeypatch.setattr(
+            Rule_TC609_0303_DataTimeRange,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                dt_start="2025-01-01",
+                dt_end="2025-12-31 23:59:59",
+            ),
+        )
+
+        result = Rule_TC609_0303_DataTimeRange.eval(
+            Data(
+                data_id="time-good",
+                dt="2025-03-01 08:30:00",
+            )
+        )
+        assert result.status is False
+        assert result.label == [QualityLabel.QUALITY_GOOD]
+
+    def test_created_time_out_of_range_is_bad(self, monkeypatch):
+        monkeypatch.setattr(
+            Rule_TC609_0303_DataTimeRange,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                dt_start="2025-01-01",
+                dt_end="2025-12-31 23:59:59",
+            ),
+        )
+
+        result = Rule_TC609_0303_DataTimeRange.eval(
+            Data(
+                data_id="time-created-out",
+                dt="2024-12-31 23:59:59",
+            )
+        )
+        assert result.status is True
+        assert result.label == ["QUALITY_BAD_TIMELINESS.Rule_TC609_0303_DataTimeRange"]
+        assert "earlier than allowed start" in result.reason[0]
+
+    def test_dt_invalid_format_is_bad(self, monkeypatch):
+        monkeypatch.setattr(
+            Rule_TC609_0303_DataTimeRange,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                dt_start="2025-01-01",
+                dt_end="2025-12-31 23:59:59",
+            ),
+        )
+
+        result = Rule_TC609_0303_DataTimeRange.eval(
+            Data(
+                data_id="time-dt-format",
+                dt="2025年03月01日",
+            )
+        )
+        assert result.status is True
+        assert result.label == ["QUALITY_BAD_TIMELINESS.Rule_TC609_0303_DataTimeRange"]
+        assert "unsupported datetime format" in result.reason[0]
+
+    def test_missing_time_field_is_bad(self, monkeypatch):
+        monkeypatch.setattr(
+            Rule_TC609_0303_DataTimeRange,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                dt_start="2025-01-01",
+                dt_end="2025-12-31 23:59:59",
+            ),
+        )
+
+        result = Rule_TC609_0303_DataTimeRange.eval(Data(data_id="time-missing"))
+        assert result.status is True
+        assert result.label == ["QUALITY_BAD_TIMELINESS.Rule_TC609_0303_DataTimeRange"]
+        assert "dt is missing" in result.reason[0]
 
 
 class TestRulePIIDetection:
@@ -397,7 +474,7 @@ class TestRuleDatasetDocCompleteness:
             "本数据集说明包含数据集规模与样本数量，给出格式规范和文件结构，"
             "提供访问渠道，并说明技术支持联系方式。"
         )
-        res = RuleDocBasicInfoCompleteness.eval(
+        res = Rule_TC609_0101_DocBasicInfoCompleteness.eval(
             Data(data_id="doc-basic-good", content=content)
         )
         assert res.status is False
@@ -407,12 +484,12 @@ class TestRuleDatasetDocCompleteness:
     def test_basic_info_completeness_bad(self, monkeypatch):
         self._mock_aspect_matching(monkeypatch)
         content = "仅提到样本数量和文件结构，未说明访问渠道。"
-        res = RuleDocBasicInfoCompleteness.eval(
+        res = Rule_TC609_0101_DocBasicInfoCompleteness.eval(
             Data(data_id="doc-basic-bad", content=content)
         )
         assert res.status is True
         assert res.label == [
-            "QUALITY_BAD_COMPLETENESS.RuleDocBasicInfoCompleteness"
+            "QUALITY_BAD_COMPLETENESS.Rule_TC609_0101_DocBasicInfoCompleteness"
         ]
         assert res.score < 0.8
 
@@ -421,7 +498,7 @@ class TestRuleDatasetDocCompleteness:
         content = (
             "文档包含模态类型、数据分布情况、标签类别统计、样本示例以及局限性说明。"
         )
-        res = RuleDocContentFeatureCompleteness.eval(
+        res = Rule_TC609_0102_DocContentFeatureCompleteness.eval(
             Data(data_id="doc-content-good", content=content)
         )
         assert res.status is False
@@ -433,7 +510,7 @@ class TestRuleDatasetDocCompleteness:
         content = (
             "建设过程包括数据来源、采集方法、加工处理流程、标注规范和版本控制记录。"
         )
-        res = RuleDocConstructionProcessCompleteness.eval(
+        res = Rule_TC609_0103_DocConstructionProcessCompleteness.eval(
             Data(data_id="doc-process-good", content=content)
         )
         assert res.status is False
@@ -445,7 +522,7 @@ class TestRuleDatasetDocCompleteness:
         content = (
             "应用说明提供使用许可、目标应用场景、评估方法、基准测试结果与典型应用案例。"
         )
-        res = RuleDocApplicationCompleteness.eval(
+        res = Rule_TC609_0104_DocApplicationCompleteness.eval(
             Data(data_id="doc-application-good", content=content)
         )
         assert res.status is False
@@ -453,11 +530,11 @@ class TestRuleDatasetDocCompleteness:
         assert res.score == 1.0
 
     def test_empty_content_is_bad(self):
-        res = RuleDocApplicationCompleteness.eval(
+        res = Rule_TC609_0104_DocApplicationCompleteness.eval(
             Data(data_id="doc-empty", content="   ")
         )
         assert res.status is True
         assert res.label == [
-            "QUALITY_BAD_COMPLETENESS.RuleDocApplicationCompleteness"
+            "QUALITY_BAD_COMPLETENESS.Rule_TC609_0104_DocApplicationCompleteness"
         ]
         assert "missing or empty" in res.reason[0]

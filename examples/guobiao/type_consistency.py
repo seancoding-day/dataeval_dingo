@@ -9,7 +9,7 @@ available locally.
 
 from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
-from dingo.model.rule.rule_guobiao import RuleDataTypeConsistency
+from dingo.model.rule.rule_guobiao import Rule_TC609_0207_DataTypeConsistency
 
 
 def main():
@@ -19,12 +19,12 @@ def main():
         content="高血压患者应在医生指导下规律用药，并定期监测血压变化。",
     )
 
-    RuleDataTypeConsistency.dynamic_config = EvaluatorRuleArgs(
+    Rule_TC609_0207_DataTypeConsistency.dynamic_config = EvaluatorRuleArgs(
         threshold=0.5,
         model="MoritzLaurer/mDeBERTa-v3-base-mnli-xnli",
         device=-1,
     )
-    result = RuleDataTypeConsistency.eval(data)
+    result = Rule_TC609_0207_DataTypeConsistency.eval(data)
     print(result)
 
 

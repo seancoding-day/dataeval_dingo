@@ -1,4 +1,4 @@
-﻿"""Evaluate one Chinese text using the national-standard perplexity rule.
+"""Evaluate one Chinese text using the national-standard perplexity rule.
 
 Optional dependencies:
     conda run -n dingo pip install "dingo-python[hhem]"
@@ -10,7 +10,7 @@ download.
 
 from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
-from dingo.model.rule.rule_guobiao import RuleTextPerplexity
+from dingo.model.rule.rule_guobiao import Rule_TC609_02080101_TextPerplexity
 
 
 def main():
@@ -19,12 +19,12 @@ def main():
         content="人工智能正在推动科学研究和产业应用快速发展。高质量数据集能够为模型训练提供准确、完整且具有代表性的样本，从而提高模型在真实应用场景中的稳定性和可靠性。",
     )
 
-    RuleTextPerplexity.dynamic_config = EvaluatorRuleArgs(
+    Rule_TC609_02080101_TextPerplexity.dynamic_config = EvaluatorRuleArgs(
         threshold=100.0,
         model="uer/gpt2-chinese-cluecorpussmall",
         stride=512,
     )
-    result = RuleTextPerplexity.eval(data)
+    result = Rule_TC609_02080101_TextPerplexity.eval(data)
     print(result)
 
 

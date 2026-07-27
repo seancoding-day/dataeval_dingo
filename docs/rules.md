@@ -2,6 +2,13 @@ The specific rules for each quality metric are as follows:
 
 | Function Name                | Type              | Description                                                                           | Reference                                                                                                                                                                                                           |
 |------------------------------|-------------------|---------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Rule_TC609_0101_DocBasicInfoCompleteness | COMPLETENESS | Check whether dataset documentation covers dataset scale, format specification, file structure, access channel, and technical support. | 2025 High-quality dataset quality evaluation specification |
+| Rule_TC609_0102_DocContentFeatureCompleteness | COMPLETENESS | Check whether dataset documentation covers modality type, data distribution, label statistics, sample examples, and limitations. | 2025 High-quality dataset quality evaluation specification |
+| Rule_TC609_0103_DocConstructionProcessCompleteness | COMPLETENESS | Check whether dataset documentation covers data sources, collection methods, processing pipeline, annotation specification, and version control. | 2025 High-quality dataset quality evaluation specification |
+| Rule_TC609_0104_DocApplicationCompleteness | COMPLETENESS | Check whether dataset documentation covers licensing, target scenarios, evaluation methods, benchmark results, and typical cases. | 2025 High-quality dataset quality evaluation specification |
+| Rule_TC609_0207_DataTypeConsistency | TYPE_CONSISTENCY | Use a local zero-shot classifier to check whether content belongs to the type declared in `data.type`. | 2025 High-quality dataset classification guide |
+| Rule_TC609_02080101_TextPerplexity | FLUENCY | Calculate text perplexity with a configurable causal language model and flag values above the configured threshold. | 2025 High-quality dataset quality evaluation specification |
+| Rule_TC609_0303_DataTimeRange | TIMELINESS | Check whether `data.dt` is within the configured `dt_start` and `dt_end` time range. | 2025 High-quality dataset quality evaluation specification |
 | RuleAbnormalChar | EFFECTIVENESS | Check whether content contains abnormal characters. | |
 | RuleAbnormalHtml | EFFECTIVENESS | Check whether content contains abnormal HTML. | |
 | RuleAbnormalNumber | FLUENCY | Check PDF content for abnormal page or index numbers. | |
@@ -21,7 +28,6 @@ The specific rules for each quality metric are as follows:
 | RuleContentShort | EFFECTIVENESS | Check whether content is too short. | |
 | RuleContentShortMultiLan | EFFECTIVENESS | Check whether multilingual content is too short. | |
 | RuleCurlyBracket | UNDERSTANDABILITY | check whether the ratio of the number of {,} and the number of characters < 0.025     | [Redpajama](https://www.together.ai/blog/redpajama-data-v2) [C4](https://arxiv.org/abs/1910.10683)                                                                                                                  |
-| RuleDataTypeConsistency | TYPE_CONSISTENCY | Use a local zero-shot classifier to check whether content belongs to the type declared in `data.type`. | 2025 High-quality dataset classification guide |
 | RuleDictConsistency | EFFECTIVENESS | Compare two dictionary fields and report mismatched keys. | |
 | RuleDocFormulaRepeat | SIMILARITY | Check whether formulas repeat in a document. | |
 | RuleDocRepeat | SIMILARITY        | check whether content repeats                                                         | [Redpajama](https://www.together.ai/blog/redpajama-data-v2) [MAP-en](https://arxiv.org/abs/2405.19327) [FineWeb](https://huggingface.co/datasets/HuggingFaceFW/fineweb)  [Gopher](https://arxiv.org/abs/2112.11446) |
@@ -87,7 +93,6 @@ The specific rules for each quality metric are as follows:
 | RuleSpecialCharacter | RELEVANCE         | check whether content has special characters.                                         |                                                                                                                                                                                                                     |
 | RuleStopWord | EFFECTIVENESS     | check whether the ratio of stop word > 0.06                                           | [Redpajama](https://www.together.ai/blog/redpajama-data-v2) [MAP-en](https://arxiv.org/abs/2405.19327) [Gopher](https://arxiv.org/abs/2112.11446) [Dolma](https://arxiv.org/abs/2402.00159)                         |
 | RuleSymbolWordRatio | EFFECTIVENESS     | check whether the ratio of symbol / word is > 0.4                                     | [Redpajama](https://www.together.ai/blog/redpajama-data-v2) [Gopher](https://arxiv.org/abs/2112.11446) [Dolma](https://arxiv.org/abs/2402.00159)                                                                    |
-| RuleTextPerplexity | FLUENCY | Calculate text perplexity with a configurable causal language model and flag values above the configured threshold. | 2025 High-quality dataset quality evaluation specification |
 | RuleUniqueWords | UNDERSTANDABILITY | check whether the ratio of unique words > 0.1                                         | [Redpajama](https://www.together.ai/blog/redpajama-data-v2) [MAP-en](https://arxiv.org/abs/2405.19327)                                                                                                              |
 | RuleUnsafeWords | SECURITY | Check whether content contains unsafe words. | |
 | RuleVedioDataFormat | EFFECTIVENESS | Check whether video data has the expected format. | |
