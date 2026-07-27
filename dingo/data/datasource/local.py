@@ -32,7 +32,7 @@ class LocalDataSource(DataSource):
             "config_name": self.config_name,
         }
 
-    def load(self, **kwargs) -> Generator[str, None, None]:
+    def load(self, **kwargs) -> Generator[Any, None, None]:
         """Load the local file dataset based on `LocalDataSource`.
         Args:
             kwargs: Additional keyword arguments used for loading the dataset.
@@ -54,6 +54,25 @@ class LocalDataSource(DataSource):
                 file_list.append(f)
             if os.path.isdir(f):
                 self._find_all_files(f, file_list)
+
+    @staticmethod
+    def _load_md_file(path: str) -> Dict[str, str]:
+        try:
+            with open(path, "r", encoding="utf-8") as md_file:
+                return {
+                    "id": os.path.basename(path),
+                    "content": md_file.read(),
+                }
+        except UnicodeDecodeError as decode_error:
+            raise RuntimeError(
+                f'Failed to read markdown file "{path}": Unsupported file encoding. '
+                f'Markdown files must be UTF-8 encoded. Original error: {str(decode_error)}'
+            )
+        except Exception as e:
+            raise RuntimeError(
+                f'Unexpected error reading markdown file "{path}": {str(e)}. '
+                f'Please check if the file exists and is readable.'
+            )
 
     def _load_excel_file_xlsx(self, path: str) -> Generator[str, None, None]:
         """
@@ -377,7 +396,7 @@ class LocalDataSource(DataSource):
             if wb:
                 wb.release_resources()
 
-    def _load_local_file(self) -> Generator[str, None, None]:
+    def _load_local_file(self) -> Generator[Any, None, None]:
         """
         Load a local file and return its contents.
 
@@ -390,14 +409,27 @@ class LocalDataSource(DataSource):
             raise RuntimeError(f'"{self.path}" is not a valid path')
 
         f_list = []
+        input_is_file = os.path.isfile(self.path)
         if os.path.exists(self.path) and os.path.isfile(self.path):
             f_list = [self.path]
         elif os.path.exists(self.path) and os.path.isdir(self.path):
             self._find_all_files(self.path, f_list)
 
-        by_line = self.input_args.dataset.format not in ["json", "listjson", "mineru", "mineru_v2"]
+        by_line = self.input_args.dataset.format not in ["json", "listjson", "mineru", "mineru_v2", "md"]
 
         for f in f_list:
+            if self.input_args.dataset.format == "md":
+                if f.lower().endswith(".md"):
+                    yield self._load_md_file(f)
+                elif input_is_file:
+                    raise RuntimeError(
+                        f'Input file "{self.path}" is not a markdown file. '
+                        f'Please provide a ".md" file or a directory containing ".md" files when dataset.format is "md".'
+                    )
+                else:
+                    continue
+                continue
+
             # Check if file is CSV
             if f.endswith('.csv'):
                 if self.input_args.dataset.format != 'csv':
