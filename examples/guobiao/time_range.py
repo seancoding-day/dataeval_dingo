@@ -2,7 +2,7 @@
 
 from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
-from dingo.model.rule.rule_guobiao import RuleDataTimeRange
+from dingo.model.rule.rule_guobiao import Rule_TC609_0303_DataTimeRange
 
 
 def main():
@@ -12,11 +12,11 @@ def main():
         content="示例数据",
     )
 
-    RuleDataTimeRange.dynamic_config = EvaluatorRuleArgs(
+    Rule_TC609_0303_DataTimeRange.dynamic_config = EvaluatorRuleArgs(
         dt_start="2025-01-01",
         dt_end="2025-12-31 23:59:59",
     )
-    result = RuleDataTimeRange.eval(data)
+    result = Rule_TC609_0303_DataTimeRange.eval(data)
     print(result)
 
 

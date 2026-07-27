@@ -11,7 +11,7 @@ from dingo.model.rule.base import BaseRule
 
 
 @Model.rule_register("QUALITY_BAD_TYPE_CONSISTENCY", ["guobiao"])
-class RuleDataTypeConsistency(BaseRule):
+class Rule_TC609_0207_DataTypeConsistency(BaseRule):
     """Check whether content belongs to the type declared in ``input_data.type``.
 
     A local zero-shot classifier evaluates the hypothesis ``这段文本属于{type}类型``.
@@ -21,7 +21,7 @@ class RuleDataTypeConsistency(BaseRule):
     _metric_info = {
         "category": "National Standard Data Quality Metrics",
         "quality_dimension": "TYPE_CONSISTENCY",
-        "metric_name": "RuleDataTypeConsistency",
+        "metric_name": "Rule_TC609_0207_DataTypeConsistency",
         "description": (
             "Uses a local zero-shot classifier to check whether content belongs "
             "to the type declared in the record"
@@ -60,7 +60,7 @@ class RuleDataTypeConsistency(BaseRule):
         ]
         if missing_packages:
             raise ImportError(
-                "RuleDataTypeConsistency requires optional packages: "
+                "Rule_TC609_0207_DataTypeConsistency requires optional packages: "
                 f"{', '.join(missing_packages)}. "
                 'Install them with: pip install "dingo-python[hhem]"'
             )
@@ -120,7 +120,7 @@ class RuleDataTypeConsistency(BaseRule):
         threshold = cls.dynamic_config.threshold
         if threshold is None or not 0 < threshold <= 1:
             raise ValueError(
-                "RuleDataTypeConsistency dynamic_config.threshold must be in (0, 1]"
+                "Rule_TC609_0207_DataTypeConsistency dynamic_config.threshold must be in (0, 1]"
             )
 
         model_name = cls.dynamic_config.model
@@ -147,13 +147,13 @@ class RuleDataTypeConsistency(BaseRule):
 
 
 @Model.rule_register("QUALITY_BAD_TIMELINESS", ["guobiao"])
-class RuleDataTimeRange(BaseRule):
+class Rule_TC609_0303_DataTimeRange(BaseRule):
     """Check whether creation/update time fields are within configured ranges."""
 
     _metric_info = {
         "category": "National Standard Data Quality Metrics",
         "quality_dimension": "TIMELINESS",
-        "metric_name": "RuleDataTimeRange",
+        "metric_name": "Rule_TC609_0303_DataTimeRange",
         "description": (
             "Checks whether created and updated timestamps are within configured "
             "time ranges"
@@ -238,7 +238,7 @@ class RuleDataTimeRange(BaseRule):
 
         if dt_start is None and dt_end is None:
             raise ValueError(
-                "RuleDataTimeRange requires at least one configured range boundary in dynamic_config"
+                "Rule_TC609_0303_DataTimeRange requires at least one configured range boundary in dynamic_config"
             )
 
         dt_value = getattr(input_data, "dt", None)
@@ -280,13 +280,13 @@ class RuleDataTimeRange(BaseRule):
 
 
 @Model.rule_register("QUALITY_BAD_FLUENCY", ["pretrain", "guobiao"])
-class RuleTextPerplexity(BaseRule):
+class Rule_TC609_02080101_TextPerplexity(BaseRule):
     """Check whether text perplexity exceeds the configured threshold."""
 
     _metric_info = {
         "category": "National Standard Data Quality Metrics",
         "quality_dimension": "FLUENCY",
-        "metric_name": "RuleTextPerplexity",
+        "metric_name": "Rule_TC609_02080101_TextPerplexity",
         "description": (
             "Calculates text perplexity with a causal language model and "
             "flags text whose PPL exceeds the configured threshold"
@@ -318,7 +318,7 @@ class RuleTextPerplexity(BaseRule):
         ]
         if missing_packages:
             raise ImportError(
-                "RuleTextPerplexity requires optional packages: "
+                "Rule_TC609_02080101_TextPerplexity requires optional packages: "
                 f"{', '.join(missing_packages)}. "
                 'Install them with: pip install "dingo-python[hhem]"'
             )
@@ -336,7 +336,7 @@ class RuleTextPerplexity(BaseRule):
             from transformers import AutoModelForCausalLM, AutoTokenizer
         except ImportError as exc:
             raise ImportError(
-                "RuleTextPerplexity requires transformers and torch. "
+                "Rule_TC609_02080101_TextPerplexity requires transformers and torch. "
                 'Install them with: pip install "dingo-python[hhem]"'
             ) from exc
 
@@ -352,7 +352,7 @@ class RuleTextPerplexity(BaseRule):
             import torch
         except ImportError as exc:
             raise ImportError(
-                "RuleTextPerplexity requires transformers and torch. "
+                "Rule_TC609_02080101_TextPerplexity requires transformers and torch. "
                 'Install them with: pip install "dingo-python[hhem]"'
             ) from exc
 
@@ -361,7 +361,7 @@ class RuleTextPerplexity(BaseRule):
         sequence_length = input_ids.size(1)
         if sequence_length < 2:
             raise ValueError(
-                "RuleTextPerplexity requires at least two model tokens"
+                "Rule_TC609_02080101_TextPerplexity requires at least two model tokens"
             )
 
         model_config = getattr(model, "config", None)
@@ -401,7 +401,7 @@ class RuleTextPerplexity(BaseRule):
 
         if total_loss_tokens == 0:
             raise ValueError(
-                "RuleTextPerplexity could not calculate loss for the input"
+                "Rule_TC609_02080101_TextPerplexity could not calculate loss for the input"
             )
 
         mean_loss = total_negative_log_likelihood / total_loss_tokens
@@ -425,7 +425,7 @@ class RuleTextPerplexity(BaseRule):
         threshold = cls.dynamic_config.threshold
         if threshold is None or threshold <= 0:
             raise ValueError(
-                "RuleTextPerplexity dynamic_config.threshold must be greater than 0"
+                "Rule_TC609_02080101_TextPerplexity dynamic_config.threshold must be greater than 0"
             )
 
         model_name = getattr(
@@ -667,13 +667,13 @@ class _RuleDatasetDocCompletenessBase(BaseRule):
 
 
 @Model.rule_register("QUALITY_BAD_COMPLETENESS", ["guobiao"])
-class RuleDocBasicInfoCompleteness(_RuleDatasetDocCompletenessBase):
+class Rule_TC609_0101_DocBasicInfoCompleteness(_RuleDatasetDocCompletenessBase):
     """0101: Basic information completeness in dataset documentation."""
 
     _metric_info = {
         "category": "National Standard Data Quality Metrics",
         "quality_dimension": "COMPLETENESS",
-        "metric_name": "RuleDocBasicInfoCompleteness",
+        "metric_name": "Rule_TC609_0101_DocBasicInfoCompleteness",
         "description": (
             "Checks whether dataset documentation covers basic information "
             "aspects such as scale, format, structure, access, and support"
@@ -699,13 +699,13 @@ class RuleDocBasicInfoCompleteness(_RuleDatasetDocCompletenessBase):
 
 
 @Model.rule_register("QUALITY_BAD_COMPLETENESS", ["guobiao"])
-class RuleDocContentFeatureCompleteness(_RuleDatasetDocCompletenessBase):
+class Rule_TC609_0102_DocContentFeatureCompleteness(_RuleDatasetDocCompletenessBase):
     """0102: Content feature completeness in dataset documentation."""
 
     _metric_info = {
         "category": "National Standard Data Quality Metrics",
         "quality_dimension": "COMPLETENESS",
-        "metric_name": "RuleDocContentFeatureCompleteness",
+        "metric_name": "Rule_TC609_0102_DocContentFeatureCompleteness",
         "description": (
             "Checks whether dataset documentation covers content-feature aspects "
             "such as modality, distribution, labels, examples, and limitations"
@@ -731,13 +731,13 @@ class RuleDocContentFeatureCompleteness(_RuleDatasetDocCompletenessBase):
 
 
 @Model.rule_register("QUALITY_BAD_COMPLETENESS", ["guobiao"])
-class RuleDocConstructionProcessCompleteness(_RuleDatasetDocCompletenessBase):
+class Rule_TC609_0103_DocConstructionProcessCompleteness(_RuleDatasetDocCompletenessBase):
     """0103: Construction-process completeness in dataset documentation."""
 
     _metric_info = {
         "category": "National Standard Data Quality Metrics",
         "quality_dimension": "COMPLETENESS",
-        "metric_name": "RuleDocConstructionProcessCompleteness",
+        "metric_name": "Rule_TC609_0103_DocConstructionProcessCompleteness",
         "description": (
             "Checks whether dataset documentation covers construction-process "
             "aspects such as data source, collection, processing, annotation, "
@@ -764,13 +764,13 @@ class RuleDocConstructionProcessCompleteness(_RuleDatasetDocCompletenessBase):
 
 
 @Model.rule_register("QUALITY_BAD_COMPLETENESS", ["guobiao"])
-class RuleDocApplicationCompleteness(_RuleDatasetDocCompletenessBase):
+class Rule_TC609_0104_DocApplicationCompleteness(_RuleDatasetDocCompletenessBase):
     """0104: Application-description completeness in dataset documentation."""
 
     _metric_info = {
         "category": "National Standard Data Quality Metrics",
         "quality_dimension": "COMPLETENESS",
-        "metric_name": "RuleDocApplicationCompleteness",
+        "metric_name": "Rule_TC609_0104_DocApplicationCompleteness",
         "description": (
             "Checks whether dataset documentation covers application aspects "
             "such as license, scenarios, evaluation method, benchmark, and cases"
