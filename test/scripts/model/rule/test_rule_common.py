@@ -4,8 +4,9 @@ from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
 from dingo.io.output.eval_detail import QualityLabel
 from dingo.model.rule.rule_common import RuleDocFormulaRepeat, RulePIIDetection, RuleUnsafeWords
-from dingo.model.rule.rule_guobiao import (Rule_TC609_0303_DataTimeRange, Rule_TC609_0207_DataTypeConsistency, Rule_TC609_0104_DocApplicationCompleteness, Rule_TC609_0101_DocBasicInfoCompleteness, Rule_TC609_0103_DocConstructionProcessCompleteness,
-                                           Rule_TC609_0102_DocContentFeatureCompleteness, Rule_TC609_02080101_TextPerplexity, _RuleDatasetDocCompletenessBase)
+from dingo.model.rule.rule_guobiao import (Rule_TC609_0101_DocBasicInfoCompleteness, Rule_TC609_0102_DocContentFeatureCompleteness, Rule_TC609_0103_DocConstructionProcessCompleteness,
+                                           Rule_TC609_0104_DocApplicationCompleteness, Rule_TC609_0207_DataTypeConsistency, Rule_TC609_0303_DataTimeRange, Rule_TC609_02080101_TextPerplexity,
+                                           _RuleDatasetDocCompletenessBase)
 
 
 class TestRuleDocFormulaRepeat:
