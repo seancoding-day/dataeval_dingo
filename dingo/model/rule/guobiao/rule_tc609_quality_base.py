@@ -25,7 +25,7 @@ def _tc609_metric_info(code, name, description, coverage):
     }
 
 
-class _TC609CompositeBase(BaseRule):
+class Rule_TC609_Composite(BaseRule):
     """Base class for a TC609 metric composed from existing Dingo rules."""
 
     component_rules = ()
