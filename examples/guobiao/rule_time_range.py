@@ -2,7 +2,7 @@
 
 from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
-from dingo.model.rule.rule_guobiao import Rule_TC609_0303_DataTimeRange
+from dingo.model.rule.guobiao.rule_tc609_quality import Rule_TC609_0303_DataTimeRange
 
 
 def main():

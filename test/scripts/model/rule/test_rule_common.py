@@ -3,10 +3,11 @@ import pytest
 from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
 from dingo.io.output.eval_detail import QualityLabel
+from dingo.model.rule.guobiao.rule_tc609_quality import (Rule_TC609_0101_DocBasicInfoCompleteness, Rule_TC609_0102_DocContentFeatureCompleteness, Rule_TC609_0103_DocConstructionProcessCompleteness,
+                                                         Rule_TC609_0104_DocApplicationCompleteness, Rule_TC609_0207_DataTypeConsistency, Rule_TC609_0303_DataTimeRange,
+                                                         Rule_TC609_02080101_TextPerplexity)
+from dingo.model.rule.guobiao.rule_tc609_quality_base import Rule_TC609_01_DocCompleteness
 from dingo.model.rule.rule_common import RuleDocFormulaRepeat, RulePIIDetection, RuleUnsafeWords
-from dingo.model.rule.rule_guobiao import (Rule_TC609_0101_DocBasicInfoCompleteness, Rule_TC609_0102_DocContentFeatureCompleteness, Rule_TC609_0103_DocConstructionProcessCompleteness,
-                                           Rule_TC609_0104_DocApplicationCompleteness, Rule_TC609_0207_DataTypeConsistency, Rule_TC609_0303_DataTimeRange, Rule_TC609_02080101_TextPerplexity,
-                                           _RuleDatasetDocCompletenessBase)
 
 
 class TestRuleDocFormulaRepeat:
@@ -68,7 +69,7 @@ class TestRule_TC609_02080101_TextPerplexity:
         )
 
         assert res.status is True
-        assert res.label == ["QUALITY_BAD_FLUENCY.Rule_TC609_02080101_TextPerplexity"]
+        assert res.label == ["QUALITY_BAD_TC609_02080101.Rule_TC609_02080101_TextPerplexity"]
         assert "125.5000" in res.reason[0]
         assert "test-model" in res.reason[0]
 
@@ -111,12 +112,12 @@ class TestRule_TC609_02080101_TextPerplexity:
         res = Rule_TC609_02080101_TextPerplexity.eval(Data(data_id="ppl-empty", content="  "))
 
         assert res.status is True
-        assert res.label == ["QUALITY_BAD_FLUENCY.Rule_TC609_02080101_TextPerplexity"]
+        assert res.label == ["QUALITY_BAD_TC609_02080101.Rule_TC609_02080101_TextPerplexity"]
         assert "empty content" in res.reason[0]
 
     def test_missing_dependencies_raise_clear_error(self, monkeypatch):
         monkeypatch.setattr(
-            "dingo.model.rule.rule_guobiao.importlib.util.find_spec",
+            "dingo.model.rule.guobiao.rule_tc609_quality.importlib.util.find_spec",
             lambda package: None if package == "transformers" else object(),
         )
 
@@ -164,7 +165,7 @@ class TestRule_TC609_0207_DataTypeConsistency:
         assert result.status is True
         assert result.score == 0.25
         assert result.label == [
-            "QUALITY_BAD_TYPE_CONSISTENCY.Rule_TC609_0207_DataTypeConsistency"
+            "QUALITY_BAD_TC609_0207.Rule_TC609_0207_DataTypeConsistency"
         ]
 
     def test_missing_type_is_bad(self):
@@ -213,7 +214,7 @@ class TestRule_TC609_0303_DataTimeRange:
             )
         )
         assert result.status is True
-        assert result.label == ["QUALITY_BAD_TIMELINESS.Rule_TC609_0303_DataTimeRange"]
+        assert result.label == ["QUALITY_BAD_TC609_0303.Rule_TC609_0303_DataTimeRange"]
         assert "earlier than allowed start" in result.reason[0]
 
     def test_dt_invalid_format_is_bad(self, monkeypatch):
@@ -233,7 +234,7 @@ class TestRule_TC609_0303_DataTimeRange:
             )
         )
         assert result.status is True
-        assert result.label == ["QUALITY_BAD_TIMELINESS.Rule_TC609_0303_DataTimeRange"]
+        assert result.label == ["QUALITY_BAD_TC609_0303.Rule_TC609_0303_DataTimeRange"]
         assert "unsupported datetime format" in result.reason[0]
 
     def test_missing_time_field_is_bad(self, monkeypatch):
@@ -248,7 +249,7 @@ class TestRule_TC609_0303_DataTimeRange:
 
         result = Rule_TC609_0303_DataTimeRange.eval(Data(data_id="time-missing"))
         assert result.status is True
-        assert result.label == ["QUALITY_BAD_TIMELINESS.Rule_TC609_0303_DataTimeRange"]
+        assert result.label == ["QUALITY_BAD_TC609_0303.Rule_TC609_0303_DataTimeRange"]
         assert "dt is missing" in result.reason[0]
 
 
@@ -463,7 +464,7 @@ class TestRuleDatasetDocCompleteness:
             return matched, missing
 
         monkeypatch.setattr(
-            _RuleDatasetDocCompletenessBase,
+            Rule_TC609_01_DocCompleteness,
             "_match_aspects",
             classmethod(mock_match),
         )
@@ -489,7 +490,7 @@ class TestRuleDatasetDocCompleteness:
         )
         assert res.status is True
         assert res.label == [
-            "QUALITY_BAD_COMPLETENESS.Rule_TC609_0101_DocBasicInfoCompleteness"
+            "QUALITY_BAD_TC609_0101.Rule_TC609_0101_DocBasicInfoCompleteness"
         ]
         assert res.score < 0.8
 
@@ -535,6 +536,6 @@ class TestRuleDatasetDocCompleteness:
         )
         assert res.status is True
         assert res.label == [
-            "QUALITY_BAD_COMPLETENESS.Rule_TC609_0104_DocApplicationCompleteness"
+            "QUALITY_BAD_TC609_0104.Rule_TC609_0104_DocApplicationCompleteness"
         ]
         assert "missing or empty" in res.reason[0]

@@ -49,6 +49,8 @@ dingo/
 │   │   ├── rule/            ← Rule-based evaluators (80+ built-in)
 │   │   │   ├── base.py      ← BaseRule
 │   │   │   ├── rule_common.py ← Common rules (text quality, format, PII, etc.)
+│   │   │   ├── guobiao/
+│   │   │   │   └── rule_tc609_quality.py ← TC609 quality metrics and placeholders
 │   │   │   ├── rule_search_ranking.py ← IR ranking metrics (NDCG, MRR, Recall, Precision, MAP, HitRate)
 │   │   │   └── utils/       ← Shared utilities (normalize, ngrams, etc.)
 │   │   └── llm/             ← LLM-based evaluators
