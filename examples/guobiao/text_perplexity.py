@@ -10,7 +10,7 @@ download.
 
 from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
-from dingo.model.rule.rule_guobiao import Rule_TC609_02080101_TextPerplexity
+from dingo.model.rule.guobiao.rule_tc609_quality import Rule_TC609_02080101_TextPerplexity
 
 
 def main():
