@@ -86,7 +86,7 @@ class _TC609PlaceholderBase(BaseRule):
         )
 
 
-class _TC609DatasetDocCompletenessBase(BaseRule):
+class Rule_TC609_01_DocCompleteness(BaseRule):
     """Shared logic for dataset documentation completeness checks."""
 
     _required_fields = [RequiredField.CONTENT]

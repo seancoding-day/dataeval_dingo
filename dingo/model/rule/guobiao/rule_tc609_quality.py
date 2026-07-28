@@ -9,14 +9,14 @@ from dingo.model.model import Model
 from dingo.model.rule.guobiao.rule_tc609_quality_base import (
     _tc609_metric_info,
     _TC609CompositeBase,
-    _TC609DatasetDocCompletenessBase,
+    Rule_TC609_01_DocCompleteness,
     _TC609PlaceholderBase,
 )
 from dingo.model.rule.base import BaseRule
 
 
 @Model.rule_register("QUALITY_BAD_TC609_0101", ["guobiao"])
-class Rule_TC609_0101_DocBasicInfoCompleteness(_TC609DatasetDocCompletenessBase):
+class Rule_TC609_0101_DocBasicInfoCompleteness(Rule_TC609_01_DocCompleteness):
     """0101: Basic information completeness in dataset documentation."""
 
     _metric_info = {
@@ -50,7 +50,7 @@ class Rule_TC609_0101_DocBasicInfoCompleteness(_TC609DatasetDocCompletenessBase)
 
 
 @Model.rule_register("QUALITY_BAD_TC609_0102", ["guobiao"])
-class Rule_TC609_0102_DocContentFeatureCompleteness(_TC609DatasetDocCompletenessBase):
+class Rule_TC609_0102_DocContentFeatureCompleteness(Rule_TC609_01_DocCompleteness):
     """0102: Content feature completeness in dataset documentation."""
 
     _metric_info = {
@@ -84,7 +84,9 @@ class Rule_TC609_0102_DocContentFeatureCompleteness(_TC609DatasetDocCompleteness
 
 
 @Model.rule_register("QUALITY_BAD_TC609_0103", ["guobiao"])
-class Rule_TC609_0103_DocConstructionProcessCompleteness(_TC609DatasetDocCompletenessBase):
+class Rule_TC609_0103_DocConstructionProcessCompleteness(
+    Rule_TC609_01_DocCompleteness
+):
     """0103: Construction-process completeness in dataset documentation."""
 
     _metric_info = {
@@ -119,7 +121,7 @@ class Rule_TC609_0103_DocConstructionProcessCompleteness(_TC609DatasetDocComplet
 
 
 @Model.rule_register("QUALITY_BAD_TC609_0104", ["guobiao"])
-class Rule_TC609_0104_DocApplicationCompleteness(_TC609DatasetDocCompletenessBase):
+class Rule_TC609_0104_DocApplicationCompleteness(Rule_TC609_01_DocCompleteness):
     """0104: Application-description completeness in dataset documentation."""
 
     _metric_info = {
