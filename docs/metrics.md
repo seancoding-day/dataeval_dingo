@@ -60,46 +60,46 @@ This document provides comprehensive information about all quality metrics used 
 
 | Type | Rule | Coverage | Group | Description |
 |---|---|---|---|---|
-| `QUALITY_BAD_TC609_0101` | Rule_TC609_0101_DocBasicInfoCompleteness | covered | `guobiao` | Checks whether dataset documentation covers basic information aspects such as scale, format, structure, access, and support |
-| `QUALITY_BAD_TC609_0102` | Rule_TC609_0102_DocContentFeatureCompleteness | covered | `guobiao` | Checks whether dataset documentation covers content-feature aspects such as modality, distribution, labels, examples, and limitations |
-| `QUALITY_BAD_TC609_0103` | Rule_TC609_0103_DocConstructionProcessCompleteness | covered | `guobiao` | Checks whether dataset documentation covers construction-process aspects such as data source, collection, processing, annotation, and version control |
-| `QUALITY_BAD_TC609_0104` | Rule_TC609_0104_DocApplicationCompleteness | covered | `guobiao` | Checks whether dataset documentation covers application aspects such as license, scenarios, evaluation method, benchmark, and cases |
-| `QUALITY_BAD_TC609_0201` | Rule_TC609_0201_FormatCompliance | partial | `guobiao` | Combines existing NLP, SFT, image, audio, and video format rules. |
-| `QUALITY_BAD_TC609_0202` | Rule_TC609_0202_SafetyCompliance | partial | `guobiao` | Combines unsafe-word, PII, and identity-card detection. |
-| `QUALITY_BAD_TC609_0203` | Rule_TC609_0203_AnnotationCompliance | partial | `guobiao` | Combines image-label overlap and visualization checks. |
-| `QUALITY_BAD_TC609_0204` | Rule_TC609_0204_StructuralCompleteness | partial | `guobiao` | Combines null-content and short-content checks. |
-| `QUALITY_BAD_TC609_0205` | Rule_TC609_0205_ContentAuthenticity | partial | `guobiao` | Uses HHEM consistency checking as partial evidence of authenticity. |
-| `QUALITY_BAD_TC609_0206` | Rule_TC609_0206_ContentConsistency | partial | `guobiao` | Combines structured-field and image-text consistency checks. |
-| `QUALITY_BAD_TC609_0207` | Rule_TC609_0207_DataTypeConsistency | partial | `guobiao` | Uses a local zero-shot classifier to check whether content belongs to the type declared in the record |
-| `QUALITY_BAD_TC609_02080101` | Rule_TC609_02080101_TextPerplexity | covered | `pretrain,guobiao` | Calculates text perplexity with a causal language model and flags text whose PPL exceeds the configured threshold |
-| `QUALITY_BAD_TC609_02080102` | Rule_TC609_02080102_KnowledgeInformationDensity | partial | `guobiao` | Combines alphabetic-word, stop-word, and unique-word ratio checks. |
-| `QUALITY_BAD_TC609_02080103` | Rule_TC609_02080103_RepeatedContent | covered | `guobiao` | Combines document-text and formula repetition checks. |
-| `QUALITY_BAD_TC609_02080104` | Rule_TC609_02080104_TextCompleteness | covered | `guobiao` | Combines null, short, ellipsis-ending, and terminal-ending checks. |
-| `QUALITY_BAD_TC609_02080105` | Rule_TC609_02080105_InformationMissing | partial | `guobiao` | Uses content length and sentence/word counts as partial missing-information checks. |
-| `QUALITY_BAD_TC609_02080106` | Rule_TC609_02080106_TextPurity | partial | `guobiao` | Combines abnormal HTML, character, invisible-content, and watermark checks. |
-| `QUALITY_BAD_TC609_02080107` | Rule_TC609_02080107_TextCoherence | partial | `guobiao` | Combines punctuation, word-boundary, and line-break fluency checks. |
-| `QUALITY_BAD_TC609_02080201` | Rule_TC609_02080201_ImageResolution | partial | `guobiao` | Uses image aspect-ratio validation as partial resolution coverage. |
-| `QUALITY_BAD_TC609_02080202` | Rule_TC609_02080202_ImageDuplication | covered | `guobiao` | Uses PHash and CNN duplicate-image detection. |
-| `QUALITY_BAD_TC609_02080203` | Rule_TC609_02080203_ImageSignalNoiseRatio | partial | `guobiao` | Uses NIMA image quality as partial evidence; it is not a true SNR metric. |
-| `QUALITY_BAD_TC609_02080204` | Rule_TC609_02080204_ImageClarity | partial | `guobiao` | Combines image validity and NIMA quality as partial clarity coverage. |
-| `QUALITY_BAD_TC609_02080301` | Rule_TC609_02080301_VideoResolution | uncovered | `guobiao_placeholder` | Placeholder: video resolution is not implemented. |
-| `QUALITY_BAD_TC609_02080302` | Rule_TC609_02080302_VideoDuplication | uncovered | `guobiao_placeholder` | Placeholder: duplicate-video detection is not implemented. |
-| `QUALITY_BAD_TC609_02080303` | Rule_TC609_02080303_VideoFrameRate | uncovered | `guobiao_placeholder` | Placeholder: video FPS validation is not implemented. |
-| `QUALITY_BAD_TC609_02080304` | Rule_TC609_02080304_VideoDuration | uncovered | `guobiao_placeholder` | Placeholder: video duration validation is not implemented. |
-| `QUALITY_BAD_TC609_02080305` | Rule_TC609_02080305_VideoClarity | uncovered | `guobiao_placeholder` | Placeholder: video clarity evaluation is not implemented. |
-| `QUALITY_BAD_TC609_02080306` | Rule_TC609_02080306_VideoDynamicRange | uncovered | `guobiao_placeholder` | Placeholder: video dynamic-range evaluation is not implemented. |
-| `QUALITY_BAD_TC609_02080401` | Rule_TC609_02080401_AudioSignalNoiseRatio | covered | `guobiao` | Uses the existing Welch power-spectrum SNR implementation. |
-| `QUALITY_BAD_TC609_02080402` | Rule_TC609_02080402_SignalDistortionRatio | uncovered | `guobiao_placeholder` | Placeholder: signal distortion ratio is not implemented. |
-| `QUALITY_BAD_TC609_02080403` | Rule_TC609_02080403_AudioSampleRate | uncovered | `guobiao_placeholder` | Placeholder: sample-rate quality validation is not implemented. |
-| `QUALITY_BAD_TC609_02080404` | Rule_TC609_02080404_AudioBitDepth | uncovered | `guobiao_placeholder` | Placeholder: audio bit-depth validation is not implemented. |
-| `QUALITY_BAD_TC609_02080405` | Rule_TC609_02080405_AudioBitRate | uncovered | `guobiao_placeholder` | Placeholder: audio bit-rate validation is not implemented. |
-| `QUALITY_BAD_TC609_02080406` | Rule_TC609_02080406_AudioDuration | covered | `guobiao` | Uses the existing WAV duration implementation. |
-| `QUALITY_BAD_TC609_0208` | Rule_TC609_0208_ContentCleanliness | partial | `guobiao` | Combines available text cleanliness checks; modality coverage is partial. |
-| `QUALITY_BAD_TC609_0301` | Rule_TC609_0301_ContentDiversity | uncovered | `guobiao_placeholder` | Placeholder: target-scenario distribution coverage is not implemented. |
-| `QUALITY_BAD_TC609_0302` | Rule_TC609_0302_ScaleCompleteness | uncovered | `guobiao_placeholder` | Placeholder: dataset scale versus model requirements is not implemented. |
-| `QUALITY_BAD_TC609_0303` | Rule_TC609_0303_DataTimeRange | covered | `guobiao` | Checks whether created and updated timestamps are within configured time ranges |
-| `QUALITY_BAD_TC609_0304` | Rule_TC609_0304_AnnotationAccuracy | partial | `guobiao` | Uses image annotation checks as partial evidence of annotation accuracy. |
-| `QUALITY_BAD_TC609_0305` | Rule_TC609_0305_ModelAdaptability | uncovered | `guobiao_placeholder` | Placeholder: before/after model performance comparison is not implemented. |
+| `QUALITY_BAD_TC609_0101` | Rule_TC609_0101_DocBasicInfoCompleteness | covered | `guobiao_doc` | Checks whether dataset documentation covers basic information aspects such as scale, format, structure, access, and support |
+| `QUALITY_BAD_TC609_0102` | Rule_TC609_0102_DocContentFeatureCompleteness | covered | `guobiao_doc` | Checks whether dataset documentation covers content-feature aspects such as modality, distribution, labels, examples, and limitations |
+| `QUALITY_BAD_TC609_0103` | Rule_TC609_0103_DocConstructionProcessCompleteness | covered | `guobiao_doc` | Checks whether dataset documentation covers construction-process aspects such as data source, collection, processing, annotation, and version control |
+| `QUALITY_BAD_TC609_0104` | Rule_TC609_0104_DocApplicationCompleteness | covered | `guobiao_doc` | Checks whether dataset documentation covers application aspects such as license, scenarios, evaluation method, benchmark, and cases |
+| `QUALITY_BAD_TC609_0201` | Rule_TC609_0201_FormatCompliance | partial | `guobiao_data` | Combines existing NLP, SFT, image, audio, and video format rules. |
+| `QUALITY_BAD_TC609_0202` | Rule_TC609_0202_SafetyCompliance | partial | `guobiao_data` | Combines unsafe-word, PII, and identity-card detection. |
+| `QUALITY_BAD_TC609_0203` | Rule_TC609_0203_AnnotationCompliance | partial | `guobiao_data` | Combines image-label overlap and visualization checks. |
+| `QUALITY_BAD_TC609_0204` | Rule_TC609_0204_StructuralCompleteness | partial | `guobiao_data` | Combines null-content and short-content checks. |
+| `QUALITY_BAD_TC609_0205` | Rule_TC609_0205_ContentAuthenticity | partial | `guobiao_data` | Uses HHEM consistency checking as partial evidence of authenticity. |
+| `QUALITY_BAD_TC609_0206` | Rule_TC609_0206_ContentConsistency | partial | `guobiao_data` | Combines structured-field and image-text consistency checks. |
+| `QUALITY_BAD_TC609_0207` | Rule_TC609_0207_DataTypeConsistency | partial | `guobiao_data` | Uses a local zero-shot classifier to check whether content belongs to the type declared in the record |
+| `QUALITY_BAD_TC609_02080101` | Rule_TC609_02080101_TextPerplexity | covered | `pretrain,guobiao_text` | Calculates text perplexity with a causal language model and flags text whose PPL exceeds the configured threshold |
+| `QUALITY_BAD_TC609_02080102` | Rule_TC609_02080102_KnowledgeInformationDensity | partial | `guobiao_text` | Combines alphabetic-word, stop-word, and unique-word ratio checks. |
+| `QUALITY_BAD_TC609_02080103` | Rule_TC609_02080103_RepeatedContent | covered | `guobiao_text` | Combines document-text and formula repetition checks. |
+| `QUALITY_BAD_TC609_02080104` | Rule_TC609_02080104_TextCompleteness | covered | `guobiao_text` | Combines null, short, ellipsis-ending, and terminal-ending checks. |
+| `QUALITY_BAD_TC609_02080105` | Rule_TC609_02080105_InformationMissing | partial | `guobiao_text` | Uses content length and sentence/word counts as partial missing-information checks. |
+| `QUALITY_BAD_TC609_02080106` | Rule_TC609_02080106_TextPurity | partial | `guobiao_text` | Combines abnormal HTML, character, invisible-content, and watermark checks. |
+| `QUALITY_BAD_TC609_02080107` | Rule_TC609_02080107_TextCoherence | partial | `guobiao_text` | Combines punctuation, word-boundary, and line-break fluency checks. |
+| `QUALITY_BAD_TC609_02080201` | Rule_TC609_02080201_ImageResolution | partial | `guobiao_image` | Uses image aspect-ratio validation as partial resolution coverage. |
+| `QUALITY_BAD_TC609_02080202` | Rule_TC609_02080202_ImageDuplication | covered | `guobiao_image` | Uses PHash and CNN duplicate-image detection. |
+| `QUALITY_BAD_TC609_02080203` | Rule_TC609_02080203_ImageSignalNoiseRatio | partial | `guobiao_image` | Uses NIMA image quality as partial evidence; it is not a true SNR metric. |
+| `QUALITY_BAD_TC609_02080204` | Rule_TC609_02080204_ImageClarity | partial | `guobiao_image` | Combines image validity and NIMA quality as partial clarity coverage. |
+| `QUALITY_BAD_TC609_02080301` | Rule_TC609_02080301_VideoResolution | uncovered | `guobiao_video` | Placeholder: video resolution is not implemented. |
+| `QUALITY_BAD_TC609_02080302` | Rule_TC609_02080302_VideoDuplication | uncovered | `guobiao_video` | Placeholder: duplicate-video detection is not implemented. |
+| `QUALITY_BAD_TC609_02080303` | Rule_TC609_02080303_VideoFrameRate | uncovered | `guobiao_video` | Placeholder: video FPS validation is not implemented. |
+| `QUALITY_BAD_TC609_02080304` | Rule_TC609_02080304_VideoDuration | uncovered | `guobiao_video` | Placeholder: video duration validation is not implemented. |
+| `QUALITY_BAD_TC609_02080305` | Rule_TC609_02080305_VideoClarity | uncovered | `guobiao_video` | Placeholder: video clarity evaluation is not implemented. |
+| `QUALITY_BAD_TC609_02080306` | Rule_TC609_02080306_VideoDynamicRange | uncovered | `guobiao_video` | Placeholder: video dynamic-range evaluation is not implemented. |
+| `QUALITY_BAD_TC609_02080401` | Rule_TC609_02080401_AudioSignalNoiseRatio | covered | `guobiao_audio` | Uses the existing Welch power-spectrum SNR implementation. |
+| `QUALITY_BAD_TC609_02080402` | Rule_TC609_02080402_SignalDistortionRatio | uncovered | `guobiao_audio` | Placeholder: signal distortion ratio is not implemented. |
+| `QUALITY_BAD_TC609_02080403` | Rule_TC609_02080403_AudioSampleRate | uncovered | `guobiao_audio` | Placeholder: sample-rate quality validation is not implemented. |
+| `QUALITY_BAD_TC609_02080404` | Rule_TC609_02080404_AudioBitDepth | uncovered | `guobiao_audio` | Placeholder: audio bit-depth validation is not implemented. |
+| `QUALITY_BAD_TC609_02080405` | Rule_TC609_02080405_AudioBitRate | uncovered | `guobiao_audio` | Placeholder: audio bit-rate validation is not implemented. |
+| `QUALITY_BAD_TC609_02080406` | Rule_TC609_02080406_AudioDuration | covered | `guobiao_audio` | Uses the existing WAV duration implementation. |
+| `QUALITY_BAD_TC609_0208` | Rule_TC609_0208_ContentCleanliness | partial | `guobiao_data` | Combines available text cleanliness checks; modality coverage is partial. |
+| `QUALITY_BAD_TC609_0301` | Rule_TC609_0301_ContentDiversity | uncovered | `guobiao_model` | Placeholder: target-scenario distribution coverage is not implemented. |
+| `QUALITY_BAD_TC609_0302` | Rule_TC609_0302_ScaleCompleteness | uncovered | `guobiao_model` | Placeholder: dataset scale versus model requirements is not implemented. |
+| `QUALITY_BAD_TC609_0303` | Rule_TC609_0303_DataTimeRange | covered | `guobiao_model` | Checks whether created and updated timestamps are within configured time ranges |
+| `QUALITY_BAD_TC609_0304` | Rule_TC609_0304_AnnotationAccuracy | partial | `guobiao_model` | Uses image annotation checks as partial evidence of annotation accuracy. |
+| `QUALITY_BAD_TC609_0305` | Rule_TC609_0305_ModelAdaptability | uncovered | `guobiao_model` | Placeholder: before/after model performance comparison is not implemented. |
 
 ### Rule-Based TEXT Quality Metrics
 

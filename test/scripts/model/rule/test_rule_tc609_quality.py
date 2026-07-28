@@ -39,6 +39,31 @@ def test_tc609_quality_defines_all_standard_metrics():
     assert actual_codes == expected_primary_codes
 
 
+def test_tc609_rules_are_grouped_by_evaluation_object():
+    expected_group_sizes = {
+        "guobiao_doc": 4,
+        "guobiao_data": 8,
+        "guobiao_text": 7,
+        "guobiao_image": 4,
+        "guobiao_video": 6,
+        "guobiao_audio": 6,
+        "guobiao_model": 5,
+    }
+
+    for group_name, expected_size in expected_group_sizes.items():
+        tc609_rules = [
+            rule
+            for rule in Model.rule_groups[group_name]
+            if rule.__name__.startswith("Rule_TC609_")
+        ]
+        assert len(tc609_rules) == expected_size
+
+    assert not any(
+        rule.__name__.startswith("Rule_TC609_")
+        for rule in Model.rule_groups.get("guobiao", [])
+    )
+
+
 def test_composite_rule_maps_component_failure_to_tc609_label(monkeypatch):
     class PassingRule:
         @classmethod
@@ -81,7 +106,7 @@ def test_composite_rule_maps_component_failure_to_tc609_label(monkeypatch):
 
 
 def test_uncovered_rule_is_explicit_placeholder():
-    assert Rule_TC609_0301_ContentDiversity.group == ["guobiao_placeholder"]
+    assert Rule_TC609_0301_ContentDiversity.group == ["guobiao_model"]
     with pytest.raises(NotImplementedError, match="placeholder"):
         Rule_TC609_0301_ContentDiversity.eval(
             Data(data_id="diversity", content="test")

@@ -15,7 +15,7 @@ from dingo.model.rule.guobiao.rule_tc609_quality_base import (
 from dingo.model.rule.base import BaseRule
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0101", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_0101", ["guobiao_doc"])
 class Rule_TC609_0101_DocBasicInfoCompleteness(Rule_TC609_01_DocCompleteness):
     """0101: Basic information completeness in dataset documentation."""
 
@@ -49,7 +49,7 @@ class Rule_TC609_0101_DocBasicInfoCompleteness(Rule_TC609_01_DocCompleteness):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0102", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_0102", ["guobiao_doc"])
 class Rule_TC609_0102_DocContentFeatureCompleteness(Rule_TC609_01_DocCompleteness):
     """0102: Content feature completeness in dataset documentation."""
 
@@ -83,7 +83,7 @@ class Rule_TC609_0102_DocContentFeatureCompleteness(Rule_TC609_01_DocCompletenes
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0103", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_0103", ["guobiao_doc"])
 class Rule_TC609_0103_DocConstructionProcessCompleteness(
     Rule_TC609_01_DocCompleteness
 ):
@@ -120,7 +120,7 @@ class Rule_TC609_0103_DocConstructionProcessCompleteness(
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0104", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_0104", ["guobiao_doc"])
 class Rule_TC609_0104_DocApplicationCompleteness(Rule_TC609_01_DocCompleteness):
     """0104: Application-description completeness in dataset documentation."""
 
@@ -154,7 +154,7 @@ class Rule_TC609_0104_DocApplicationCompleteness(Rule_TC609_01_DocCompleteness):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0201", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_0201", ["guobiao_data"])
 class Rule_TC609_0201_FormatCompliance(Rule_TC609_Composite):
     """0201: Format compliance, partially covered by existing format rules."""
 
@@ -174,7 +174,7 @@ class Rule_TC609_0201_FormatCompliance(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0202", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_0202", ["guobiao_data"])
 class Rule_TC609_0202_SafetyCompliance(Rule_TC609_Composite):
     """0202: Safety compliance, composed from safety and PII rules."""
 
@@ -192,7 +192,7 @@ class Rule_TC609_0202_SafetyCompliance(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0203", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_0203", ["guobiao_data"])
 class Rule_TC609_0203_AnnotationCompliance(Rule_TC609_Composite):
     """0203: Annotation compliance, partially covered by image label rules."""
 
@@ -209,7 +209,7 @@ class Rule_TC609_0203_AnnotationCompliance(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0204", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_0204", ["guobiao_data"])
 class Rule_TC609_0204_StructuralCompleteness(Rule_TC609_Composite):
     """0204: Structural completeness, composed from content checks."""
 
@@ -226,7 +226,7 @@ class Rule_TC609_0204_StructuralCompleteness(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0205", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_0205", ["guobiao_data"])
 class Rule_TC609_0205_ContentAuthenticity(Rule_TC609_Composite):
     """0205: Content authenticity, partially covered by HHEM."""
 
@@ -241,7 +241,7 @@ class Rule_TC609_0205_ContentAuthenticity(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0206", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_0206", ["guobiao_data"])
 class Rule_TC609_0206_ContentConsistency(Rule_TC609_Composite):
     """0206: Content consistency, composed from dict and image-text checks."""
 
@@ -258,7 +258,7 @@ class Rule_TC609_0206_ContentConsistency(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0207", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_0207", ["guobiao_data"])
 class Rule_TC609_0207_DataTypeConsistency(BaseRule):
     """Check whether content belongs to the type declared in ``input_data.type``.
 
@@ -396,7 +396,7 @@ class Rule_TC609_0207_DataTypeConsistency(BaseRule):
         return res
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0208", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_0208", ["guobiao_data"])
 class Rule_TC609_0208_ContentCleanliness(Rule_TC609_Composite):
     """0208: Content cleanliness, composed from available cleaning rules."""
 
@@ -416,7 +416,7 @@ class Rule_TC609_0208_ContentCleanliness(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080101", ["pretrain", "guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_02080101", ["pretrain", "guobiao_text"])
 class Rule_TC609_02080101_TextPerplexity(BaseRule):
     """Check whether text perplexity exceeds the configured threshold."""
 
@@ -597,7 +597,7 @@ class Rule_TC609_02080101_TextPerplexity(BaseRule):
         return res
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080102", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_02080102", ["guobiao_text"])
 class Rule_TC609_02080102_KnowledgeInformationDensity(Rule_TC609_Composite):
     component_rules = (
         "dingo.model.rule.rule_common.RuleAlphaWords",
@@ -613,7 +613,7 @@ class Rule_TC609_02080102_KnowledgeInformationDensity(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080103", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_02080103", ["guobiao_text"])
 class Rule_TC609_02080103_RepeatedContent(Rule_TC609_Composite):
     component_rules = (
         "dingo.model.rule.rule_common.RuleDocRepeat",
@@ -628,7 +628,7 @@ class Rule_TC609_02080103_RepeatedContent(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080104", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_02080104", ["guobiao_text"])
 class Rule_TC609_02080104_TextCompleteness(Rule_TC609_Composite):
     component_rules = (
         "dingo.model.rule.rule_common.RuleContentNull",
@@ -645,7 +645,7 @@ class Rule_TC609_02080104_TextCompleteness(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080105", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_02080105", ["guobiao_text"])
 class Rule_TC609_02080105_InformationMissing(Rule_TC609_Composite):
     component_rules = (
         "dingo.model.rule.rule_common.RuleContentNull",
@@ -662,7 +662,7 @@ class Rule_TC609_02080105_InformationMissing(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080106", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_02080106", ["guobiao_text"])
 class Rule_TC609_02080106_TextPurity(Rule_TC609_Composite):
     component_rules = (
         "dingo.model.rule.rule_common.RuleAbnormalChar",
@@ -680,7 +680,7 @@ class Rule_TC609_02080106_TextPurity(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080107", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_02080107", ["guobiao_text"])
 class Rule_TC609_02080107_TextCoherence(Rule_TC609_Composite):
     component_rules = (
         "dingo.model.rule.rule_common.RuleNoPunc",
@@ -698,7 +698,7 @@ class Rule_TC609_02080107_TextCoherence(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080201", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_02080201", ["guobiao_image"])
 class Rule_TC609_02080201_ImageResolution(Rule_TC609_Composite):
     component_rules = ("dingo.model.rule.rule_image.RuleImageSizeValid",)
     _required_fields = [RequiredField.IMAGE]
@@ -710,7 +710,7 @@ class Rule_TC609_02080201_ImageResolution(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080202", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_02080202", ["guobiao_image"])
 class Rule_TC609_02080202_ImageDuplication(Rule_TC609_Composite):
     component_rules = ("dingo.model.rule.rule_image.RuleImageRepeat",)
     _required_fields = [RequiredField.CONTENT]
@@ -722,7 +722,7 @@ class Rule_TC609_02080202_ImageDuplication(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080203", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_02080203", ["guobiao_image"])
 class Rule_TC609_02080203_ImageSignalNoiseRatio(Rule_TC609_Composite):
     component_rules = ("dingo.model.rule.rule_image.RuleImageQuality",)
     _required_fields = [RequiredField.IMAGE]
@@ -734,7 +734,7 @@ class Rule_TC609_02080203_ImageSignalNoiseRatio(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080204", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_02080204", ["guobiao_image"])
 class Rule_TC609_02080204_ImageClarity(Rule_TC609_Composite):
     component_rules = (
         "dingo.model.rule.rule_image.RuleImageValid",
@@ -749,7 +749,7 @@ class Rule_TC609_02080204_ImageClarity(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080301", ["guobiao_placeholder"])
+@Model.rule_register("QUALITY_BAD_TC609_02080301", ["guobiao_video"])
 class Rule_TC609_02080301_VideoResolution(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080301", "Rule_TC609_02080301_VideoResolution",
@@ -757,7 +757,7 @@ class Rule_TC609_02080301_VideoResolution(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080302", ["guobiao_placeholder"])
+@Model.rule_register("QUALITY_BAD_TC609_02080302", ["guobiao_video"])
 class Rule_TC609_02080302_VideoDuplication(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080302", "Rule_TC609_02080302_VideoDuplication",
@@ -765,7 +765,7 @@ class Rule_TC609_02080302_VideoDuplication(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080303", ["guobiao_placeholder"])
+@Model.rule_register("QUALITY_BAD_TC609_02080303", ["guobiao_video"])
 class Rule_TC609_02080303_VideoFrameRate(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080303", "Rule_TC609_02080303_VideoFrameRate",
@@ -773,7 +773,7 @@ class Rule_TC609_02080303_VideoFrameRate(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080304", ["guobiao_placeholder"])
+@Model.rule_register("QUALITY_BAD_TC609_02080304", ["guobiao_video"])
 class Rule_TC609_02080304_VideoDuration(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080304", "Rule_TC609_02080304_VideoDuration",
@@ -781,7 +781,7 @@ class Rule_TC609_02080304_VideoDuration(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080305", ["guobiao_placeholder"])
+@Model.rule_register("QUALITY_BAD_TC609_02080305", ["guobiao_video"])
 class Rule_TC609_02080305_VideoClarity(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080305", "Rule_TC609_02080305_VideoClarity",
@@ -789,7 +789,7 @@ class Rule_TC609_02080305_VideoClarity(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080306", ["guobiao_placeholder"])
+@Model.rule_register("QUALITY_BAD_TC609_02080306", ["guobiao_video"])
 class Rule_TC609_02080306_VideoDynamicRange(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080306", "Rule_TC609_02080306_VideoDynamicRange",
@@ -797,7 +797,7 @@ class Rule_TC609_02080306_VideoDynamicRange(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080401", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_02080401", ["guobiao_audio"])
 class Rule_TC609_02080401_AudioSignalNoiseRatio(Rule_TC609_Composite):
     # Existing RuleAudioDuration currently contains the SNR implementation.
     component_rules = ("dingo.model.rule.rule_audio.RuleAudioDuration",)
@@ -810,7 +810,7 @@ class Rule_TC609_02080401_AudioSignalNoiseRatio(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080402", ["guobiao_placeholder"])
+@Model.rule_register("QUALITY_BAD_TC609_02080402", ["guobiao_audio"])
 class Rule_TC609_02080402_SignalDistortionRatio(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080402", "Rule_TC609_02080402_SignalDistortionRatio",
@@ -818,7 +818,7 @@ class Rule_TC609_02080402_SignalDistortionRatio(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080403", ["guobiao_placeholder"])
+@Model.rule_register("QUALITY_BAD_TC609_02080403", ["guobiao_audio"])
 class Rule_TC609_02080403_AudioSampleRate(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080403", "Rule_TC609_02080403_AudioSampleRate",
@@ -826,7 +826,7 @@ class Rule_TC609_02080403_AudioSampleRate(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080404", ["guobiao_placeholder"])
+@Model.rule_register("QUALITY_BAD_TC609_02080404", ["guobiao_audio"])
 class Rule_TC609_02080404_AudioBitDepth(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080404", "Rule_TC609_02080404_AudioBitDepth",
@@ -834,7 +834,7 @@ class Rule_TC609_02080404_AudioBitDepth(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080405", ["guobiao_placeholder"])
+@Model.rule_register("QUALITY_BAD_TC609_02080405", ["guobiao_audio"])
 class Rule_TC609_02080405_AudioBitRate(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080405", "Rule_TC609_02080405_AudioBitRate",
@@ -842,7 +842,7 @@ class Rule_TC609_02080405_AudioBitRate(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080406", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_02080406", ["guobiao_audio"])
 class Rule_TC609_02080406_AudioDuration(Rule_TC609_Composite):
     # Existing RuleAudioSnrQuality currently contains the duration implementation.
     component_rules = ("dingo.model.rule.rule_audio.RuleAudioSnrQuality",)
@@ -855,7 +855,7 @@ class Rule_TC609_02080406_AudioDuration(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0301", ["guobiao_placeholder"])
+@Model.rule_register("QUALITY_BAD_TC609_0301", ["guobiao_model"])
 class Rule_TC609_0301_ContentDiversity(_TC609PlaceholderBase):
     """0301: Placeholder for content diversity."""
 
@@ -867,7 +867,7 @@ class Rule_TC609_0301_ContentDiversity(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0302", ["guobiao_placeholder"])
+@Model.rule_register("QUALITY_BAD_TC609_0302", ["guobiao_model"])
 class Rule_TC609_0302_ScaleCompleteness(_TC609PlaceholderBase):
     """0302: Placeholder for scale completeness."""
 
@@ -879,7 +879,7 @@ class Rule_TC609_0302_ScaleCompleteness(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0303", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_0303", ["guobiao_model"])
 class Rule_TC609_0303_DataTimeRange(BaseRule):
     """Check whether creation/update time fields are within configured ranges."""
 
@@ -1014,7 +1014,7 @@ class Rule_TC609_0303_DataTimeRange(BaseRule):
         return res
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0304", ["guobiao"])
+@Model.rule_register("QUALITY_BAD_TC609_0304", ["guobiao_model"])
 class Rule_TC609_0304_AnnotationAccuracy(Rule_TC609_Composite):
     """0304: Annotation accuracy, partially covered by label checks."""
 
@@ -1031,7 +1031,7 @@ class Rule_TC609_0304_AnnotationAccuracy(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0305", ["guobiao_placeholder"])
+@Model.rule_register("QUALITY_BAD_TC609_0305", ["guobiao_model"])
 class Rule_TC609_0305_ModelAdaptability(_TC609PlaceholderBase):
     """0305: Placeholder for model adaptability."""
 
