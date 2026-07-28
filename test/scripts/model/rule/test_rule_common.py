@@ -5,8 +5,8 @@ from dingo.io import Data
 from dingo.io.output.eval_detail import QualityLabel
 from dingo.model.rule.rule_common import RuleDocFormulaRepeat, RulePIIDetection, RuleUnsafeWords
 from dingo.model.rule.guobiao.rule_tc609_quality import (Rule_TC609_0101_DocBasicInfoCompleteness, Rule_TC609_0102_DocContentFeatureCompleteness, Rule_TC609_0103_DocConstructionProcessCompleteness,
-                                           Rule_TC609_0104_DocApplicationCompleteness, Rule_TC609_0207_DataTypeConsistency, Rule_TC609_0303_DataTimeRange, Rule_TC609_02080101_TextPerplexity,
-                                           _TC609DatasetDocCompletenessBase)
+                                           Rule_TC609_0104_DocApplicationCompleteness, Rule_TC609_0207_DataTypeConsistency, Rule_TC609_0303_DataTimeRange, Rule_TC609_02080101_TextPerplexity)
+from dingo.model.rule.guobiao.rule_tc609_quality_base import _TC609DatasetDocCompletenessBase
 
 
 class TestRuleDocFormulaRepeat:
