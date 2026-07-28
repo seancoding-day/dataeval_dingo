@@ -15,6 +15,247 @@ from dingo.model.rule.guobiao.rule_tc609_quality_base import (
 from dingo.model.rule.base import BaseRule
 
 
+@Model.rule_register("QUALITY_BAD_TC609_0101", ["guobiao"])
+class Rule_TC609_0101_DocBasicInfoCompleteness(_TC609DatasetDocCompletenessBase):
+    """0101: Basic information completeness in dataset documentation."""
+
+    _metric_info = {
+        "category": "National Standard Data Quality Metrics",
+        "quality_dimension": "COMPLETENESS",
+        "metric_name": "Rule_TC609_0101_DocBasicInfoCompleteness",
+        "description": (
+            "Checks whether dataset documentation covers basic information "
+            "aspects such as scale, format, structure, access, and support"
+        ),
+        "paper_title": "High-quality dataset quality evaluation specification",
+        "paper_url": "",
+        "paper_authors": "SAC/TC609",
+        "evaluation_results": "",
+        "standard_code": "0101",
+        "coverage": "covered",
+    }
+    _default_dimension_name = "Basic information"
+    _default_aspect_keywords = {
+        "dataset_scale": ["数据集规模", "样本数量", "样本规模", "数据量", "存储体积", "数据体量"],
+        "format_specification": ["格式规范", "数据格式", "文件格式", "编码格式", "字段格式"],
+        "file_structure": ["文件结构", "目录结构", "文件组织", "数据组织结构"],
+        "access_channel": ["访问渠道", "获取方式", "下载方式", "访问方式", "获取渠道"],
+        "technical_support": ["技术支持", "支持方式", "联系方式", "问题反馈", "维护方式"],
+    }
+    dynamic_config = EvaluatorRuleArgs(
+        threshold=0.8,
+        dimension_name=_default_dimension_name,
+        aspect_keywords=_default_aspect_keywords,
+    )
+
+
+@Model.rule_register("QUALITY_BAD_TC609_0102", ["guobiao"])
+class Rule_TC609_0102_DocContentFeatureCompleteness(_TC609DatasetDocCompletenessBase):
+    """0102: Content feature completeness in dataset documentation."""
+
+    _metric_info = {
+        "category": "National Standard Data Quality Metrics",
+        "quality_dimension": "COMPLETENESS",
+        "metric_name": "Rule_TC609_0102_DocContentFeatureCompleteness",
+        "description": (
+            "Checks whether dataset documentation covers content-feature aspects "
+            "such as modality, distribution, labels, examples, and limitations"
+        ),
+        "paper_title": "High-quality dataset quality evaluation specification",
+        "paper_url": "",
+        "paper_authors": "SAC/TC609",
+        "evaluation_results": "",
+        "standard_code": "0102",
+        "coverage": "covered",
+    }
+    _default_dimension_name = "Content feature"
+    _default_aspect_keywords = {
+        "modality_type": ["模态类型", "数据模态", "文本图像", "多模态", "音频视频"],
+        "data_distribution": ["数据分布", "分布情况", "分布特征", "类别分布", "统计分布"],
+        "label_statistics": ["标签类别统计", "标签统计", "类别统计", "标签分布"],
+        "sample_examples": ["样本示例", "样例", "示例数据", "样本展示", "案例样本"],
+        "limitations": ["局限性说明", "局限性", "限制说明", "不足", "已知问题"],
+    }
+    dynamic_config = EvaluatorRuleArgs(
+        threshold=0.8,
+        dimension_name=_default_dimension_name,
+        aspect_keywords=_default_aspect_keywords,
+    )
+
+
+@Model.rule_register("QUALITY_BAD_TC609_0103", ["guobiao"])
+class Rule_TC609_0103_DocConstructionProcessCompleteness(_TC609DatasetDocCompletenessBase):
+    """0103: Construction-process completeness in dataset documentation."""
+
+    _metric_info = {
+        "category": "National Standard Data Quality Metrics",
+        "quality_dimension": "COMPLETENESS",
+        "metric_name": "Rule_TC609_0103_DocConstructionProcessCompleteness",
+        "description": (
+            "Checks whether dataset documentation covers construction-process "
+            "aspects such as data source, collection, processing, annotation, "
+            "and version control"
+        ),
+        "paper_title": "High-quality dataset quality evaluation specification",
+        "paper_url": "",
+        "paper_authors": "SAC/TC609",
+        "evaluation_results": "",
+        "standard_code": "0103",
+        "coverage": "covered",
+    }
+    _default_dimension_name = "Construction process"
+    _default_aspect_keywords = {
+        "data_source": ["数据来源", "来源说明", "数据源", "来源渠道"],
+        "collection_method": ["采集方法", "采集方式", "收集方法", "获取流程"],
+        "processing_pipeline": ["加工处理流程", "处理流程", "清洗流程", "预处理流程"],
+        "annotation_specification": ["标注规范", "标注标准", "标注规则", "标注说明"],
+        "version_control": ["版本控制", "版本记录", "变更记录", "版本管理"],
+    }
+    dynamic_config = EvaluatorRuleArgs(
+        threshold=0.8,
+        dimension_name=_default_dimension_name,
+        aspect_keywords=_default_aspect_keywords,
+    )
+
+
+@Model.rule_register("QUALITY_BAD_TC609_0104", ["guobiao"])
+class Rule_TC609_0104_DocApplicationCompleteness(_TC609DatasetDocCompletenessBase):
+    """0104: Application-description completeness in dataset documentation."""
+
+    _metric_info = {
+        "category": "National Standard Data Quality Metrics",
+        "quality_dimension": "COMPLETENESS",
+        "metric_name": "Rule_TC609_0104_DocApplicationCompleteness",
+        "description": (
+            "Checks whether dataset documentation covers application aspects "
+            "such as license, scenarios, evaluation method, benchmark, and cases"
+        ),
+        "paper_title": "High-quality dataset quality evaluation specification",
+        "paper_url": "",
+        "paper_authors": "SAC/TC609",
+        "evaluation_results": "",
+        "standard_code": "0104",
+        "coverage": "covered",
+    }
+    _default_dimension_name = "Application description"
+    _default_aspect_keywords = {
+        "license": ["使用许可", "许可协议", "授权协议", "license", "开源协议"],
+        "target_scenarios": ["目标应用场景", "应用场景", "使用场景", "场景说明"],
+        "evaluation_method": ["评估方法", "评价方法", "评测方法", "评估方案"],
+        "benchmark_results": ["基准测试结果", "基准结果", "benchmark", "基线结果"],
+        "typical_cases": ["典型应用案例", "应用案例", "典型案例", "落地案例"],
+    }
+    dynamic_config = EvaluatorRuleArgs(
+        threshold=0.8,
+        dimension_name=_default_dimension_name,
+        aspect_keywords=_default_aspect_keywords,
+    )
+
+
+@Model.rule_register("QUALITY_BAD_TC609_0201", ["guobiao"])
+class Rule_TC609_0201_FormatCompliance(_TC609CompositeBase):
+    """0201: Format compliance, partially covered by existing format rules."""
+
+    component_rules = (
+        "dingo.model.rule.rule_common.RuleNlpDataFormat",
+        "dingo.model.rule.rule_common.RuleSftDataFormat",
+        "dingo.model.rule.rule_common.RuleImageDataFormat",
+        "dingo.model.rule.rule_common.RuleAudioDataFormat",
+        "dingo.model.rule.rule_common.RuleVedioDataFormat",
+    )
+    composition_mode = "any"
+    _metric_info = _tc609_metric_info(
+        "0201",
+        "Rule_TC609_0201_FormatCompliance",
+        "Combines existing NLP, SFT, image, audio, and video format rules.",
+        "partial",
+    )
+
+
+@Model.rule_register("QUALITY_BAD_TC609_0202", ["guobiao"])
+class Rule_TC609_0202_SafetyCompliance(_TC609CompositeBase):
+    """0202: Safety compliance, composed from safety and PII rules."""
+
+    component_rules = (
+        "dingo.model.rule.rule_common.RuleUnsafeWords",
+        "dingo.model.rule.rule_common.RulePIIDetection",
+        "dingo.model.rule.rule_common.RuleIDCard",
+    )
+    _required_fields = [RequiredField.CONTENT]
+    _metric_info = _tc609_metric_info(
+        "0202",
+        "Rule_TC609_0202_SafetyCompliance",
+        "Combines unsafe-word, PII, and identity-card detection.",
+        "partial",
+    )
+
+
+@Model.rule_register("QUALITY_BAD_TC609_0203", ["guobiao"])
+class Rule_TC609_0203_AnnotationCompliance(_TC609CompositeBase):
+    """0203: Annotation compliance, partially covered by image label rules."""
+
+    component_rules = (
+        "dingo.model.rule.rule_image.RuleImageLabelOverlap",
+        "dingo.model.rule.rule_image.RuleImageLabelVisualization",
+    )
+    _required_fields = [RequiredField.IMAGE]
+    _metric_info = _tc609_metric_info(
+        "0203",
+        "Rule_TC609_0203_AnnotationCompliance",
+        "Combines image-label overlap and visualization checks.",
+        "partial",
+    )
+
+
+@Model.rule_register("QUALITY_BAD_TC609_0204", ["guobiao"])
+class Rule_TC609_0204_StructuralCompleteness(_TC609CompositeBase):
+    """0204: Structural completeness, composed from content checks."""
+
+    component_rules = (
+        "dingo.model.rule.rule_common.RuleContentNull",
+        "dingo.model.rule.rule_common.RuleContentShort",
+    )
+    _required_fields = [RequiredField.CONTENT]
+    _metric_info = _tc609_metric_info(
+        "0204",
+        "Rule_TC609_0204_StructuralCompleteness",
+        "Combines null-content and short-content checks.",
+        "partial",
+    )
+
+
+@Model.rule_register("QUALITY_BAD_TC609_0205", ["guobiao"])
+class Rule_TC609_0205_ContentAuthenticity(_TC609CompositeBase):
+    """0205: Content authenticity, partially covered by HHEM."""
+
+    component_rules = (
+        "dingo.model.rule.rule_hallucination_hhem.RuleHallucinationHHEM",
+    )
+    _metric_info = _tc609_metric_info(
+        "0205",
+        "Rule_TC609_0205_ContentAuthenticity",
+        "Uses HHEM consistency checking as partial evidence of authenticity.",
+        "partial",
+    )
+
+
+@Model.rule_register("QUALITY_BAD_TC609_0206", ["guobiao"])
+class Rule_TC609_0206_ContentConsistency(_TC609CompositeBase):
+    """0206: Content consistency, composed from dict and image-text checks."""
+
+    component_rules = (
+        "dingo.model.rule.rule_common.RuleDictConsistency",
+        "dingo.model.rule.rule_image.RuleImageTextSimilarity",
+    )
+    composition_mode = "any"
+    _metric_info = _tc609_metric_info(
+        "0206",
+        "Rule_TC609_0206_ContentConsistency",
+        "Combines structured-field and image-text consistency checks.",
+        "partial",
+    )
+
+
 @Model.rule_register("QUALITY_BAD_TC609_0207", ["guobiao"])
 class Rule_TC609_0207_DataTypeConsistency(BaseRule):
     """Check whether content belongs to the type declared in ``input_data.type``.
@@ -153,139 +394,24 @@ class Rule_TC609_0207_DataTypeConsistency(BaseRule):
         return res
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0303", ["guobiao"])
-class Rule_TC609_0303_DataTimeRange(BaseRule):
-    """Check whether creation/update time fields are within configured ranges."""
+@Model.rule_register("QUALITY_BAD_TC609_0208", ["guobiao"])
+class Rule_TC609_0208_ContentCleanliness(_TC609CompositeBase):
+    """0208: Content cleanliness, composed from available cleaning rules."""
 
-    _metric_info = {
-        "category": "National Standard Data Quality Metrics",
-        "quality_dimension": "TIMELINESS",
-        "metric_name": "Rule_TC609_0303_DataTimeRange",
-        "description": (
-            "Checks whether created and updated timestamps are within configured "
-            "time ranges"
-        ),
-        "paper_title": "High-quality dataset quality evaluation specification",
-        "paper_url": "",
-        "paper_authors": "SAC/TC609",
-        "evaluation_results": "",
-        "standard_code": "0303",
-        "coverage": "covered",
-    }
-
-    _required_fields = [RequiredField.DT]
-    dynamic_config = EvaluatorRuleArgs(
-        dt_start=None,
-        dt_end=None,
+    component_rules = (
+        "dingo.model.rule.rule_common.RuleAbnormalChar",
+        "dingo.model.rule.rule_common.RuleAbnormalHtml",
+        "dingo.model.rule.rule_common.RuleDocRepeat",
+        "dingo.model.rule.rule_common.RuleContentNull",
+        "dingo.model.rule.rule_common.RuleWatermark",
     )
-
-    @classmethod
-    def _parse_datetime(cls, value, field_name):
-        if isinstance(value, datetime):
-            if value.tzinfo is None:
-                return value
-            return value.astimezone(timezone.utc).replace(tzinfo=None)
-
-        if isinstance(value, str):
-            text = value.strip()
-            if not text:
-                raise ValueError(f"{field_name} is empty")
-
-            iso_text = text.replace("Z", "+00:00")
-            try:
-                parsed = datetime.fromisoformat(iso_text)
-                if parsed.tzinfo is None:
-                    return parsed
-                return parsed.astimezone(timezone.utc).replace(tzinfo=None)
-            except ValueError:
-                raise ValueError(
-                    f"{field_name} has unsupported datetime format: {value!r}"
-                ) from None
-
-        raise ValueError(
-            f"{field_name} has unsupported datetime format: {value!r}"
-        )
-
-    @classmethod
-    def _validate_time_range(
-        cls,
-        dt_value,
-        start_value,
-        end_value,
-    ):
-        parsed_dt = cls._parse_datetime(dt_value, "time_value")
-        parsed_dt_start = (
-            cls._parse_datetime(start_value, "start_time")
-            if start_value is not None
-            else None
-        )
-        parsed_dt_end = (
-            cls._parse_datetime(end_value, "end_time")
-            if end_value is not None
-            else None
-        )
-
-        if (
-            parsed_dt_start is not None
-            and parsed_dt_end is not None
-            and parsed_dt_start > parsed_dt_end
-        ):
-            raise ValueError("time range is invalid: start is later than end")
-
-        if parsed_dt_start is not None and parsed_dt < parsed_dt_start:
-            return False, parsed_dt, parsed_dt_start, parsed_dt_end
-        if parsed_dt_end is not None and parsed_dt > parsed_dt_end:
-            return False, parsed_dt, parsed_dt_start, parsed_dt_end
-        return True, parsed_dt, parsed_dt_start, parsed_dt_end
-
-    @classmethod
-    def eval(cls, input_data: Data) -> EvalDetail:
-        res = EvalDetail(metric=cls.__name__)
-
-        dt_start = getattr(cls.dynamic_config, "dt_start", None)
-        dt_end = getattr(cls.dynamic_config, "dt_end", None)
-
-        if dt_start is None and dt_end is None:
-            raise ValueError(
-                "Rule_TC609_0303_DataTimeRange requires at least one configured range boundary in dynamic_config"
-            )
-
-        dt_value = getattr(input_data, "dt", None)
-        if dt_value is None:
-            res.status = True
-            res.label = [f"{cls.metric_type}.{cls.__name__}"]
-            res.reason = ["dt is missing"]
-            return res
-
-        try:
-            is_valid, parsed_dt, parsed_dt_start, parsed_dt_end = cls._validate_time_range(
-                dt_value=dt_value,
-                start_value=dt_start,
-                end_value=dt_end,
-            )
-        except ValueError as exc:
-            res.status = True
-            res.label = [f"{cls.metric_type}.{cls.__name__}"]
-            res.reason = [f"dt: {exc}"]
-            return res
-
-        if not is_valid:
-            res.status = True
-            res.label = [f"{cls.metric_type}.{cls.__name__}"]
-            if parsed_dt_start is not None and parsed_dt < parsed_dt_start:
-                res.reason = [
-                    f"dt {parsed_dt.isoformat(sep=' ')} is earlier than "
-                    f"allowed start {parsed_dt_start.isoformat(sep=' ')}"
-                ]
-            else:
-                res.reason = [
-                    f"dt {parsed_dt.isoformat(sep=' ')} is later than "
-                    f"allowed end {parsed_dt_end.isoformat(sep=' ')}"
-                ]
-            return res
-
-        res.label = [QualityLabel.QUALITY_GOOD]
-        return res
+    _required_fields = [RequiredField.CONTENT]
+    _metric_info = _tc609_metric_info(
+        "0208",
+        "Rule_TC609_0208_ContentCleanliness",
+        "Combines available text cleanliness checks; modality coverage is partial.",
+        "partial",
+    )
 
 
 @Model.rule_register("QUALITY_BAD_TC609_02080101", ["pretrain", "guobiao"])
@@ -469,329 +595,6 @@ class Rule_TC609_02080101_TextPerplexity(BaseRule):
         return res
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0101", ["guobiao"])
-class Rule_TC609_0101_DocBasicInfoCompleteness(_TC609DatasetDocCompletenessBase):
-    """0101: Basic information completeness in dataset documentation."""
-
-    _metric_info = {
-        "category": "National Standard Data Quality Metrics",
-        "quality_dimension": "COMPLETENESS",
-        "metric_name": "Rule_TC609_0101_DocBasicInfoCompleteness",
-        "description": (
-            "Checks whether dataset documentation covers basic information "
-            "aspects such as scale, format, structure, access, and support"
-        ),
-        "paper_title": "High-quality dataset quality evaluation specification",
-        "paper_url": "",
-        "paper_authors": "SAC/TC609",
-        "evaluation_results": "",
-        "standard_code": "0101",
-        "coverage": "covered",
-    }
-    _default_dimension_name = "Basic information"
-    _default_aspect_keywords = {
-        "dataset_scale": ["数据集规模", "样本数量", "样本规模", "数据量", "存储体积", "数据体量"],
-        "format_specification": ["格式规范", "数据格式", "文件格式", "编码格式", "字段格式"],
-        "file_structure": ["文件结构", "目录结构", "文件组织", "数据组织结构"],
-        "access_channel": ["访问渠道", "获取方式", "下载方式", "访问方式", "获取渠道"],
-        "technical_support": ["技术支持", "支持方式", "联系方式", "问题反馈", "维护方式"],
-    }
-    dynamic_config = EvaluatorRuleArgs(
-        threshold=0.8,
-        dimension_name=_default_dimension_name,
-        aspect_keywords=_default_aspect_keywords,
-    )
-
-
-@Model.rule_register("QUALITY_BAD_TC609_0102", ["guobiao"])
-class Rule_TC609_0102_DocContentFeatureCompleteness(_TC609DatasetDocCompletenessBase):
-    """0102: Content feature completeness in dataset documentation."""
-
-    _metric_info = {
-        "category": "National Standard Data Quality Metrics",
-        "quality_dimension": "COMPLETENESS",
-        "metric_name": "Rule_TC609_0102_DocContentFeatureCompleteness",
-        "description": (
-            "Checks whether dataset documentation covers content-feature aspects "
-            "such as modality, distribution, labels, examples, and limitations"
-        ),
-        "paper_title": "High-quality dataset quality evaluation specification",
-        "paper_url": "",
-        "paper_authors": "SAC/TC609",
-        "evaluation_results": "",
-        "standard_code": "0102",
-        "coverage": "covered",
-    }
-    _default_dimension_name = "Content feature"
-    _default_aspect_keywords = {
-        "modality_type": ["模态类型", "数据模态", "文本图像", "多模态", "音频视频"],
-        "data_distribution": ["数据分布", "分布情况", "分布特征", "类别分布", "统计分布"],
-        "label_statistics": ["标签类别统计", "标签统计", "类别统计", "标签分布"],
-        "sample_examples": ["样本示例", "样例", "示例数据", "样本展示", "案例样本"],
-        "limitations": ["局限性说明", "局限性", "限制说明", "不足", "已知问题"],
-    }
-    dynamic_config = EvaluatorRuleArgs(
-        threshold=0.8,
-        dimension_name=_default_dimension_name,
-        aspect_keywords=_default_aspect_keywords,
-    )
-
-
-@Model.rule_register("QUALITY_BAD_TC609_0103", ["guobiao"])
-class Rule_TC609_0103_DocConstructionProcessCompleteness(_TC609DatasetDocCompletenessBase):
-    """0103: Construction-process completeness in dataset documentation."""
-
-    _metric_info = {
-        "category": "National Standard Data Quality Metrics",
-        "quality_dimension": "COMPLETENESS",
-        "metric_name": "Rule_TC609_0103_DocConstructionProcessCompleteness",
-        "description": (
-            "Checks whether dataset documentation covers construction-process "
-            "aspects such as data source, collection, processing, annotation, "
-            "and version control"
-        ),
-        "paper_title": "High-quality dataset quality evaluation specification",
-        "paper_url": "",
-        "paper_authors": "SAC/TC609",
-        "evaluation_results": "",
-        "standard_code": "0103",
-        "coverage": "covered",
-    }
-    _default_dimension_name = "Construction process"
-    _default_aspect_keywords = {
-        "data_source": ["数据来源", "来源说明", "数据源", "来源渠道"],
-        "collection_method": ["采集方法", "采集方式", "收集方法", "获取流程"],
-        "processing_pipeline": ["加工处理流程", "处理流程", "清洗流程", "预处理流程"],
-        "annotation_specification": ["标注规范", "标注标准", "标注规则", "标注说明"],
-        "version_control": ["版本控制", "版本记录", "变更记录", "版本管理"],
-    }
-    dynamic_config = EvaluatorRuleArgs(
-        threshold=0.8,
-        dimension_name=_default_dimension_name,
-        aspect_keywords=_default_aspect_keywords,
-    )
-
-
-@Model.rule_register("QUALITY_BAD_TC609_0104", ["guobiao"])
-class Rule_TC609_0104_DocApplicationCompleteness(_TC609DatasetDocCompletenessBase):
-    """0104: Application-description completeness in dataset documentation."""
-
-    _metric_info = {
-        "category": "National Standard Data Quality Metrics",
-        "quality_dimension": "COMPLETENESS",
-        "metric_name": "Rule_TC609_0104_DocApplicationCompleteness",
-        "description": (
-            "Checks whether dataset documentation covers application aspects "
-            "such as license, scenarios, evaluation method, benchmark, and cases"
-        ),
-        "paper_title": "High-quality dataset quality evaluation specification",
-        "paper_url": "",
-        "paper_authors": "SAC/TC609",
-        "evaluation_results": "",
-        "standard_code": "0104",
-        "coverage": "covered",
-    }
-    _default_dimension_name = "Application description"
-    _default_aspect_keywords = {
-        "license": ["使用许可", "许可协议", "授权协议", "license", "开源协议"],
-        "target_scenarios": ["目标应用场景", "应用场景", "使用场景", "场景说明"],
-        "evaluation_method": ["评估方法", "评价方法", "评测方法", "评估方案"],
-        "benchmark_results": ["基准测试结果", "基准结果", "benchmark", "基线结果"],
-        "typical_cases": ["典型应用案例", "应用案例", "典型案例", "落地案例"],
-    }
-    dynamic_config = EvaluatorRuleArgs(
-        threshold=0.8,
-        dimension_name=_default_dimension_name,
-        aspect_keywords=_default_aspect_keywords,
-    )
-
-
-# Table 2 - Data quality metrics
-
-
-@Model.rule_register("QUALITY_BAD_TC609_0201", ["guobiao"])
-class Rule_TC609_0201_FormatCompliance(_TC609CompositeBase):
-    """0201: Format compliance, partially covered by existing format rules."""
-
-    component_rules = (
-        "dingo.model.rule.rule_common.RuleNlpDataFormat",
-        "dingo.model.rule.rule_common.RuleSftDataFormat",
-        "dingo.model.rule.rule_common.RuleImageDataFormat",
-        "dingo.model.rule.rule_common.RuleAudioDataFormat",
-        "dingo.model.rule.rule_common.RuleVedioDataFormat",
-    )
-    composition_mode = "any"
-    _metric_info = _tc609_metric_info(
-        "0201",
-        "Rule_TC609_0201_FormatCompliance",
-        "Combines existing NLP, SFT, image, audio, and video format rules.",
-        "partial",
-    )
-
-
-@Model.rule_register("QUALITY_BAD_TC609_0202", ["guobiao"])
-class Rule_TC609_0202_SafetyCompliance(_TC609CompositeBase):
-    """0202: Safety compliance, composed from safety and PII rules."""
-
-    component_rules = (
-        "dingo.model.rule.rule_common.RuleUnsafeWords",
-        "dingo.model.rule.rule_common.RulePIIDetection",
-        "dingo.model.rule.rule_common.RuleIDCard",
-    )
-    _required_fields = [RequiredField.CONTENT]
-    _metric_info = _tc609_metric_info(
-        "0202",
-        "Rule_TC609_0202_SafetyCompliance",
-        "Combines unsafe-word, PII, and identity-card detection.",
-        "partial",
-    )
-
-
-@Model.rule_register("QUALITY_BAD_TC609_0203", ["guobiao"])
-class Rule_TC609_0203_AnnotationCompliance(_TC609CompositeBase):
-    """0203: Annotation compliance, partially covered by image label rules."""
-
-    component_rules = (
-        "dingo.model.rule.rule_image.RuleImageLabelOverlap",
-        "dingo.model.rule.rule_image.RuleImageLabelVisualization",
-    )
-    _required_fields = [RequiredField.IMAGE]
-    _metric_info = _tc609_metric_info(
-        "0203",
-        "Rule_TC609_0203_AnnotationCompliance",
-        "Combines image-label overlap and visualization checks.",
-        "partial",
-    )
-
-
-@Model.rule_register("QUALITY_BAD_TC609_0204", ["guobiao"])
-class Rule_TC609_0204_StructuralCompleteness(_TC609CompositeBase):
-    """0204: Structural completeness, composed from content checks."""
-
-    component_rules = (
-        "dingo.model.rule.rule_common.RuleContentNull",
-        "dingo.model.rule.rule_common.RuleContentShort",
-    )
-    _required_fields = [RequiredField.CONTENT]
-    _metric_info = _tc609_metric_info(
-        "0204",
-        "Rule_TC609_0204_StructuralCompleteness",
-        "Combines null-content and short-content checks.",
-        "partial",
-    )
-
-
-@Model.rule_register("QUALITY_BAD_TC609_0205", ["guobiao"])
-class Rule_TC609_0205_ContentAuthenticity(_TC609CompositeBase):
-    """0205: Content authenticity, partially covered by HHEM."""
-
-    component_rules = (
-        "dingo.model.rule.rule_hallucination_hhem.RuleHallucinationHHEM",
-    )
-    _metric_info = _tc609_metric_info(
-        "0205",
-        "Rule_TC609_0205_ContentAuthenticity",
-        "Uses HHEM consistency checking as partial evidence of authenticity.",
-        "partial",
-    )
-
-
-@Model.rule_register("QUALITY_BAD_TC609_0206", ["guobiao"])
-class Rule_TC609_0206_ContentConsistency(_TC609CompositeBase):
-    """0206: Content consistency, composed from dict and image-text checks."""
-
-    component_rules = (
-        "dingo.model.rule.rule_common.RuleDictConsistency",
-        "dingo.model.rule.rule_image.RuleImageTextSimilarity",
-    )
-    composition_mode = "any"
-    _metric_info = _tc609_metric_info(
-        "0206",
-        "Rule_TC609_0206_ContentConsistency",
-        "Combines structured-field and image-text consistency checks.",
-        "partial",
-    )
-
-
-@Model.rule_register("QUALITY_BAD_TC609_0208", ["guobiao"])
-class Rule_TC609_0208_ContentCleanliness(_TC609CompositeBase):
-    """0208: Content cleanliness, composed from available cleaning rules."""
-
-    component_rules = (
-        "dingo.model.rule.rule_common.RuleAbnormalChar",
-        "dingo.model.rule.rule_common.RuleAbnormalHtml",
-        "dingo.model.rule.rule_common.RuleDocRepeat",
-        "dingo.model.rule.rule_common.RuleContentNull",
-        "dingo.model.rule.rule_common.RuleWatermark",
-    )
-    _required_fields = [RequiredField.CONTENT]
-    _metric_info = _tc609_metric_info(
-        "0208",
-        "Rule_TC609_0208_ContentCleanliness",
-        "Combines available text cleanliness checks; modality coverage is partial.",
-        "partial",
-    )
-
-
-# Table 3 - Model application metrics
-
-
-@Model.rule_register("QUALITY_BAD_TC609_0301", ["guobiao_placeholder"])
-class Rule_TC609_0301_ContentDiversity(_TC609PlaceholderBase):
-    """0301: Placeholder for content diversity."""
-
-    _metric_info = _tc609_metric_info(
-        "0301",
-        "Rule_TC609_0301_ContentDiversity",
-        "Placeholder: target-scenario distribution coverage is not implemented.",
-        "uncovered",
-    )
-
-
-@Model.rule_register("QUALITY_BAD_TC609_0302", ["guobiao_placeholder"])
-class Rule_TC609_0302_ScaleCompleteness(_TC609PlaceholderBase):
-    """0302: Placeholder for scale completeness."""
-
-    _metric_info = _tc609_metric_info(
-        "0302",
-        "Rule_TC609_0302_ScaleCompleteness",
-        "Placeholder: dataset scale versus model requirements is not implemented.",
-        "uncovered",
-    )
-
-
-@Model.rule_register("QUALITY_BAD_TC609_0304", ["guobiao"])
-class Rule_TC609_0304_AnnotationAccuracy(_TC609CompositeBase):
-    """0304: Annotation accuracy, partially covered by label checks."""
-
-    component_rules = (
-        "dingo.model.rule.rule_image.RuleImageLabelOverlap",
-        "dingo.model.rule.rule_image.RuleImageLabelVisualization",
-    )
-    _required_fields = [RequiredField.IMAGE]
-    _metric_info = _tc609_metric_info(
-        "0304",
-        "Rule_TC609_0304_AnnotationAccuracy",
-        "Uses image annotation checks as partial evidence of annotation accuracy.",
-        "partial",
-    )
-
-
-@Model.rule_register("QUALITY_BAD_TC609_0305", ["guobiao_placeholder"])
-class Rule_TC609_0305_ModelAdaptability(_TC609PlaceholderBase):
-    """0305: Placeholder for model adaptability."""
-
-    _metric_info = _tc609_metric_info(
-        "0305",
-        "Rule_TC609_0305_ModelAdaptability",
-        "Placeholder: before/after model performance comparison is not implemented.",
-        "uncovered",
-    )
-
-
-# Appendix A.1 - Text content cleanliness metrics
-
-
 @Model.rule_register("QUALITY_BAD_TC609_02080102", ["guobiao"])
 class Rule_TC609_02080102_KnowledgeInformationDensity(_TC609CompositeBase):
     component_rules = (
@@ -893,9 +696,6 @@ class Rule_TC609_02080107_TextCoherence(_TC609CompositeBase):
     )
 
 
-# Appendix A.2 - Image content cleanliness metrics
-
-
 @Model.rule_register("QUALITY_BAD_TC609_02080201", ["guobiao"])
 class Rule_TC609_02080201_ImageResolution(_TC609CompositeBase):
     component_rules = ("dingo.model.rule.rule_image.RuleImageSizeValid",)
@@ -947,9 +747,6 @@ class Rule_TC609_02080204_ImageClarity(_TC609CompositeBase):
     )
 
 
-# Appendix A.3 - Video content cleanliness placeholders
-
-
 @Model.rule_register("QUALITY_BAD_TC609_02080301", ["guobiao_placeholder"])
 class Rule_TC609_02080301_VideoResolution(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
@@ -996,9 +793,6 @@ class Rule_TC609_02080306_VideoDynamicRange(_TC609PlaceholderBase):
         "02080306", "Rule_TC609_02080306_VideoDynamicRange",
         "Placeholder: video dynamic-range evaluation is not implemented.", "uncovered"
     )
-
-
-# Appendix A.4 - Audio content cleanliness metrics
 
 
 @Model.rule_register("QUALITY_BAD_TC609_02080401", ["guobiao"])
@@ -1056,4 +850,192 @@ class Rule_TC609_02080406_AudioDuration(_TC609CompositeBase):
         "Rule_TC609_02080406_AudioDuration",
         "Uses the existing WAV duration implementation.",
         "covered",
+    )
+
+
+@Model.rule_register("QUALITY_BAD_TC609_0301", ["guobiao_placeholder"])
+class Rule_TC609_0301_ContentDiversity(_TC609PlaceholderBase):
+    """0301: Placeholder for content diversity."""
+
+    _metric_info = _tc609_metric_info(
+        "0301",
+        "Rule_TC609_0301_ContentDiversity",
+        "Placeholder: target-scenario distribution coverage is not implemented.",
+        "uncovered",
+    )
+
+
+@Model.rule_register("QUALITY_BAD_TC609_0302", ["guobiao_placeholder"])
+class Rule_TC609_0302_ScaleCompleteness(_TC609PlaceholderBase):
+    """0302: Placeholder for scale completeness."""
+
+    _metric_info = _tc609_metric_info(
+        "0302",
+        "Rule_TC609_0302_ScaleCompleteness",
+        "Placeholder: dataset scale versus model requirements is not implemented.",
+        "uncovered",
+    )
+
+
+@Model.rule_register("QUALITY_BAD_TC609_0303", ["guobiao"])
+class Rule_TC609_0303_DataTimeRange(BaseRule):
+    """Check whether creation/update time fields are within configured ranges."""
+
+    _metric_info = {
+        "category": "National Standard Data Quality Metrics",
+        "quality_dimension": "TIMELINESS",
+        "metric_name": "Rule_TC609_0303_DataTimeRange",
+        "description": (
+            "Checks whether created and updated timestamps are within configured "
+            "time ranges"
+        ),
+        "paper_title": "High-quality dataset quality evaluation specification",
+        "paper_url": "",
+        "paper_authors": "SAC/TC609",
+        "evaluation_results": "",
+        "standard_code": "0303",
+        "coverage": "covered",
+    }
+
+    _required_fields = [RequiredField.DT]
+    dynamic_config = EvaluatorRuleArgs(
+        dt_start=None,
+        dt_end=None,
+    )
+
+    @classmethod
+    def _parse_datetime(cls, value, field_name):
+        if isinstance(value, datetime):
+            if value.tzinfo is None:
+                return value
+            return value.astimezone(timezone.utc).replace(tzinfo=None)
+
+        if isinstance(value, str):
+            text = value.strip()
+            if not text:
+                raise ValueError(f"{field_name} is empty")
+
+            iso_text = text.replace("Z", "+00:00")
+            try:
+                parsed = datetime.fromisoformat(iso_text)
+                if parsed.tzinfo is None:
+                    return parsed
+                return parsed.astimezone(timezone.utc).replace(tzinfo=None)
+            except ValueError:
+                raise ValueError(
+                    f"{field_name} has unsupported datetime format: {value!r}"
+                ) from None
+
+        raise ValueError(
+            f"{field_name} has unsupported datetime format: {value!r}"
+        )
+
+    @classmethod
+    def _validate_time_range(
+        cls,
+        dt_value,
+        start_value,
+        end_value,
+    ):
+        parsed_dt = cls._parse_datetime(dt_value, "time_value")
+        parsed_dt_start = (
+            cls._parse_datetime(start_value, "start_time")
+            if start_value is not None
+            else None
+        )
+        parsed_dt_end = (
+            cls._parse_datetime(end_value, "end_time")
+            if end_value is not None
+            else None
+        )
+
+        if (
+            parsed_dt_start is not None
+            and parsed_dt_end is not None
+            and parsed_dt_start > parsed_dt_end
+        ):
+            raise ValueError("time range is invalid: start is later than end")
+
+        if parsed_dt_start is not None and parsed_dt < parsed_dt_start:
+            return False, parsed_dt, parsed_dt_start, parsed_dt_end
+        if parsed_dt_end is not None and parsed_dt > parsed_dt_end:
+            return False, parsed_dt, parsed_dt_start, parsed_dt_end
+        return True, parsed_dt, parsed_dt_start, parsed_dt_end
+
+    @classmethod
+    def eval(cls, input_data: Data) -> EvalDetail:
+        res = EvalDetail(metric=cls.__name__)
+
+        dt_start = getattr(cls.dynamic_config, "dt_start", None)
+        dt_end = getattr(cls.dynamic_config, "dt_end", None)
+
+        if dt_start is None and dt_end is None:
+            raise ValueError(
+                "Rule_TC609_0303_DataTimeRange requires at least one configured range boundary in dynamic_config"
+            )
+
+        dt_value = getattr(input_data, "dt", None)
+        if dt_value is None:
+            res.status = True
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = ["dt is missing"]
+            return res
+
+        try:
+            is_valid, parsed_dt, parsed_dt_start, parsed_dt_end = cls._validate_time_range(
+                dt_value=dt_value,
+                start_value=dt_start,
+                end_value=dt_end,
+            )
+        except ValueError as exc:
+            res.status = True
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = [f"dt: {exc}"]
+            return res
+
+        if not is_valid:
+            res.status = True
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            if parsed_dt_start is not None and parsed_dt < parsed_dt_start:
+                res.reason = [
+                    f"dt {parsed_dt.isoformat(sep=' ')} is earlier than "
+                    f"allowed start {parsed_dt_start.isoformat(sep=' ')}"
+                ]
+            else:
+                res.reason = [
+                    f"dt {parsed_dt.isoformat(sep=' ')} is later than "
+                    f"allowed end {parsed_dt_end.isoformat(sep=' ')}"
+                ]
+            return res
+
+        res.label = [QualityLabel.QUALITY_GOOD]
+        return res
+
+
+@Model.rule_register("QUALITY_BAD_TC609_0304", ["guobiao"])
+class Rule_TC609_0304_AnnotationAccuracy(_TC609CompositeBase):
+    """0304: Annotation accuracy, partially covered by label checks."""
+
+    component_rules = (
+        "dingo.model.rule.rule_image.RuleImageLabelOverlap",
+        "dingo.model.rule.rule_image.RuleImageLabelVisualization",
+    )
+    _required_fields = [RequiredField.IMAGE]
+    _metric_info = _tc609_metric_info(
+        "0304",
+        "Rule_TC609_0304_AnnotationAccuracy",
+        "Uses image annotation checks as partial evidence of annotation accuracy.",
+        "partial",
+    )
+
+
+@Model.rule_register("QUALITY_BAD_TC609_0305", ["guobiao_placeholder"])
+class Rule_TC609_0305_ModelAdaptability(_TC609PlaceholderBase):
+    """0305: Placeholder for model adaptability."""
+
+    _metric_info = _tc609_metric_info(
+        "0305",
+        "Rule_TC609_0305_ModelAdaptability",
+        "Placeholder: before/after model performance comparison is not implemented.",
+        "uncovered",
     )
