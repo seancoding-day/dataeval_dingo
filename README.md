@@ -1,3 +1,5 @@
+[![MCP Toplist](https://mcptoplist.com/badge/glama%2FMigoXLab%2Fdingo.svg)](https://mcptoplist.com/server/glama%2FMigoXLab%2Fdingo)
+
 <!-- SEO Meta Information and Structured Data -->
 <div itemscope itemtype="https://schema.org/SoftwareApplication" align="center" xmlns="http://www.w3.org/1999/html">
   <meta itemprop="name" content="Dingo: A Comprehensive AI Data Quality Evaluation Tool">
