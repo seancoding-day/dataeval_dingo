@@ -10,6 +10,7 @@ from typing import List
 from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail
 from dingo.model import Model
+from dingo.model.llm.base import LLMCallResult, llm_response_content
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.utils import log
 from dingo.utils.exception import ConvertJsonError
@@ -293,6 +294,7 @@ class LLMRAGContextPrecision(BaseOpenAI):
         # 获取所有上下文的消息
         messages_list = cls.build_messages(input_data)
         responses = []
+        usage = None
 
         # 为每个上下文发送单独的请求
         for item in messages_list:
@@ -302,7 +304,10 @@ class LLMRAGContextPrecision(BaseOpenAI):
 
             while attempts < 3:
                 try:
-                    response = cls.send_messages(messages)
+                    response_result = cls.send_messages(messages)
+                    response = llm_response_content(response_result)
+                    if isinstance(response_result, LLMCallResult):
+                        usage = cls._merge_token_usage(usage, response_result.usage)
                     break
                 except Exception as e:
                     attempts += 1
@@ -326,4 +331,6 @@ class LLMRAGContextPrecision(BaseOpenAI):
             responses.append(response)
 
         # 处理所有响应
-        return cls.process_response(responses)
+        result = cls.process_response(responses)
+        result.usage = usage
+        return result

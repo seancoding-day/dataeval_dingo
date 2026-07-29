@@ -25,8 +25,9 @@ from typing import Any
 
 from dingo.config.input_args import EvaluatorLLMArgs
 from dingo.io.input import Data
-from dingo.io.output.eval_detail import EvalDetail
+from dingo.io.output.eval_detail import EvalDetail, TokenUsage
 from dingo.model import Model
+from dingo.model.llm.base_openai import BaseOpenAI
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +128,7 @@ class RelevanceGrade:
     confidence: float = 0.0
     reasoning: str = ""
     error: str = ""
+    usage: TokenUsage | None = None
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {
@@ -475,6 +477,7 @@ class LLMSearchResultRelevance:
 
         client = self._get_client()
         last_grade = RelevanceGrade(error="LLM grading failed")
+        usage: TokenUsage | None = None
         for attempt in range(3):
             try:
                 completion = client.chat.completions.create(
@@ -487,14 +490,24 @@ class LLMSearchResultRelevance:
                     max_tokens=self.max_tokens,
                     timeout=self.timeout,
                 )
+                usage = BaseOpenAI._merge_token_usage(
+                    usage,
+                    BaseOpenAI._extract_token_usage(
+                        completion,
+                        model_name=self.model,
+                        provider="openai",
+                    ),
+                )
                 response_text = completion.choices[0].message.content or ""
                 last_grade = _parse_grade_response(response_text)
+                last_grade.usage = usage
                 if not last_grade.error:
                     return last_grade
                 error: Exception | str = last_grade.error
             except Exception as exc:
                 error = exc
                 last_grade = RelevanceGrade(error=str(exc))
+                last_grade.usage = usage
 
             logger.warning(
                 "LLM grading attempt %s/3 failed for query=%r title=%r: %s",
@@ -577,6 +590,7 @@ class LLMSearchResultRelevance:
             score=round(grade.score, 5),
             label=labels,
             reason=[reason],
+            usage=grade.usage,
         )
 
 

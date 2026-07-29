@@ -26,12 +26,12 @@ def _make_provider(**cfg_kwargs) -> type:
     return _Provider
 
 
-def _stub_response(content='{"score": 1, "reason": "ok"}', finish_reason="stop"):
+def _stub_response(content='{"score": 1, "reason": "ok"}', finish_reason="stop", usage=None):
     choice = SimpleNamespace(
         finish_reason=finish_reason,
         message=SimpleNamespace(content=content),
     )
-    return SimpleNamespace(choices=[choice])
+    return SimpleNamespace(choices=[choice], usage=usage)
 
 
 # ---------------------------------------------------------------------------
@@ -127,7 +127,25 @@ class TestSendMessages:
         none_resp = _stub_response(content=None)
         with mock.patch("litellm.completion", return_value=none_resp):
             result = P.send_messages([{"role": "user", "content": "hi"}])
-        assert result == ""
+        assert result.content == ""
+
+    def test_returns_token_usage_when_provider_supplies_usage(self):
+        P = _make_provider(model="gpt-4o")
+        provider_resp = _stub_response(
+            usage={
+                "prompt_tokens": 6,
+                "completion_tokens": 3,
+                "total_tokens": 9,
+            }
+        )
+        with mock.patch("litellm.completion", return_value=provider_resp):
+            result = P.send_messages([{"role": "user", "content": "hi"}])
+
+        assert result.content == '{"score": 1, "reason": "ok"}'
+        assert result.usage.prompt_tokens == 6
+        assert result.usage.completion_tokens == 3
+        assert result.usage.total_tokens == 9
+        assert result.usage.provider == "litellm"
 
 
 # ---------------------------------------------------------------------------

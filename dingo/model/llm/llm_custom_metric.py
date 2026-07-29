@@ -7,6 +7,7 @@ from pydantic import ValidationError
 from dingo.config.input_args import EvaluatorLLMArgs
 from dingo.io.input import Data
 from dingo.io.output.eval_detail import EvalDetail
+from dingo.model.llm.base import LLMCallResult
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.model.model import Model
 from dingo.utils.exception import ConvertJsonError, ExceedMaxTokens
@@ -112,7 +113,14 @@ class LLMCustomMetric(BaseOpenAI):
                 f"Exceed max tokens: {extra_params.get('max_tokens', 4000)}"
             )
 
-        return str(completions.choices[0].message.content)
+        return LLMCallResult(
+            content=str(completions.choices[0].message.content),
+            usage=self._extract_token_usage(
+                completions,
+                model_name=model_name,
+                provider="openai",
+            ),
+        )
 
     def _eval_detail_from_response(self, response_json: dict) -> EvalDetail:
         custom_metric = self._get_custom_metric()
@@ -189,9 +197,15 @@ class LLMCustomMetric(BaseOpenAI):
         attempts = 0
         except_msg = ""
         except_name = Exception.__name__
+        usage = None
         while attempts < 3:
             try:
                 response = self.send_messages(messages)
+                if isinstance(response, LLMCallResult):
+                    usage = self._merge_token_usage(usage, response.usage)
+                    result = self.process_response(response.content)
+                    result.usage = usage
+                    return result
                 return self.process_response(response)
             except (ValidationError, ExceedMaxTokens, ConvertJsonError) as e:
                 except_msg = str(e)
@@ -203,9 +217,11 @@ class LLMCustomMetric(BaseOpenAI):
                 except_msg = str(e)
                 except_name = e.__class__.__name__
 
-        return EvalDetail(
+        result = EvalDetail(
             metric=self._get_custom_metric().metric,
             status=True,
             label=[f"QUALITY_BAD.{except_name}"],
             reason=[except_msg],
         )
+        result.usage = usage
+        return result

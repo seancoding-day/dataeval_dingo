@@ -134,6 +134,13 @@ class LocalExecutor(ExecProto):
                             self.summary.type_count[field_key].setdefault(label, 0)
                             self.summary.type_count[field_key][label] += 1
 
+                    for field_key, eval_detail_list in result_info.token_usage_details.items():
+                        for eval_detail in eval_detail_list:
+                            if eval_detail.usage is not None and eval_detail.metric:
+                                self.summary.add_token_usage(
+                                    field_key, eval_detail.metric, eval_detail.usage
+                                )
+
                     if result_info.eval_status:
                         self.summary.num_bad += 1
                     else:
@@ -210,6 +217,9 @@ class LocalExecutor(ExecProto):
 
         # Set result_info fields
         join_fields = ','.join(eval_fields.values()) if eval_fields else 'default'
+        usage_detail_list = [mr for mr in eval_detail_list if mr.usage is not None]
+        if usage_detail_list:
+            result_info.token_usage_details = {join_fields: usage_detail_list}
 
         # 根据配置决定保存哪些结果
         if self.input_args.executor.result_save.all_labels or self.input_args.executor.result_save.merge:
@@ -242,6 +252,12 @@ class LocalExecutor(ExecProto):
                 # 第一层是字段名，如果不存在，则直接赋值
                 else:
                     existing_item.eval_details[key] = value
+
+            for key, value in new_item.token_usage_details.items():
+                if key in existing_item.token_usage_details:
+                    existing_item.token_usage_details[key].extend(value)
+                else:
+                    existing_item.token_usage_details[key] = value
         else:
             existing_list.append(new_item)
 

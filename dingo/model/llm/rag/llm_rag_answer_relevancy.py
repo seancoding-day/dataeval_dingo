@@ -13,6 +13,7 @@ import numpy as np
 from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail
 from dingo.model import Model
+from dingo.model.llm.base import LLMCallResult, llm_response_content
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.utils import log
 from dingo.utils.exception import ConvertJsonError
@@ -106,7 +107,14 @@ class LLMRAGAnswerRelevancy(BaseOpenAI):
     @classmethod
     def generate_multiple_questions(cls, input_data: Data, n: int = 3) -> List[Dict[str, Any]]:
         """生成多个相关问题"""
+        questions, _ = cls._generate_multiple_questions_with_usage(input_data, n)
+        return questions
+
+    @classmethod
+    def _generate_multiple_questions_with_usage(cls, input_data: Data, n: int = 3):
+        """生成多个相关问题，同时返回 LLM token 使用量"""
         questions = []
+        usage = None
 
         # 确保客户端已经创建
         if not hasattr(cls, 'client') or cls.client is None:
@@ -117,13 +125,16 @@ class LLMRAGAnswerRelevancy(BaseOpenAI):
             messages = cls.build_messages(input_data)
 
             # 调用LLM生成问题
-            response = cls.send_messages(messages)
+            response_result = cls.send_messages(messages)
+            response = llm_response_content(response_result)
+            if isinstance(response_result, LLMCallResult):
+                usage = cls._merge_token_usage(usage, response_result.usage)
 
             # 处理响应
             processed_response = cls.process_question_response(response)
             questions.append(processed_response)
 
-        return questions
+        return questions, usage
 
     @classmethod
     def process_question_response(cls, response: str) -> Dict[str, Any]:
@@ -246,7 +257,9 @@ class LLMRAGAnswerRelevancy(BaseOpenAI):
                 cls.dynamic_config.temperature = 0.7
 
             # 生成多个相关问题
-            generated_questions = cls.generate_multiple_questions(input_data, cls.strictness)
+            generated_questions, usage = cls._generate_multiple_questions_with_usage(
+                input_data, cls.strictness
+            )
 
             # 计算相关性分数和详细信息
             score, details = cls.calculate_score(generated_questions, original_question)
@@ -254,6 +267,7 @@ class LLMRAGAnswerRelevancy(BaseOpenAI):
             # 构建结果
             result = EvalDetail(metric=cls.__name__)
             result.score = score
+            result.usage = usage
 
             # 根据分数判断是否通过，默认阈值为5
             threshold = 5

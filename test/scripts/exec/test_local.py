@@ -3,7 +3,8 @@ import pytest
 from dingo.config import InputArgs
 from dingo.exec import Executor, LocalExecutor
 from dingo.io import ResultInfo
-from dingo.io.output.eval_detail import EvalDetail
+from dingo.io.output.eval_detail import EvalDetail, TokenUsage
+from dingo.model import Model
 
 
 class TestLocal:
@@ -191,6 +192,86 @@ class TestLocal:
         assert "QUALITY_BAD_EFFECTIVENESS-PromptContentChaos" in all_labels
         assert "�I am 8 years old. ^I love apple because:" in all_reasons
         assert "文本中包含不可见字符或乱码（如�和^），可能影响阅读理解。" in all_reasons
+
+    def test_merge_result_info_preserves_token_usage_details(self):
+        localexecutor = LocalExecutor({})
+        item1 = ResultInfo(
+            dingo_id="1",
+            token_usage_details={
+                "content": [
+                    EvalDetail(
+                        metric="LLMMetricA",
+                        usage=TokenUsage(total_tokens=3),
+                    )
+                ]
+            },
+        )
+        item2 = ResultInfo(
+            dingo_id="1",
+            token_usage_details={
+                "content": [
+                    EvalDetail(
+                        metric="LLMMetricB",
+                        usage=TokenUsage(total_tokens=5),
+                    )
+                ]
+            },
+        )
+
+        merged = localexecutor.merge_result_info([], item1)
+        merged = localexecutor.merge_result_info(merged, item2)
+
+        assert len(merged[0].token_usage_details["content"]) == 2
+
+    def test_token_usage_summary_can_include_unsaved_good_eval_details(self):
+        class TokenUsageGoodLLM:
+            def eval(self, input_data):
+                return EvalDetail(
+                    metric="TokenUsageGoodLLM",
+                    status=False,
+                    label=["QUALITY_GOOD"],
+                    usage=TokenUsage(
+                        prompt_tokens=10,
+                        completion_tokens=5,
+                        total_tokens=15,
+                    ),
+                )
+
+        old_model = Model.llm_name_map.get("TokenUsageGoodLLM")
+        Model.llm_name_map["TokenUsageGoodLLM"] = TokenUsageGoodLLM
+        try:
+            input_args = InputArgs(
+                executor={
+                    "result_save": {
+                        "bad": True,
+                        "good": False,
+                        "all_labels": False,
+                    }
+                },
+                evaluator=[
+                    {
+                        "fields": {"content": "content"},
+                        "evals": [{"name": "TokenUsageGoodLLM"}],
+                    }
+                ],
+            )
+            executor = LocalExecutor(input_args)
+
+            result = executor.evaluate_single_data(
+                dingo_id="1",
+                eval_fields={"content": "content"},
+                eval_type="llm",
+                map_data={"content": "ok"},
+                eval_list=input_args.evaluator[0].evals,
+            )
+
+            assert result.eval_details == {}
+            assert result.token_usage_details["content"][0].usage.total_tokens == 15
+        finally:
+            if old_model is None:
+                Model.llm_name_map.pop("TokenUsageGoodLLM", None)
+            else:
+                Model.llm_name_map["TokenUsageGoodLLM"] = old_model
 
     def test_all_labels_config(self):
         input_data = {

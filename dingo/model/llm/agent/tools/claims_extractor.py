@@ -23,8 +23,10 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import Field
 
+from dingo.io.output.eval_detail import TokenUsage
 from dingo.model.llm.agent.tools.base_tool import BaseTool, ToolConfig
 from dingo.model.llm.agent.tools.tool_registry import tool_register
+from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.utils import log
 
 
@@ -351,10 +353,11 @@ Critical: Extract SPECIFIC claims with verifiable details. Ignore opinions, mark
 
             # Extract claims from each chunk
             all_claims = []
+            token_usage: TokenUsage | None = None
             for i, chunk_data in enumerate(chunks):
-                log.debug(f"Processing chunk {i+1}/{len(chunks)}")
+                log.debug(f"Processing chunk {i + 1}/{len(chunks)}")
 
-                chunk_claims = cls._extract_claims_from_chunk(
+                chunk_claims, chunk_usage = cls._extract_claims_from_chunk(
                     client,
                     chunk_data['text'],
                     chunk_data['start_pos'],
@@ -362,6 +365,7 @@ Critical: Extract SPECIFIC claims with verifiable details. Ignore opinions, mark
                     include_context
                 )
                 all_claims.extend(chunk_claims)
+                token_usage = BaseOpenAI._merge_token_usage(token_usage, chunk_usage)
 
             # Deduplicate and merge similar claims
             unique_claims = cls._deduplicate_claims(all_claims)
@@ -377,6 +381,8 @@ Critical: Extract SPECIFIC claims with verifiable details. Ignore opinions, mark
 
             # Build metadata
             metadata = cls._build_metadata(unique_claims)
+            if token_usage is not None:
+                metadata['token_usage'] = token_usage.model_dump()
 
             result = {
                 'success': True,
@@ -460,7 +466,7 @@ Critical: Extract SPECIFIC claims with verifiable details. Ignore opinions, mark
         start_pos: int,
         claim_types: List[str],
         include_context: bool
-    ) -> List[Dict]:
+    ) -> tuple[List[Dict], TokenUsage | None]:
         """
         Extract claims from a single text chunk using LLM.
 
@@ -472,7 +478,7 @@ Critical: Extract SPECIFIC claims with verifiable details. Ignore opinions, mark
             include_context: Whether to include context
 
         Returns:
-            List of extracted claims
+            Tuple of extracted claims and token usage
         """
         # Build user prompt
         user_prompt = f"""Extract verifiable claims from the following text.
@@ -495,6 +501,11 @@ Return JSON with claims array as specified in the system prompt.
                 ],
                 temperature=cls.config.temperature,
                 response_format={"type": "json_object"}  # Force JSON output
+            )
+            token_usage = BaseOpenAI._extract_token_usage(
+                response,
+                model_name=cls.config.model,
+                provider="openai",
             )
 
             output_text = response.choices[0].message.content
@@ -520,14 +531,14 @@ Return JSON with claims array as specified in the system prompt.
 
                     filtered_claims.append(claim)
 
-            return filtered_claims
+            return filtered_claims, token_usage
 
         except json.JSONDecodeError as e:
             log.warning(f"Failed to parse LLM output as JSON: {e}")
-            return []
+            return [], token_usage if 'token_usage' in locals() else None
         except Exception as e:
             log.error(f"LLM call failed: {e}")
-            return []
+            return [], None
 
     @classmethod
     def _deduplicate_claims(cls, claims: List[Dict]) -> List[Dict]:
