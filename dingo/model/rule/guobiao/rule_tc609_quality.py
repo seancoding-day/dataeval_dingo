@@ -167,7 +167,10 @@ class Rule_TC609_0201_FormatCompliance(BaseRule):
         "Optional[list]": {"expected_type": list, "allow_none": True},
         "Optional[dict]": {"expected_type": dict, "allow_none": True},
     }
-    dynamic_config = EvaluatorRuleArgs(field_schema=None)
+    dynamic_config = EvaluatorRuleArgs(
+        field_schema=None,
+        allow_extra=True,
+    )
     _metric_info = _tc609_metric_info(
         "0201",
         "Rule_TC609_0201_FormatCompliance",
@@ -226,9 +229,10 @@ class Rule_TC609_0201_FormatCompliance(BaseRule):
                 )
                 res.status = True
 
-        for field_name in sorted(record.keys() - schema.keys()):
-            reasons.append(f"{field_name}: unexpected field")
-            res.status = True
+        if not getattr(cls.dynamic_config, "allow_extra", True):
+            for field_name in sorted(record.keys() - schema.keys()):
+                reasons.append(f"{field_name}: unexpected field")
+                res.status = True
 
         if res.status:
             res.label = [f"{cls.metric_type}.{cls.__name__}"]

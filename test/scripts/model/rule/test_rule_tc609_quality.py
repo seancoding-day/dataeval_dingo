@@ -124,7 +124,10 @@ def test_format_compliance_reports_unexpected_fields(monkeypatch):
     monkeypatch.setattr(
         Rule_TC609_0201_FormatCompliance,
         "dynamic_config",
-        EvaluatorRuleArgs(field_schema={"content": "str"}),
+        EvaluatorRuleArgs(
+            field_schema={"content": "str"},
+            allow_extra=False,
+        ),
     )
 
     result = Rule_TC609_0201_FormatCompliance.eval(
@@ -133,6 +136,21 @@ def test_format_compliance_reports_unexpected_fields(monkeypatch):
 
     assert result.status is True
     assert result.reason == ["source: unexpected field"]
+
+
+def test_format_compliance_allows_unexpected_fields_by_default(monkeypatch):
+    monkeypatch.setattr(
+        Rule_TC609_0201_FormatCompliance,
+        "dynamic_config",
+        EvaluatorRuleArgs(field_schema={"content": "str"}),
+    )
+
+    result = Rule_TC609_0201_FormatCompliance.eval(
+        Data(content="example", source="demo")
+    )
+
+    assert result.status is False
+    assert result.label == [QualityLabel.QUALITY_GOOD]
 
 
 @pytest.mark.parametrize(
