@@ -4,6 +4,7 @@ from typing import Dict, List, Literal
 from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model import Model
+from dingo.model.llm.base import LLMCallResult, llm_response_content
 from dingo.model.llm.base_openai import BaseOpenAI
 
 
@@ -199,17 +200,25 @@ appear to be making claims about the topic rather than the model's internal know
                 cls.create_client()
 
             # 1. 提取声明
-            claims = cls._extract_claims(input_data.prompt, input_data.content)
+            usage = None
+            claims, claim_usage = cls._extract_claims_with_usage(
+                input_data.prompt, input_data.content
+            )
+            usage = cls._merge_token_usage(usage, claim_usage)
             if not claims:
                 result = EvalDetail(metric=cls.__name__)
                 result.reason = ["No factual claims found"]
+                result.usage = usage
                 return result
 
             # 2. 分批验证
             all_results = []
             for i in range(0, len(claims), cls.batch_size):
                 batch = claims[i:i + cls.batch_size]
-                results = cls._verify_claims(input_data.prompt, input_data.content, batch)
+                results, batch_usage = cls._verify_claims_with_usage(
+                    input_data.prompt, input_data.content, batch
+                )
+                usage = cls._merge_token_usage(usage, batch_usage)
                 all_results.extend(results)
 
             # 3. 计算指标
@@ -218,6 +227,7 @@ appear to be making claims about the topic rather than the model's internal know
             # 4. 设置评估结果
             result = EvalDetail(metric=cls.__name__)
             result.reason = [cls._format_reason(metrics)]
+            result.usage = usage
 
             # 5. 根据分数设置状态
             if metrics["factual_ratio"] < cls.threshold:
@@ -237,6 +247,11 @@ appear to be making claims about the topic rather than the model's internal know
 
     @classmethod
     def _extract_claims(cls, prompt: str, response: str) -> List[str]:
+        claims, _ = cls._extract_claims_with_usage(prompt, response)
+        return claims
+
+    @classmethod
+    def _extract_claims_with_usage(cls, prompt: str, response: str):
         """提取事实性声明"""
         messages = [
             {"role": "user", "content": (cls.prompt["CLAIM_LISTING"] +
@@ -245,10 +260,12 @@ appear to be making claims about the topic rather than the model's internal know
                 response=response
             )}
         ]
-        result = cls.send_messages(messages)
+        response_result = cls.send_messages(messages)
+        result = llm_response_content(response_result)
         try:
             claims = cls._parse_json_list(result)
-            return [c for c in claims if c.strip()]  # 过滤空声明
+            usage = response_result.usage if isinstance(response_result, LLMCallResult) else None
+            return [c for c in claims if c.strip()], usage  # 过滤空声明
         except Exception as e:
             raise ValueError(f"Failed to parse claims: {str(e)}")
 
@@ -257,6 +274,14 @@ appear to be making claims about the topic rather than the model's internal know
                       prompt: str,
                       response: str,
                       claims: List[str]) -> List[FactCheckResult]:
+        results, _ = cls._verify_claims_with_usage(prompt, response, claims)
+        return results
+
+    @classmethod
+    def _verify_claims_with_usage(cls,
+                      prompt: str,
+                      response: str,
+                      claims: List[str]):
         """验证一批声明"""
         messages = [
             {"role": "user", "content": (cls.prompt["FACT_CHECKING"] +
@@ -266,9 +291,11 @@ appear to be making claims about the topic rather than the model's internal know
                 claims=claims
             )}
         ]
-        result = cls.send_messages(messages)
+        response_result = cls.send_messages(messages)
+        result = llm_response_content(response_result)
         try:
-            return cls._parse_check_results(result)
+            usage = response_result.usage if isinstance(response_result, LLMCallResult) else None
+            return cls._parse_check_results(result), usage
         except Exception as e:
             raise ValueError(f"Failed to parse check results: {str(e)}")
 

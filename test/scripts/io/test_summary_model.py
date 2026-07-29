@@ -11,6 +11,7 @@
 
 import pytest
 
+from dingo.io.output.eval_detail import TokenUsage
 from dingo.io.output.summary_model import SummaryModel
 
 
@@ -220,6 +221,49 @@ class TestSummaryModel:
 
         # 验证没有分数统计字段
         assert "metrics_score" not in result
+
+    def test_add_token_usage_and_to_dict(self):
+        """测试 LLM token 使用量统计输出"""
+        summary = SummaryModel(task_name="test_task", task_id="test_token_001")
+
+        summary.add_token_usage(
+            "content",
+            "LLMTextQualityV5",
+            TokenUsage(
+                prompt_tokens=10,
+                completion_tokens=4,
+                total_tokens=14,
+                reasoning_tokens=1,
+                cached_tokens=3,
+                model="gpt-test",
+                provider="openai",
+            ),
+        )
+        summary.add_token_usage(
+            "content",
+            "LLMTextQualityV5",
+            TokenUsage(
+                prompt_tokens=8,
+                completion_tokens=5,
+                total_tokens=13,
+                model="gpt-test",
+                provider="openai",
+            ),
+        )
+
+        result = summary.to_dict()
+
+        stats = result["token_usage"]["content"]["LLMTextQualityV5"]
+        assert stats["prompt_tokens"] == 18
+        assert stats["completion_tokens"] == 9
+        assert stats["total_tokens"] == 27
+        assert stats["reasoning_tokens"] == 1
+        assert stats["cached_tokens"] == 3
+        assert stats["calls"] == 2
+        assert stats["records"] == 2
+        assert stats["models"] == {"gpt-test": 2}
+        assert stats["providers"] == {"openai": 2}
+        assert stats["sources"] == {"provider": 2}
 
     def test_multiple_metrics_different_score_counts(self):
         """测试不同指标有不同数量的分数"""

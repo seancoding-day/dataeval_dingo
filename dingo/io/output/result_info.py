@@ -5,7 +5,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from dingo.io.output.eval_detail import EvalDetail
 
@@ -15,6 +15,17 @@ class ResultInfo(BaseModel):
     raw_data: Dict = {}
     eval_status: bool = False
     eval_details: Dict[str, List[EvalDetail]] = {}
+    token_usage_details: Dict[str, List[EvalDetail]] = Field(
+        default_factory=dict,
+        exclude=True,
+    )
+
+    @staticmethod
+    def _eval_detail_to_dict(model_res: EvalDetail) -> Dict[str, Any]:
+        detail = model_res.model_dump()
+        if detail.get('usage') is None:
+            detail.pop('usage', None)
+        return detail
 
     @staticmethod
     def _apply_field_filter(output_data: Dict[str, Any], field_list: Optional[List[str]]) -> Dict[str, Any]:
@@ -82,7 +93,7 @@ class ResultInfo(BaseModel):
             'raw_data': self._normalize_value(self.raw_data),
             'eval_status': self.eval_status,
             'eval_details': {
-                k: [model_res.model_dump() for model_res in v]
+                k: [self._eval_detail_to_dict(model_res) for model_res in v]
                 for k, v in self.eval_details.items()
             },
         }
@@ -112,7 +123,7 @@ class ResultInfo(BaseModel):
         dingo_result = {
             'eval_status': self.eval_status,
             'eval_details': {
-                k: [model_res.model_dump() for model_res in v]
+                k: [self._eval_detail_to_dict(model_res) for model_res in v]
                 for k, v in self.eval_details.items()
             },
         }

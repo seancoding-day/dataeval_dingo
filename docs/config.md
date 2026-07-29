@@ -100,6 +100,55 @@ HuggingFace 特定配置：
 | all_labels | bool | false   | No       | 是否保存所有标签    |
 | raw        | bool | false   | No       | 是否保存原始数据    |
 
+### LLM Token 使用量输出
+
+当 LLM 服务返回 token usage 时，Dingo 会在对应的 `EvalDetail` 中写入 `usage` 字段，并在 `summary.json` 中按字段组合和 evaluator 汇总到 `token_usage`。该统计来自模型服务商返回的 `usage`，不会本地估算；如果兼容 API 不返回 usage，则对应字段为空。
+
+单条结果示例：
+
+```json
+{
+  "metric": "LLMTextQualityV5",
+  "status": false,
+  "label": ["QUALITY_GOOD"],
+  "reason": ["pass"],
+  "usage": {
+    "prompt_tokens": 812,
+    "completion_tokens": 96,
+    "total_tokens": 908,
+    "reasoning_tokens": null,
+    "cached_tokens": null,
+    "model": "gpt-4o-mini",
+    "provider": "openai",
+    "calls": 1,
+    "source": "provider"
+  }
+}
+```
+
+汇总结果示例：
+
+```json
+{
+  "token_usage": {
+    "content": {
+      "LLMTextQualityV5": {
+        "prompt_tokens": 81200,
+        "completion_tokens": 9600,
+        "total_tokens": 90800,
+        "reasoning_tokens": 0,
+        "cached_tokens": 12000,
+        "calls": 100,
+        "records": 100,
+        "models": {"gpt-4o-mini": 100},
+        "providers": {"openai": 100},
+        "sources": {"provider": 100}
+      }
+    }
+  }
+}
+```
+
 ### Evaluator 配置 (evaluator)
 
 评估器相关配置：

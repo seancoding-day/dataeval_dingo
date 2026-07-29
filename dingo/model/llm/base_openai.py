@@ -6,8 +6,8 @@ from pydantic import ValidationError
 
 from dingo.config.input_args import EvaluatorLLMArgs
 from dingo.io.input import Data, RequiredField
-from dingo.io.output.eval_detail import EvalDetail, QualityLabel
-from dingo.model.llm.base import BaseLLM
+from dingo.io.output.eval_detail import EvalDetail, QualityLabel, TokenUsage
+from dingo.model.llm.base import BaseLLM, LLMCallResult
 from dingo.model.response.response_class import ResponseScoreReason
 from dingo.utils import log
 from dingo.utils.exception import ConvertJsonError, ExceedMaxTokens
@@ -96,7 +96,121 @@ class BaseOpenAI(BaseLLM):
                 f"Exceed max tokens: {extra_params.get('max_tokens', 4000)}"
             )
 
-        return str(completions.choices[0].message.content)
+        return LLMCallResult(
+            content=str(completions.choices[0].message.content),
+            usage=cls._extract_token_usage(
+                completions,
+                model_name=model_name,
+                provider="openai",
+            ),
+        )
+
+    @staticmethod
+    def _usage_value(data, key: str):
+        if data is None:
+            return None
+        if isinstance(data, dict):
+            return data.get(key)
+        return getattr(data, key, None)
+
+    @staticmethod
+    def _coerce_optional_int(value):
+        if value is None:
+            return None
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
+
+    @classmethod
+    def _extract_token_usage(
+        cls,
+        completion,
+        model_name: str,
+        provider: str = "openai",
+    ) -> TokenUsage | None:
+        raw_usage = getattr(completion, "usage", None)
+        if raw_usage is None:
+            return None
+
+        if hasattr(raw_usage, "model_dump"):
+            usage_data = raw_usage.model_dump()
+        elif isinstance(raw_usage, dict):
+            usage_data = raw_usage
+        else:
+            usage_data = raw_usage
+
+        completion_details = cls._usage_value(
+            usage_data, "completion_tokens_details"
+        )
+        prompt_details = cls._usage_value(usage_data, "prompt_tokens_details")
+
+        return TokenUsage(
+            prompt_tokens=cls._coerce_optional_int(
+                cls._usage_value(usage_data, "prompt_tokens")
+            ),
+            completion_tokens=cls._coerce_optional_int(
+                cls._usage_value(usage_data, "completion_tokens")
+            ),
+            total_tokens=cls._coerce_optional_int(
+                cls._usage_value(usage_data, "total_tokens")
+            ),
+            reasoning_tokens=cls._coerce_optional_int(
+                cls._usage_value(completion_details, "reasoning_tokens")
+            ),
+            cached_tokens=cls._coerce_optional_int(
+                cls._usage_value(prompt_details, "cached_tokens")
+            ),
+            model=model_name,
+            provider=provider,
+            source="provider",
+        )
+
+    @staticmethod
+    def _copy_token_usage(usage: TokenUsage) -> TokenUsage:
+        if hasattr(usage, "model_copy"):
+            return usage.model_copy(deep=True)
+        return usage.copy(deep=True)
+
+    @classmethod
+    def _merge_token_usage(
+        cls,
+        current: TokenUsage | None,
+        new_usage: TokenUsage | None,
+    ) -> TokenUsage | None:
+        if new_usage is None:
+            return current
+        if current is None:
+            return cls._copy_token_usage(new_usage)
+
+        def _sum_optional(left, right):
+            if left is None and right is None:
+                return None
+            return int(left or 0) + int(right or 0)
+
+        current.prompt_tokens = _sum_optional(
+            current.prompt_tokens, new_usage.prompt_tokens
+        )
+        current.completion_tokens = _sum_optional(
+            current.completion_tokens, new_usage.completion_tokens
+        )
+        current.total_tokens = _sum_optional(
+            current.total_tokens, new_usage.total_tokens
+        )
+        current.reasoning_tokens = _sum_optional(
+            current.reasoning_tokens, new_usage.reasoning_tokens
+        )
+        current.cached_tokens = _sum_optional(
+            current.cached_tokens, new_usage.cached_tokens
+        )
+        current.calls += int(new_usage.calls or 1)
+        if current.model != new_usage.model:
+            current.model = current.model or new_usage.model
+        if current.provider != new_usage.provider:
+            current.provider = current.provider or new_usage.provider
+        if current.source != new_usage.source:
+            current.source = current.source or new_usage.source
+        return current
 
     @classmethod
     def validate_numeric_range(cls, value, min_val, max_val, param_name):
@@ -191,10 +305,16 @@ class BaseOpenAI(BaseLLM):
         attempts = 0
         except_msg = ""
         except_name = Exception.__class__.__name__
+        usage: TokenUsage | None = None
         while attempts < 3:
             try:
                 response = cls.send_messages(messages)
-                res: EvalDetail = cls.process_response(response)
+                if isinstance(response, LLMCallResult):
+                    usage = cls._merge_token_usage(usage, response.usage)
+                    res: EvalDetail = cls.process_response(response.content)
+                    res.usage = usage
+                else:
+                    res: EvalDetail = cls.process_response(response)
                 return res
             except (ValidationError, ExceedMaxTokens, ConvertJsonError) as e:
                 except_msg = str(e)
@@ -216,4 +336,5 @@ class BaseOpenAI(BaseLLM):
         res.status = True
         res.label = [f"QUALITY_BAD.{except_name}"]
         res.reason = [except_msg]
+        res.usage = usage
         return res

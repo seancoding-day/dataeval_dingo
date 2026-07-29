@@ -20,8 +20,9 @@ from typing import Any
 
 from dingo.config.input_args import EvaluatorLLMArgs
 from dingo.io.input import Data
-from dingo.io.output.eval_detail import EvalDetail
+from dingo.io.output.eval_detail import EvalDetail, TokenUsage
 from dingo.model import Model
+from dingo.model.llm.base_openai import BaseOpenAI
 
 logger = logging.getLogger(__name__)
 
@@ -367,6 +368,7 @@ class LLMFieldQuality:
     issues: list[str] | None = None
     reason: str = ""
     error: str = ""
+    usage: TokenUsage | None = None
 
     def field_score(self, field: str) -> float:
         return {
@@ -430,6 +432,7 @@ class EffectivenessGrade:
     issues: list[str] | None = None
     llm_quality_reason: str = ""
     llm_quality_error: str = ""
+    usage: TokenUsage | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -555,6 +558,7 @@ class LLMSearchResultEffectiveness:
             return LLMFieldQuality()
         client = self._get_client()
         last_result = LLMFieldQuality(error="LLM field quality judgment failed")
+        usage: TokenUsage | None = None
         for attempt in range(3):
             try:
                 completion = client.chat.completions.create(
@@ -577,14 +581,24 @@ class LLMSearchResultEffectiveness:
                     max_tokens=self.max_tokens,
                     timeout=self.timeout,
                 )
+                usage = BaseOpenAI._merge_token_usage(
+                    usage,
+                    BaseOpenAI._extract_token_usage(
+                        completion,
+                        model_name=self.model,
+                        provider="openai",
+                    ),
+                )
                 response_text = completion.choices[0].message.content or ""
                 last_result = _parse_llm_field_quality_response(response_text)
+                last_result.usage = usage
                 if not last_result.error:
                     return last_result
                 error: Exception | str = last_result.error
             except Exception as exc:
                 error = exc
                 last_result = LLMFieldQuality(error=str(exc))
+                last_result.usage = usage
 
             logger.warning(
                 "LLM field quality attempt %s/3 failed for title=%r: %s",
@@ -722,6 +736,7 @@ class LLMSearchResultEffectiveness:
             issues=issues,
             llm_quality_reason=llm_quality.reason,
             llm_quality_error=llm_quality.error,
+            usage=llm_quality.usage,
         )
 
     @classmethod
@@ -766,6 +781,7 @@ class LLMSearchResultEffectiveness:
             score=round(grade.score, 5),
             label=labels,
             reason=[grade.to_dict()],
+            usage=grade.usage,
         )
 
 
