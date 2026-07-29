@@ -150,23 +150,92 @@ class Rule_TC609_0104_DocApplicationCompleteness(Rule_TC609_01_DocCompleteness):
 
 
 @Model.rule_register("QUALITY_BAD_TC609_0201", ["guobiao_data"])
-class Rule_TC609_0201_FormatCompliance(Rule_TC609_Composite):
-    """0201: Format compliance, partially covered by existing format rules."""
+class Rule_TC609_0201_FormatCompliance(BaseRule):
+    """Check whether a data record matches a user-provided field schema."""
 
-    component_rules = (
-        "dingo.model.rule.rule_common.RuleNlpDataFormat",
-        "dingo.model.rule.rule_common.RuleSftDataFormat",
-        "dingo.model.rule.rule_common.RuleImageDataFormat",
-        "dingo.model.rule.rule_common.RuleAudioDataFormat",
-        "dingo.model.rule.rule_common.RuleVedioDataFormat",
-    )
-    composition_mode = "any"
+    _supported_types = {
+        "str": {"expected_type": str, "allow_none": False},
+        "int": {"expected_type": int, "allow_none": False},
+        "float": {"expected_type": float, "allow_none": False},
+        "bool": {"expected_type": bool, "allow_none": False},
+        "list": {"expected_type": list, "allow_none": False},
+        "dict": {"expected_type": dict, "allow_none": False},
+        "Optional[str]": {"expected_type": str, "allow_none": True},
+        "Optional[int]": {"expected_type": int, "allow_none": True},
+        "Optional[float]": {"expected_type": float, "allow_none": True},
+        "Optional[bool]": {"expected_type": bool, "allow_none": True},
+        "Optional[list]": {"expected_type": list, "allow_none": True},
+        "Optional[dict]": {"expected_type": dict, "allow_none": True},
+    }
+    dynamic_config = EvaluatorRuleArgs(field_schema=None)
     _metric_info = _tc609_metric_info(
         "0201",
         "Rule_TC609_0201_FormatCompliance",
-        "Combines existing NLP, SFT, image, audio, and video format rules.",
-        "partial",
+        "Checks required fields and their types against a user-provided schema.",
+        "covered",
     )
+
+    @classmethod
+    def _validate_schema(cls, schema):
+        if not isinstance(schema, dict) or not schema:
+            raise ValueError(
+                "Rule_TC609_0201_FormatCompliance requires a non-empty "
+                "dynamic_config.field_schema"
+            )
+
+        for field_name, type_name in schema.items():
+            if not isinstance(field_name, str) or not field_name:
+                raise ValueError(
+                    "Rule_TC609_0201_FormatCompliance schema field names "
+                    "must be non-empty strings"
+                )
+            if (
+                not isinstance(type_name, str)
+                or type_name not in cls._supported_types
+            ):
+                supported = sorted(cls._supported_types.keys())
+                raise ValueError(
+                    f"Unsupported schema type for field {field_name!r}: "
+                    f"{type_name!r}. Supported types: {', '.join(supported)}"
+                )
+
+    @classmethod
+    def eval(cls, input_data: Data) -> EvalDetail:
+        schema = getattr(cls.dynamic_config, "field_schema", None)
+        cls._validate_schema(schema)
+
+        record = input_data.model_dump()
+        res = EvalDetail(metric=cls.__name__)
+        reasons = []
+        for field_name, type_name in schema.items():
+            expected_type = cls._supported_types[type_name]["expected_type"]
+            allow_none = cls._supported_types[type_name]["allow_none"]
+            if field_name not in record:
+                reasons.append(f"{field_name}: required field is missing")
+                res.status = True
+                continue
+
+            value = record[field_name]
+            if allow_none and value is None:
+                continue
+
+            if type(value) is not expected_type:
+                reasons.append(
+                    f"{field_name}: expected {type_name}, "
+                    f"got {type(value).__name__}"
+                )
+                res.status = True
+
+        for field_name in sorted(record.keys() - schema.keys()):
+            reasons.append(f"{field_name}: unexpected field")
+            res.status = True
+
+        if res.status:
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = reasons
+        else:
+            res.label = [QualityLabel.QUALITY_GOOD]
+        return res
 
 
 @Model.rule_register("QUALITY_BAD_TC609_0202", ["guobiao_data"])

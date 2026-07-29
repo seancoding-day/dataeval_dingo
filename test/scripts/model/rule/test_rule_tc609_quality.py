@@ -2,11 +2,16 @@ import inspect
 
 import pytest
 
+from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model.model import Model
 from dingo.model.rule.guobiao import rule_tc609_quality
-from dingo.model.rule.guobiao.rule_tc609_quality import Rule_TC609_0202_SafetyCompliance, Rule_TC609_0301_ContentDiversity
+from dingo.model.rule.guobiao.rule_tc609_quality import (
+    Rule_TC609_0201_FormatCompliance,
+    Rule_TC609_0202_SafetyCompliance,
+    Rule_TC609_0301_ContentDiversity,
+)
 
 
 def test_tc609_quality_defines_all_standard_metrics():
@@ -59,6 +64,144 @@ def test_tc609_rules_are_grouped_by_evaluation_object():
         rule.__name__.startswith("Rule_TC609_")
         for rule in Model.rule_groups.get("guobiao", [])
     )
+
+
+def test_format_compliance_accepts_matching_record(monkeypatch):
+    monkeypatch.setattr(
+        Rule_TC609_0201_FormatCompliance,
+        "dynamic_config",
+        EvaluatorRuleArgs(
+            field_schema={
+                "data_id": "str",
+                "content": "str",
+                "type": "str",
+                "dt": "str",
+            }
+        ),
+    )
+
+    result = Rule_TC609_0201_FormatCompliance.eval(
+        Data(
+            data_id="demo-001",
+            content="example",
+            type="medical",
+            dt="2026-07-20 09:00:00",
+        )
+    )
+
+    assert result.status is False
+    assert result.label == [QualityLabel.QUALITY_GOOD]
+
+
+def test_format_compliance_reports_missing_and_wrong_type(monkeypatch):
+    monkeypatch.setattr(
+        Rule_TC609_0201_FormatCompliance,
+        "dynamic_config",
+        EvaluatorRuleArgs(
+            field_schema={
+                "data_id": "str",
+                "content": "str",
+                "dt": "str",
+            }
+        ),
+    )
+
+    result = Rule_TC609_0201_FormatCompliance.eval(
+        Data(data_id=1, content="example")
+    )
+
+    assert result.status is True
+    assert result.label == [
+        "QUALITY_BAD_TC609_0201.Rule_TC609_0201_FormatCompliance"
+    ]
+    assert result.reason == [
+        "data_id: expected str, got int",
+        "dt: required field is missing",
+    ]
+
+
+def test_format_compliance_reports_unexpected_fields(monkeypatch):
+    monkeypatch.setattr(
+        Rule_TC609_0201_FormatCompliance,
+        "dynamic_config",
+        EvaluatorRuleArgs(field_schema={"content": "str"}),
+    )
+
+    result = Rule_TC609_0201_FormatCompliance.eval(
+        Data(content="example", source="demo")
+    )
+
+    assert result.status is True
+    assert result.reason == ["source: unexpected field"]
+
+
+@pytest.mark.parametrize(
+    "value, type_name",
+    [
+        (None, "Optional[str]"),
+        ("text", "Optional[str]"),
+        (None, "Optional[int]"),
+        (1, "Optional[int]"),
+        (None, "Optional[float]"),
+        (1.5, "Optional[float]"),
+        (None, "Optional[bool]"),
+        (True, "Optional[bool]"),
+        (None, "Optional[list]"),
+        ([], "Optional[list]"),
+        (None, "Optional[dict]"),
+        ({}, "Optional[dict]"),
+    ],
+)
+def test_format_compliance_accepts_optional_types(
+    monkeypatch, value, type_name
+):
+    monkeypatch.setattr(
+        Rule_TC609_0201_FormatCompliance,
+        "dynamic_config",
+        EvaluatorRuleArgs(field_schema={"value": type_name}),
+    )
+
+    result = Rule_TC609_0201_FormatCompliance.eval(Data(value=value))
+
+    assert result.status is False
+    assert result.label == [QualityLabel.QUALITY_GOOD]
+
+
+def test_format_compliance_still_requires_optional_field(monkeypatch):
+    monkeypatch.setattr(
+        Rule_TC609_0201_FormatCompliance,
+        "dynamic_config",
+        EvaluatorRuleArgs(field_schema={"value": "Optional[str]"}),
+    )
+
+    result = Rule_TC609_0201_FormatCompliance.eval(Data())
+
+    assert result.status is True
+    assert result.reason == ["value: required field is missing"]
+
+@pytest.mark.parametrize(
+    "schema, error",
+    [
+        (None, "requires a non-empty dynamic_config.field_schema"),
+        ({}, "requires a non-empty dynamic_config.field_schema"),
+        ({"content": "string"}, "Unsupported schema type"),
+        ({"content": {"type": "str"}}, "Unsupported schema type"),
+        ({"content": "optional_string"}, "Unsupported schema type"),
+        ({"content": "optional_str"}, "Unsupported schema type"),
+        ({"content": "optional[str]"}, "Unsupported schema type"),
+        ({"content": "typing.Optional[str]"}, "Unsupported schema type"),
+        ({"content": "optianal[str]"}, "Unsupported schema type"),
+    ],
+)
+def test_format_compliance_rejects_invalid_schema(monkeypatch, schema, error):
+    monkeypatch.setattr(
+        Rule_TC609_0201_FormatCompliance,
+        "dynamic_config",
+        EvaluatorRuleArgs(field_schema=schema),
+    )
+
+    with pytest.raises(ValueError, match=error):
+        Rule_TC609_0201_FormatCompliance.eval(Data(content="example"))
 
 
 def test_composite_rule_maps_component_failure_to_tc609_label(monkeypatch):
