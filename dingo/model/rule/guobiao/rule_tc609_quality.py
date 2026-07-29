@@ -246,6 +246,10 @@ class Rule_TC609_0201_FormatCompliance(BaseRule):
 class Rule_TC609_0202_SafetyCompliance(Rule_TC609_Composite):
     """0202: Safety compliance, composed from safety and PII rules."""
 
+    dynamic_config = EvaluatorRuleArgs(
+        key_list=[],
+        refer_path=[],
+    )
     component_rules = (
         "dingo.model.rule.rule_common.RuleUnsafeWords",
         "dingo.model.rule.rule_common.RulePIIDetection",
@@ -258,6 +262,15 @@ class Rule_TC609_0202_SafetyCompliance(Rule_TC609_Composite):
         "Combines unsafe-word, PII, and identity-card detection.",
         "partial",
     )
+
+    @classmethod
+    def eval(cls, input_data: Data) -> EvalDetail:
+        rule_unsafe_words = cls._resolve_rule(cls.component_rules[0])
+        rule_unsafe_words.dynamic_config = EvaluatorRuleArgs(
+            key_list=cls.dynamic_config.key_list or [],
+            refer_path=cls.dynamic_config.refer_path or [],
+        )
+        return super().eval(input_data)
 
 
 @Model.rule_register("QUALITY_BAD_TC609_0203", ["guobiao_data"])

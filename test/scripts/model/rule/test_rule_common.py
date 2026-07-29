@@ -20,15 +20,81 @@ class TestRuleDocFormulaRepeat:
         assert res.metric == "RuleDocFormulaRepeat"
         assert res.reason == ["Formula has too many consecutive repeated characters, total repeat length: 130, found 1 repeat patterns"]
 
-    def test_rule_unsafe_words(self):
+    def test_rule_unsafe_words(self, monkeypatch):
         data = Data(data_id="", prompt="", content="java is good\n \n \n \n hello \n \n but python is better")
-        r = RuleUnsafeWords
-        r.dynamic_config.key_list = ['av', 'b', 'java']
-        tmp = r.eval(data)
+        monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_list", None)
+        monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_automaton", None)
+        monkeypatch.setattr(
+            RuleUnsafeWords,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                key_list=["av", "b", "java"],
+                refer_path=[],
+            ),
+        )
+        tmp = RuleUnsafeWords.eval(data)
         assert tmp.status is True
         assert 'av' not in tmp.reason
         assert 'b' not in tmp.reason
         assert 'java' in tmp.reason
+
+    def test_rule_unsafe_words_requires_configured_words(self, monkeypatch):
+        monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_list", None)
+        monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_automaton", None)
+        monkeypatch.setattr(
+            RuleUnsafeWords,
+            "dynamic_config",
+            EvaluatorRuleArgs(key_list=[], refer_path=[]),
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="key_list.*refer_path",
+        ):
+            RuleUnsafeWords.eval(Data(content="safe text"))
+
+    def test_rule_unsafe_words_combines_key_list_and_refer_path(
+        self, monkeypatch, tmp_path
+    ):
+        monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_list", None)
+        monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_automaton", None)
+        unsafe_words_file = tmp_path / "unsafe_words.jsonl"
+        unsafe_words_file.write_text(
+            '{"word": "python"}\n',
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(
+            RuleUnsafeWords,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                key_list=["java"],
+                refer_path=[str(unsafe_words_file)],
+            ),
+        )
+
+        result = RuleUnsafeWords.eval(
+            Data(content="java and python are programming languages")
+        )
+
+        assert result.status is True
+        assert result.reason == ["java", "python"]
+
+    def test_rule_unsafe_words_reuses_cached_automaton(self, monkeypatch):
+        monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_list", None)
+        monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_automaton", None)
+        monkeypatch.setattr(
+            RuleUnsafeWords,
+            "dynamic_config",
+            EvaluatorRuleArgs(key_list=["java"], refer_path=[]),
+        )
+
+        RuleUnsafeWords.eval(Data(content="java"))
+        cached_words = RuleUnsafeWords._unsafe_words_list
+        cached_automaton = RuleUnsafeWords._unsafe_words_automaton
+        RuleUnsafeWords.eval(Data(content="java"))
+
+        assert RuleUnsafeWords._unsafe_words_list is cached_words
+        assert RuleUnsafeWords._unsafe_words_automaton is cached_automaton
 
 
 class TestRule_TC609_02080101_TextPerplexity:

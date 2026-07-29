@@ -263,6 +263,59 @@ def test_composite_rule_maps_component_failure_to_tc609_label(monkeypatch):
     assert result.reason == ["FailingRule: component failed"]
 
 
+def test_safety_compliance_passes_words_config_to_unsafe_rule(monkeypatch):
+    class UnsafeWordsRule:
+        dynamic_config = EvaluatorRuleArgs()
+        _unsafe_words_list = None
+        _unsafe_words_automaton = None
+
+        @classmethod
+        def eval(cls, input_data):
+            if "unsafe" in cls.dynamic_config.key_list:
+                return EvalDetail(
+                    metric=cls.__name__,
+                    status=True,
+                    label=["QUALITY_BAD_SECURITY.UnsafeWordsRule"],
+                    reason=["unsafe"],
+                )
+            return EvalDetail(
+                metric=cls.__name__,
+                label=[QualityLabel.QUALITY_GOOD],
+            )
+
+    class PassingRule:
+        @classmethod
+        def eval(cls, input_data):
+            return EvalDetail(
+                metric=cls.__name__,
+                label=[QualityLabel.QUALITY_GOOD],
+            )
+
+    component_map = {
+        Rule_TC609_0202_SafetyCompliance.component_rules[0]: UnsafeWordsRule,
+        Rule_TC609_0202_SafetyCompliance.component_rules[1]: PassingRule,
+        Rule_TC609_0202_SafetyCompliance.component_rules[2]: PassingRule,
+    }
+    monkeypatch.setattr(
+        Rule_TC609_0202_SafetyCompliance,
+        "_resolve_rule",
+        classmethod(lambda cls, path: component_map[path]),
+    )
+    monkeypatch.setattr(
+        Rule_TC609_0202_SafetyCompliance,
+        "dynamic_config",
+        EvaluatorRuleArgs(key_list=["unsafe"], refer_path=[]),
+    )
+
+    result = Rule_TC609_0202_SafetyCompliance.eval(
+        Data(content="unsafe")
+    )
+
+    assert UnsafeWordsRule.dynamic_config.key_list == ["unsafe"]
+    assert result.status is True
+    assert result.reason == ["UnsafeWordsRule: unsafe"]
+
+
 def test_uncovered_rule_is_explicit_placeholder():
     assert Rule_TC609_0301_ContentDiversity.group == ["guobiao_model"]
     with pytest.raises(NotImplementedError, match="placeholder"):
