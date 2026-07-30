@@ -309,20 +309,62 @@ class Rule_TC609_0203_AnnotationCompliance(BaseRule):
 
 
 @Model.rule_register("QUALITY_BAD_TC609_0204", ["guobiao_data"])
-class Rule_TC609_0204_StructuralCompleteness(Rule_TC609_Composite):
-    """0204: Structural completeness, composed from content checks."""
+class Rule_TC609_0204_StructuralCompleteness(BaseRule):
+    """Check required fields for missing, None, and empty values."""
 
-    component_rules = (
-        "dingo.model.rule.rule_common.RuleContentNull",
-        "dingo.model.rule.rule_common.RuleContentShort",
+    dynamic_config = EvaluatorRuleArgs(
+        key_list=[],
+        allow_none=False,
+        allow_empty=False,
     )
-    _required_fields = [RequiredField.CONTENT]
     _metric_info = _tc609_metric_info(
         "0204",
         "Rule_TC609_0204_StructuralCompleteness",
-        "Combines null-content and short-content checks.",
-        "partial",
+        "Checks configured fields for missing, None, and empty values.",
+        "covered",
     )
+
+    @classmethod
+    def eval(cls, input_data: Data) -> EvalDetail:
+        key_list = cls.dynamic_config.key_list or []
+        if not key_list:
+            raise ValueError(
+                "Rule_TC609_0204_StructuralCompleteness requires a non-empty "
+                "dynamic_config.key_list"
+            )
+
+        record = input_data.model_dump()
+        allow_none = getattr(cls.dynamic_config, "allow_none", False)
+        allow_empty = getattr(cls.dynamic_config, "allow_empty", False)
+        res = EvalDetail(metric=cls.__name__)
+        reasons = []
+
+        for field_name in key_list:
+            if field_name not in record:
+                reasons.append(f"{field_name}: required field is missing")
+                res.status = True
+                continue
+
+            value = record[field_name]
+            if value is None and not allow_none:
+                reasons.append(f"{field_name}: None is not allowed")
+                res.status = True
+                continue
+
+            if (
+                not allow_empty
+                and isinstance(value, (str, list, dict))
+                and len(value) == 0
+            ):
+                reasons.append(f"{field_name}: empty value is not allowed")
+                res.status = True
+
+        if res.status:
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = reasons
+        else:
+            res.label = [QualityLabel.QUALITY_GOOD]
+        return res
 
 
 @Model.rule_register("QUALITY_BAD_TC609_0205", ["guobiao_data"])

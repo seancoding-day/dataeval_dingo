@@ -11,6 +11,7 @@ from dingo.model.rule.guobiao.rule_tc609_quality import (
     Rule_TC609_0201_FormatCompliance,
     Rule_TC609_0202_SafetyCompliance,
     Rule_TC609_0203_AnnotationCompliance,
+    Rule_TC609_0204_StructuralCompleteness,
     Rule_TC609_0301_ContentDiversity,
 )
 
@@ -361,6 +362,84 @@ def test_annotation_compliance_requires_allowed_values(monkeypatch):
 
     with pytest.raises(ValueError, match="non-empty dynamic_config.key_list"):
         Rule_TC609_0203_AnnotationCompliance.eval(Data(content="positive"))
+
+
+def test_structural_completeness_accepts_present_values(monkeypatch):
+    monkeypatch.setattr(
+        Rule_TC609_0204_StructuralCompleteness,
+        "dynamic_config",
+        EvaluatorRuleArgs(
+            key_list=["content", "labels", "metadata"],
+            allow_none=False,
+            allow_empty=False,
+        ),
+    )
+
+    result = Rule_TC609_0204_StructuralCompleteness.eval(
+        Data(content="example", labels=["valid"], metadata={"source": "demo"})
+    )
+
+    assert result.status is False
+    assert result.label == [QualityLabel.QUALITY_GOOD]
+
+
+def test_structural_completeness_reports_missing_none_and_empty(monkeypatch):
+    monkeypatch.setattr(
+        Rule_TC609_0204_StructuralCompleteness,
+        "dynamic_config",
+        EvaluatorRuleArgs(
+            key_list=["missing", "nullable", "text", "items", "metadata"],
+            allow_none=False,
+            allow_empty=False,
+        ),
+    )
+
+    result = Rule_TC609_0204_StructuralCompleteness.eval(
+        Data(nullable=None, text="", items=[], metadata={})
+    )
+
+    assert result.status is True
+    assert result.reason == [
+        "missing: required field is missing",
+        "nullable: None is not allowed",
+        "text: empty value is not allowed",
+        "items: empty value is not allowed",
+        "metadata: empty value is not allowed",
+    ]
+
+
+def test_structural_completeness_allows_none_and_empty(monkeypatch):
+    monkeypatch.setattr(
+        Rule_TC609_0204_StructuralCompleteness,
+        "dynamic_config",
+        EvaluatorRuleArgs(
+            key_list=["nullable", "text", "items", "metadata"],
+            allow_none=True,
+            allow_empty=True,
+        ),
+    )
+
+    result = Rule_TC609_0204_StructuralCompleteness.eval(
+        Data(nullable=None, text="", items=[], metadata={})
+    )
+
+    assert result.status is False
+    assert result.label == [QualityLabel.QUALITY_GOOD]
+
+
+def test_structural_completeness_requires_key_list(monkeypatch):
+    monkeypatch.setattr(
+        Rule_TC609_0204_StructuralCompleteness,
+        "dynamic_config",
+        EvaluatorRuleArgs(
+            key_list=[],
+            allow_none=False,
+            allow_empty=False,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="non-empty dynamic_config.key_list"):
+        Rule_TC609_0204_StructuralCompleteness.eval(Data(content="example"))
 
 
 def test_uncovered_rule_is_explicit_placeholder():
