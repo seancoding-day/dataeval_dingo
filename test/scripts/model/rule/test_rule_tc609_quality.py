@@ -14,6 +14,7 @@ from dingo.model.rule.guobiao.rule_tc609_quality import (
     Rule_TC609_0203_AnnotationCompliance,
     Rule_TC609_0204_StructuralCompleteness,
     Rule_TC609_0205_ContentAuthenticity,
+    Rule_TC609_0206_ContentConsistency,
     Rule_TC609_0301_ContentDiversity,
 )
 
@@ -576,6 +577,107 @@ def test_content_authenticity_declares_required_fields():
         RequiredField.CONTENT,
         RequiredField.SOURCE,
     ]
+
+
+def test_content_consistency_accepts_consistent_string_fields(monkeypatch):
+    monkeypatch.setattr(
+        Rule_TC609_0206_ContentConsistency,
+        "dynamic_config",
+        EvaluatorRuleArgs(
+            key_list=["title", "content", "summary"],
+            threshold=0.5,
+            model="test-model",
+            device=-1,
+        ),
+    )
+    scores = iter([0.9, 0.8])
+    monkeypatch.setattr(
+        Rule_TC609_0206_ContentConsistency,
+        "_calculate_consistency_score",
+        classmethod(lambda cls, *args: next(scores)),
+    )
+
+    result = Rule_TC609_0206_ContentConsistency.eval(
+        Data(title="健康", content="健康知识", summary="健康摘要")
+    )
+
+    assert result.status is False
+    assert result.score == 0.8
+    assert result.label == [QualityLabel.QUALITY_GOOD]
+
+
+def test_content_consistency_rejects_inconsistent_string_fields(monkeypatch):
+    monkeypatch.setattr(
+        Rule_TC609_0206_ContentConsistency,
+        "dynamic_config",
+        EvaluatorRuleArgs(
+            key_list=["title", "content"],
+            threshold=0.5,
+            model="test-model",
+            device=-1,
+        ),
+    )
+    monkeypatch.setattr(
+        Rule_TC609_0206_ContentConsistency,
+        "_calculate_consistency_score",
+        classmethod(lambda cls, *args: 0.2),
+    )
+
+    result = Rule_TC609_0206_ContentConsistency.eval(
+        Data(title="健康", content="金融市场")
+    )
+
+    assert result.status is True
+    assert result.score == 0.2
+    assert result.reason == [
+        "title and content are inconsistent "
+        "(score: 0.2000, threshold: 0.5000)"
+    ]
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        Data(title="健康"),
+        Data(title="健康", content=["健康知识"]),
+        Data(title="健康", content=None),
+    ],
+)
+def test_content_consistency_requires_existing_string_fields(data, monkeypatch):
+    monkeypatch.setattr(
+        Rule_TC609_0206_ContentConsistency,
+        "dynamic_config",
+        EvaluatorRuleArgs(
+            key_list=["title", "content"],
+            threshold=0.5,
+            model="test-model",
+            device=-1,
+        ),
+    )
+
+    result = Rule_TC609_0206_ContentConsistency.eval(data)
+
+    assert result.status is True
+    assert result.reason == [
+        "content: field must exist and its value must be str"
+    ]
+
+
+@pytest.mark.parametrize("key_list", [[], ["content"], ["content", "content"]])
+def test_content_consistency_rejects_invalid_key_list(key_list, monkeypatch):
+    monkeypatch.setattr(
+        Rule_TC609_0206_ContentConsistency,
+        "dynamic_config",
+        EvaluatorRuleArgs(
+            key_list=key_list,
+            threshold=0.5,
+            model="test-model",
+            device=-1,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="key_list"):
+        Rule_TC609_0206_ContentConsistency.eval(Data(content="example"))
 
 
 def test_uncovered_rule_is_explicit_placeholder():
