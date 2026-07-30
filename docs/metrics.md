@@ -164,7 +164,7 @@ This document provides comprehensive information about all quality metrics used 
 | Type | Metric | Description | Paper Source | Evaluation Results | Examples |
 |------|--------|-------------|--------------|-------------------|----------|
 | `QUALITY_BAD_TC609_0202` | Rule_TC609_0202_SafetyCompliance | Combines unsafe-word, PII, and identity-card detection. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0203` | Rule_TC609_0203_AnnotationCompliance | Combines image-label overlap and visualization checks. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0203` | Rule_TC609_0203_AnnotationCompliance | Checks whether `content` belongs to the annotation values configured in `key_list`. | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0204` | Rule_TC609_0204_StructuralCompleteness | Combines null-content and short-content checks. | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0205` | Rule_TC609_0205_ContentAuthenticity | Uses HHEM consistency checking as partial evidence of authenticity. | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0206` | Rule_TC609_0206_ContentConsistency | Combines structured-field and image-text consistency checks. | Internal Implementation | N/A | N/A |

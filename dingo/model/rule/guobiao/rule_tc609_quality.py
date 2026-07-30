@@ -274,20 +274,38 @@ class Rule_TC609_0202_SafetyCompliance(Rule_TC609_Composite):
 
 
 @Model.rule_register("QUALITY_BAD_TC609_0203", ["guobiao_data"])
-class Rule_TC609_0203_AnnotationCompliance(Rule_TC609_Composite):
-    """0203: Annotation compliance, partially covered by image label rules."""
+class Rule_TC609_0203_AnnotationCompliance(BaseRule):
+    """Check whether content is one of the configured annotation values."""
 
-    component_rules = (
-        "dingo.model.rule.rule_image.RuleImageLabelOverlap",
-        "dingo.model.rule.rule_image.RuleImageLabelVisualization",
-    )
-    _required_fields = [RequiredField.IMAGE]
+    dynamic_config = EvaluatorRuleArgs(key_list=[])
+    _required_fields = [RequiredField.CONTENT]
     _metric_info = _tc609_metric_info(
         "0203",
         "Rule_TC609_0203_AnnotationCompliance",
-        "Combines image-label overlap and visualization checks.",
-        "partial",
+        "Checks whether content belongs to a user-provided annotation value list.",
+        "covered",
     )
+
+    @classmethod
+    def eval(cls, input_data: Data) -> EvalDetail:
+        allowed_values = cls.dynamic_config.key_list or []
+        if not allowed_values:
+            raise ValueError(
+                "Rule_TC609_0203_AnnotationCompliance requires a non-empty "
+                "dynamic_config.key_list"
+            )
+
+        res = EvalDetail(metric=cls.__name__)
+        content = getattr(input_data, "content", None)
+        if content not in allowed_values:
+            res.status = True
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = [
+                f"content: value {content!r} is not in dynamic_config.key_list"
+            ]
+        else:
+            res.label = [QualityLabel.QUALITY_GOOD]
+        return res
 
 
 @Model.rule_register("QUALITY_BAD_TC609_0204", ["guobiao_data"])

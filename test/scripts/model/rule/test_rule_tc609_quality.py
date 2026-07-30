@@ -10,6 +10,7 @@ from dingo.model.rule.guobiao import rule_tc609_quality
 from dingo.model.rule.guobiao.rule_tc609_quality import (
     Rule_TC609_0201_FormatCompliance,
     Rule_TC609_0202_SafetyCompliance,
+    Rule_TC609_0203_AnnotationCompliance,
     Rule_TC609_0301_ContentDiversity,
 )
 
@@ -314,6 +315,52 @@ def test_safety_compliance_passes_words_config_to_unsafe_rule(monkeypatch):
     assert UnsafeWordsRule.dynamic_config.key_list == ["unsafe"]
     assert result.status is True
     assert result.reason == ["UnsafeWordsRule: unsafe"]
+
+
+def test_annotation_compliance_accepts_allowed_content(monkeypatch):
+    monkeypatch.setattr(
+        Rule_TC609_0203_AnnotationCompliance,
+        "dynamic_config",
+        EvaluatorRuleArgs(key_list=["positive", "negative"]),
+    )
+
+    result = Rule_TC609_0203_AnnotationCompliance.eval(
+        Data(content="positive")
+    )
+
+    assert result.status is False
+    assert result.label == [QualityLabel.QUALITY_GOOD]
+
+
+def test_annotation_compliance_rejects_unknown_content(monkeypatch):
+    monkeypatch.setattr(
+        Rule_TC609_0203_AnnotationCompliance,
+        "dynamic_config",
+        EvaluatorRuleArgs(key_list=["positive", "negative"]),
+    )
+
+    result = Rule_TC609_0203_AnnotationCompliance.eval(
+        Data(content="neutral")
+    )
+
+    assert result.status is True
+    assert result.label == [
+        "QUALITY_BAD_TC609_0203.Rule_TC609_0203_AnnotationCompliance"
+    ]
+    assert result.reason == [
+        "content: value 'neutral' is not in dynamic_config.key_list"
+    ]
+
+
+def test_annotation_compliance_requires_allowed_values(monkeypatch):
+    monkeypatch.setattr(
+        Rule_TC609_0203_AnnotationCompliance,
+        "dynamic_config",
+        EvaluatorRuleArgs(key_list=[]),
+    )
+
+    with pytest.raises(ValueError, match="non-empty dynamic_config.key_list"):
+        Rule_TC609_0203_AnnotationCompliance.eval(Data(content="positive"))
 
 
 def test_uncovered_rule_is_explicit_placeholder():
