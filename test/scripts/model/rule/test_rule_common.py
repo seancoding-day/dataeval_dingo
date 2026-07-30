@@ -7,12 +7,7 @@ from dingo.model.rule.guobiao.rule_tc609_quality import (Rule_TC609_0101_DocBasi
                                                          Rule_TC609_0104_DocApplicationCompleteness, Rule_TC609_0207_DataTypeConsistency, Rule_TC609_0303_DataTimeRange,
                                                          Rule_TC609_02080101_TextPerplexity)
 from dingo.model.rule.guobiao.rule_tc609_quality_base import Rule_TC609_01_DocCompleteness
-from dingo.model.rule.rule_common import (
-    RuleDocFormulaRepeat,
-    RulePIIDetection,
-    RuleUnsafeWords,
-    RuleWatermark,
-)
+from dingo.model.rule.rule_common import RuleDocFormulaRepeat, RulePIIDetection, RuleUnsafeWords, RuleWatermark
 
 
 class TestRuleDocFormulaRepeat:

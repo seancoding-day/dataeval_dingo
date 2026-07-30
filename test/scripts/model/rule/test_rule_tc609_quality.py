@@ -8,16 +8,9 @@ from dingo.io.input import RequiredField
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model.model import Model
 from dingo.model.rule.guobiao import rule_tc609_quality
-from dingo.model.rule.guobiao.rule_tc609_quality import (
-    Rule_TC609_0201_FormatCompliance,
-    Rule_TC609_0202_SafetyCompliance,
-    Rule_TC609_0203_AnnotationCompliance,
-    Rule_TC609_0204_StructuralCompleteness,
-    Rule_TC609_0205_ContentAuthenticity,
-    Rule_TC609_0206_ContentConsistency,
-    Rule_TC609_0208_ContentCleanliness,
-    Rule_TC609_0301_ContentDiversity,
-)
+from dingo.model.rule.guobiao.rule_tc609_quality import (Rule_TC609_0201_FormatCompliance, Rule_TC609_0202_SafetyCompliance, Rule_TC609_0203_AnnotationCompliance,
+                                                         Rule_TC609_0204_StructuralCompleteness, Rule_TC609_0205_ContentAuthenticity, Rule_TC609_0206_ContentConsistency,
+                                                         Rule_TC609_0208_ContentCleanliness, Rule_TC609_0301_ContentDiversity)
 from dingo.model.rule.rule_common import RuleWatermark
 
 
@@ -203,6 +196,7 @@ def test_format_compliance_still_requires_optional_field(monkeypatch):
 
     assert result.status is True
     assert result.reason == ["value: required field is missing"]
+
 
 @pytest.mark.parametrize(
     "schema, error",

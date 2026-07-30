@@ -9,9 +9,7 @@ available locally.
 
 from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
-from dingo.model.rule.guobiao.rule_tc609_quality import (
-    Rule_TC609_0206_ContentConsistency,
-)
+from dingo.model.rule.guobiao.rule_tc609_quality import Rule_TC609_0206_ContentConsistency
 
 
 def main():
