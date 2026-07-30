@@ -194,6 +194,3 @@ class InputArgs(BaseModel):
     dataset: DatasetArgs = DatasetArgs()
     executor: ExecutorArgs = ExecutorArgs()
     evaluator: List[EvalPipline] = []
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
