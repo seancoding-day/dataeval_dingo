@@ -37,11 +37,68 @@ def load_query_result_jsonl(path: Path, max_queries: int | None = None) -> list[
     return items
 
 
+def load_queries(path: Path, max_queries: int | None = None) -> list[str]:
+    """Load unique queries from TXT, CSV, JSON, or JSONL input."""
+    suffix = path.suffix.lower()
+    queries: list[str] = []
+    seen: set[str] = set()
+
+    def add(value: Any) -> None:
+        query = str(value or "").strip()
+        if query and query not in seen:
+            seen.add(query)
+            queries.append(query)
+
+    if suffix == ".txt":
+        with path.open("r", encoding="utf-8-sig") as f:
+            for line in f:
+                add(line)
+                if max_queries and len(queries) >= max_queries:
+                    break
+        return queries
+
+    if suffix == ".csv":
+        with path.open("r", encoding="utf-8-sig", newline="") as f:
+            for row in csv.DictReader(f):
+                add(row.get("query") or row.get("query_text") or row.get("q"))
+                if max_queries and len(queries) >= max_queries:
+                    break
+        return queries
+
+    if suffix == ".json":
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+        rows = payload if isinstance(payload, list) else payload.get("queries", [])
+        for row in rows:
+            if isinstance(row, str):
+                add(row)
+            elif isinstance(row, dict):
+                add(row.get("query") or row.get("query_text") or row.get("q"))
+            if max_queries and len(queries) >= max_queries:
+                break
+        return queries
+
+    with path.open("r", encoding="utf-8-sig") as f:
+        for line_no, line in enumerate(f, start=1):
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            if isinstance(row, str):
+                add(row)
+            elif isinstance(row, dict):
+                add(row.get("query") or row.get("query_text") or row.get("q"))
+            else:
+                raise ValueError(f"Line {line_no}: query row must be a string or object.")
+            if max_queries and len(queries) >= max_queries:
+                break
+    return queries
+
+
 def get_title(result: dict[str, Any]) -> str:
     return str(result.get("title") or result.get("display_name") or "")
 
 
 def rank_discounted_mean(values: list[float]) -> float:
+    """Return a query-level weighted mean that gives higher ranks more weight."""
     if not values:
         return 0.0
     weights = [1.0 / math.log2(rank + 2) for rank in range(len(values))]
@@ -61,11 +118,18 @@ def summarize(values: list[float]) -> dict[str, float | int]:
 
 
 def add_common_args(parser: argparse.ArgumentParser) -> None:
-    parser.add_argument("--input-jsonl", type=Path, required=True)
+    parser.add_argument(
+        "--input-jsonl",
+        "--input-queries",
+        dest="input_jsonl",
+        type=Path,
+        required=True,
+        help="Precomputed query-result JSONL, or a TXT/CSV/JSON/JSONL query file in live retrieval mode.",
+    )
     parser.add_argument("--output-dir", type=Path, default=Path("outputs/search_result_eval"))
     parser.add_argument("--top-k", type=int, default=10)
     parser.add_argument("--max-queries", type=int, default=None)
-    parser.add_argument("--save-good", action="store_true", help="Save good query-level records under good/.")
+    parser.add_argument("--save-good", action="store_true", help="Save good classified records under good/.")
 
 
 def write_json(path: Path, payload: dict[str, Any]) -> None:

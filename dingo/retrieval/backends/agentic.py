@@ -7,8 +7,8 @@ Supports two modes:
     POST {api_url}/v1/search  -- direct connection to the Go service, no auth.
 
   Public (when api_token is set):
-    POST {api_url}/agentic-search  -- SciVerse public gateway with Bearer auth.
-    POST {api_url}/meta-search     -- SciVerse metadata search gateway.
+    POST {api_url}/agentic-search  -- Sciverse public gateway with Bearer auth.
+    POST {api_url}/meta-search     -- Sciverse metadata search gateway.
     Rate limit defaults to 1 RPS.
 
 Examples:
@@ -291,16 +291,33 @@ class MetaSearchClient(AgenticSearchClient):
     def __init__(
         self,
         *args,
-        search_type: str = "paper",
+        search_type: str = "all",
         sort_by: str | None = None,
         freshness_boost: str | None = None,
         filters: list[dict[str, Any]] | dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> None:
-        self.search_type = search_type
+        api_url = kwargs.get("api_url")
+        if api_url:
+            normalized_url = str(api_url).rstrip("/")
+            if normalized_url.endswith("/meta-search"):
+                kwargs["api_url"] = normalized_url[: -len("/meta-search")]
+        self.search_type = (search_type or "all").strip().lower()
+        if self.search_type not in {"all", "paper", "ebook"}:
+            raise ValueError("meta_search search_type must be 'all', 'paper', or 'ebook'")
         self.sort_by = sort_by
         self.freshness_boost = freshness_boost
         self.filters = self._normalize_filters(filters)
+        if self.search_type != "all" and not any(
+            item.get("field") == "metadata_type" for item in self.filters
+        ):
+            self.filters.append(
+                {
+                    "field": "metadata_type",
+                    "operator": "FILTER_OP_EQ",
+                    "value": self.search_type,
+                }
+            )
         super().__init__(*args, **kwargs)
         if self._public_mode:
             self.name = "sciverse-meta-search-api"
