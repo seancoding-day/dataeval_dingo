@@ -2108,7 +2108,12 @@ class RuleUnsafeWords(BaseRule):
         "paper_authors": "Together Computer, 2023",
         "evaluation_results": "docs/eval/rule/slimpajama_data_evaluated_by_rule.md"
     }
-    dynamic_config = EvaluatorRuleArgs(refer_path=[])
+    dynamic_config = EvaluatorRuleArgs(
+        key_list=[],
+        refer_path=[],
+    )
+    _unsafe_words_list = None
+    _unsafe_words_automaton = None
 
     _required_fields = [RequiredField.CONTENT]
 
@@ -2121,17 +2126,32 @@ class RuleUnsafeWords(BaseRule):
 
         res = EvalDetail(metric=cls.__name__)
         content = input_data.content
-        key_list = cls.dynamic_config.key_list
-        if key_list is None:
-            key_list = get_unsafe_words(cls.dynamic_config.refer_path)
+        if cls._unsafe_words_list is None:
+            unsafe_words_list = []
+            unsafe_words_list.extend(cls.dynamic_config.key_list or [])
+            unsafe_words_list.extend(get_unsafe_words(cls.dynamic_config.refer_path or []))
+            unsafe_words_list = list(dict.fromkeys(
+                word for word in unsafe_words_list
+                if isinstance(word, str) and word
+            ))
+            if not unsafe_words_list:
+                raise ValueError(
+                    "RuleUnsafeWords requires unsafe words from dynamic_config."
+                    "key_list or files configured in dynamic_config.refer_path"
+                )
+            cls._unsafe_words_list = unsafe_words_list
 
-        A = ahocorasick.Automaton()
-        for index, key in enumerate(key_list):
-            A.add_word(key, (index, key))
-        A.make_automaton()
+        if cls._unsafe_words_automaton is None:
+            automaton = ahocorasick.Automaton()
+            for index, key in enumerate(cls._unsafe_words_list):
+                automaton.add_word(key, (index, key))
+            automaton.make_automaton()
+            cls._unsafe_words_automaton = automaton
 
         matches = []
-        for end_index, (index, keyword) in A.iter(content):
+        for end_index, (index, keyword) in cls._unsafe_words_automaton.iter(
+            content
+        ):
             start_index = end_index - len(keyword) + 1
 
             # 检查单词边界
@@ -2274,6 +2294,11 @@ class RuleWatermark(BaseRule):
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
+        if not cls.dynamic_config.key_list:
+            raise ValueError(
+                "RuleWatermark requires non-empty dynamic_config.key_list"
+            )
+
         res = EvalDetail(metric=cls.__name__)
         matches = re.findall("|".join(cls.dynamic_config.key_list), input_data.content)
         if matches:
