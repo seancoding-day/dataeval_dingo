@@ -2294,6 +2294,11 @@ class RuleWatermark(BaseRule):
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
+        if not cls.dynamic_config.key_list:
+            raise ValueError(
+                "RuleWatermark requires non-empty dynamic_config.key_list"
+            )
+
         res = EvalDetail(metric=cls.__name__)
         matches = re.findall("|".join(cls.dynamic_config.key_list), input_data.content)
         if matches:
