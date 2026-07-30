@@ -7,7 +7,12 @@ from dingo.model.rule.guobiao.rule_tc609_quality import (Rule_TC609_0101_DocBasi
                                                          Rule_TC609_0104_DocApplicationCompleteness, Rule_TC609_0207_DataTypeConsistency, Rule_TC609_0303_DataTimeRange,
                                                          Rule_TC609_02080101_TextPerplexity)
 from dingo.model.rule.guobiao.rule_tc609_quality_base import Rule_TC609_01_DocCompleteness
-from dingo.model.rule.rule_common import RuleDocFormulaRepeat, RulePIIDetection, RuleUnsafeWords
+from dingo.model.rule.rule_common import (
+    RuleDocFormulaRepeat,
+    RulePIIDetection,
+    RuleUnsafeWords,
+    RuleWatermark,
+)
 
 
 class TestRuleDocFormulaRepeat:
@@ -19,6 +24,19 @@ class TestRuleDocFormulaRepeat:
         assert res.label == ["QUALITY_BAD_SIMILARITY.RuleDocFormulaRepeat"]
         assert res.metric == "RuleDocFormulaRepeat"
         assert res.reason == ["Formula has too many consecutive repeated characters, total repeat length: 130, found 1 repeat patterns"]
+
+    def test_requires_configured_watermarks(self, monkeypatch):
+        monkeypatch.setattr(
+            RuleWatermark,
+            "dynamic_config",
+            EvaluatorRuleArgs(key_list=[]),
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="RuleWatermark requires non-empty dynamic_config.key_list",
+        ):
+            RuleWatermark.eval(Data(content="safe text"))
 
     def test_rule_unsafe_words(self, monkeypatch):
         data = Data(data_id="", prompt="", content="java is good\n \n \n \n hello \n \n but python is better")

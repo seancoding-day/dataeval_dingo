@@ -737,6 +737,7 @@ class Rule_TC609_0207_DataTypeConsistency(BaseRule):
 class Rule_TC609_0208_ContentCleanliness(Rule_TC609_Composite):
     """0208: Content cleanliness, composed from available cleaning rules."""
 
+    dynamic_config = EvaluatorRuleArgs(key_list=[])
     component_rules = (
         "dingo.model.rule.rule_common.RuleAbnormalChar",
         "dingo.model.rule.rule_common.RuleAbnormalHtml",
@@ -751,6 +752,14 @@ class Rule_TC609_0208_ContentCleanliness(Rule_TC609_Composite):
         "Combines available text cleanliness checks; modality coverage is partial.",
         "partial",
     )
+
+    @classmethod
+    def eval(cls, input_data: Data) -> EvalDetail:
+        rule_watermark = cls._resolve_rule(cls.component_rules[-1])
+        rule_watermark.dynamic_config = EvaluatorRuleArgs(
+            key_list=cls.dynamic_config.key_list or [],
+        )
+        return super().eval(input_data)
 
 
 @Model.rule_register("QUALITY_BAD_TC609_02080101", ["pretrain", "guobiao_text"])

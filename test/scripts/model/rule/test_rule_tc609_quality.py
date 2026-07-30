@@ -15,8 +15,10 @@ from dingo.model.rule.guobiao.rule_tc609_quality import (
     Rule_TC609_0204_StructuralCompleteness,
     Rule_TC609_0205_ContentAuthenticity,
     Rule_TC609_0206_ContentConsistency,
+    Rule_TC609_0208_ContentCleanliness,
     Rule_TC609_0301_ContentDiversity,
 )
+from dingo.model.rule.rule_common import RuleWatermark
 
 
 def test_tc609_quality_defines_all_standard_metrics():
@@ -365,6 +367,56 @@ def test_annotation_compliance_requires_allowed_values(monkeypatch):
 
     with pytest.raises(ValueError, match="non-empty dynamic_config.key_list"):
         Rule_TC609_0203_AnnotationCompliance.eval(Data(content="positive"))
+
+
+def test_content_cleanliness_propagates_empty_watermark_config(monkeypatch):
+    monkeypatch.setattr(
+        Rule_TC609_0208_ContentCleanliness,
+        "dynamic_config",
+        EvaluatorRuleArgs(key_list=[]),
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="RuleWatermark requires non-empty dynamic_config.key_list",
+    ):
+        Rule_TC609_0208_ContentCleanliness.eval(Data(content="safe text"))
+
+
+def test_content_cleanliness_passes_key_list_to_watermark(monkeypatch):
+    monkeypatch.setattr(
+        Rule_TC609_0208_ContentCleanliness,
+        "dynamic_config",
+        EvaluatorRuleArgs(key_list=["DINGO-WATERMARK"]),
+    )
+    monkeypatch.setattr(
+        RuleWatermark,
+        "dynamic_config",
+        EvaluatorRuleArgs(key_list=["stale-value"]),
+    )
+
+    result = Rule_TC609_0208_ContentCleanliness.eval(
+        Data(content="text with DINGO-WATERMARK")
+    )
+
+    assert RuleWatermark.dynamic_config.key_list == ["DINGO-WATERMARK"]
+    assert result.status is True
+    assert result.reason == ["RuleWatermark: DINGO-WATERMARK"]
+
+
+def test_content_cleanliness_returns_good_without_watermark(monkeypatch):
+    monkeypatch.setattr(
+        Rule_TC609_0208_ContentCleanliness,
+        "dynamic_config",
+        EvaluatorRuleArgs(key_list=["DINGO-WATERMARK"]),
+    )
+
+    result = Rule_TC609_0208_ContentCleanliness.eval(
+        Data(content="ordinary clean text")
+    )
+
+    assert result.status is False
+    assert result.label == [QualityLabel.QUALITY_GOOD]
 
 
 def test_structural_completeness_accepts_present_values(monkeypatch):

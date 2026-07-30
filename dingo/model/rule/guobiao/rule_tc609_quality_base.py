@@ -49,6 +49,10 @@ class Rule_TC609_Composite(BaseRule):
                 component_res = rule.eval(input_data)
             except (ImportError, ModuleNotFoundError):
                 raise
+            except ValueError:
+                # Invalid evaluator configuration must stop the composite
+                # instead of being converted into a data-quality finding.
+                raise
             except Exception as exc:
                 reasons.append(f"{rule.__name__}: {type(exc).__name__}: {exc}")
                 continue
