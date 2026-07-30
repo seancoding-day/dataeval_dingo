@@ -4,6 +4,7 @@ import pytest
 
 from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
+from dingo.io.input import RequiredField
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model.model import Model
 from dingo.model.rule.guobiao import rule_tc609_quality
@@ -12,6 +13,7 @@ from dingo.model.rule.guobiao.rule_tc609_quality import (
     Rule_TC609_0202_SafetyCompliance,
     Rule_TC609_0203_AnnotationCompliance,
     Rule_TC609_0204_StructuralCompleteness,
+    Rule_TC609_0205_ContentAuthenticity,
     Rule_TC609_0301_ContentDiversity,
 )
 
@@ -440,6 +442,140 @@ def test_structural_completeness_requires_key_list(monkeypatch):
 
     with pytest.raises(ValueError, match="non-empty dynamic_config.key_list"):
         Rule_TC609_0204_StructuralCompleteness.eval(Data(content="example"))
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "https://example.com/data/1",
+        "http://localhost:8080/record?id=1",
+    ],
+)
+def test_content_authenticity_accepts_source_returning_200(source, monkeypatch):
+    class Response:
+        status_code = 200
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr("requests.get", lambda *args, **kwargs: Response())
+    result = Rule_TC609_0205_ContentAuthenticity.eval(
+        Data(content="example", source=source)
+    )
+
+    assert result.status is False
+    assert result.label == [QualityLabel.QUALITY_GOOD]
+
+
+def test_content_authenticity_rejects_source_not_returning_200(monkeypatch):
+    class Response:
+        status_code = 404
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr("requests.get", lambda *args, **kwargs: Response())
+    result = Rule_TC609_0205_ContentAuthenticity.eval(
+        Data(content="example", source="https://example.com/missing")
+    )
+
+    assert result.status is True
+    assert result.reason == [
+        "source: URL returned HTTP status 404, expected 200"
+    ]
+
+
+def test_content_authenticity_rejects_request_failure(monkeypatch):
+    import requests
+
+    def raise_timeout(*args, **kwargs):
+        raise requests.Timeout("timed out")
+
+    monkeypatch.setattr("requests.get", raise_timeout)
+    result = Rule_TC609_0205_ContentAuthenticity.eval(
+        Data(content="example", source="https://example.com/slow")
+    )
+
+    assert result.status is True
+    assert result.reason == [
+        "source: URL request failed: Timeout: timed out"
+    ]
+
+
+@pytest.mark.parametrize("timeout", [10.0, "10", 0, -1, True, None])
+def test_content_authenticity_requires_positive_integer_timeout(
+    timeout, monkeypatch
+):
+    monkeypatch.setattr(
+        Rule_TC609_0205_ContentAuthenticity,
+        "dynamic_config",
+        EvaluatorRuleArgs(timeout=timeout),
+    )
+
+    with pytest.raises(ValueError, match="positive integer"):
+        Rule_TC609_0205_ContentAuthenticity.eval(
+            Data(content="example", source="https://example.com/data")
+        )
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        None,
+        "",
+        "example.com/data/1",
+        "ftp://example.com/data/1",
+    ],
+)
+def test_content_authenticity_rejects_source_without_http_prefix(source):
+    result = Rule_TC609_0205_ContentAuthenticity.eval(
+        Data(content="example", source=source)
+    )
+
+    assert result.status is True
+    assert result.label == [
+        "QUALITY_BAD_TC609_0205.Rule_TC609_0205_ContentAuthenticity"
+    ]
+    assert result.reason == [
+        "source: expected a valid HTTP or HTTPS URL"
+    ]
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "https://",
+        "https://exa mple.com/data/1",
+        "https://example.com:invalid/data/1",
+    ],
+)
+def test_content_authenticity_handles_prefixed_url_request_failure(
+    source, monkeypatch
+):
+    import requests
+
+    def raise_invalid_url(*args, **kwargs):
+        raise requests.exceptions.InvalidURL("failed to parse URL")
+
+    monkeypatch.setattr("requests.get", raise_invalid_url)
+    result = Rule_TC609_0205_ContentAuthenticity.eval(
+        Data(content="example", source=source)
+    )
+
+    assert result.status is True
+    assert result.label == [
+        "QUALITY_BAD_TC609_0205.Rule_TC609_0205_ContentAuthenticity"
+    ]
+    assert result.reason == [
+        "source: URL request failed: InvalidURL: failed to parse URL"
+    ]
+
+
+def test_content_authenticity_declares_required_fields():
+    assert Rule_TC609_0205_ContentAuthenticity._required_fields == [
+        RequiredField.CONTENT,
+        RequiredField.SOURCE,
+    ]
 
 
 def test_uncovered_rule_is_explicit_placeholder():

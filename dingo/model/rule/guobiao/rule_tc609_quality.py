@@ -368,18 +368,73 @@ class Rule_TC609_0204_StructuralCompleteness(BaseRule):
 
 
 @Model.rule_register("QUALITY_BAD_TC609_0205", ["guobiao_data"])
-class Rule_TC609_0205_ContentAuthenticity(Rule_TC609_Composite):
-    """0205: Content authenticity, partially covered by HHEM."""
+class Rule_TC609_0205_ContentAuthenticity(BaseRule):
+    """Check whether a record's HTTP or HTTPS source returns status 200."""
 
-    component_rules = (
-        "dingo.model.rule.rule_hallucination_hhem.RuleHallucinationHHEM",
-    )
+    _required_fields = [RequiredField.CONTENT, RequiredField.SOURCE]
+    dynamic_config = EvaluatorRuleArgs(timeout=10)
     _metric_info = _tc609_metric_info(
         "0205",
         "Rule_TC609_0205_ContentAuthenticity",
-        "Uses HHEM consistency checking as partial evidence of authenticity.",
-        "partial",
+        "Checks whether source is an HTTP or HTTPS URL that returns status 200.",
+        "covered",
     )
+
+    @classmethod
+    def eval(cls, input_data: Data) -> EvalDetail:
+        source = getattr(input_data, "source", None)
+        res = EvalDetail(metric=cls.__name__)
+        if not (
+            isinstance(source, str)
+            and source
+            and source.lower().startswith(("http://", "https://"))
+        ):
+            res.status = True
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = ["source: expected a valid HTTP or HTTPS URL"]
+            return res
+
+        import requests
+
+        timeout = getattr(cls.dynamic_config, "timeout")
+        if (
+            isinstance(timeout, bool)
+            or not isinstance(timeout, int)
+            or timeout <= 0
+        ):
+            raise ValueError(
+                "Rule_TC609_0205_ContentAuthenticity requires "
+                "dynamic_config.timeout to be a positive integer"
+            )
+        response = None
+        try:
+            response = requests.get(
+                source,
+                timeout=timeout,
+                allow_redirects=True,
+                stream=True,
+            )
+            if response.status_code != 200:
+                res.status = True
+                res.label = [f"{cls.metric_type}.{cls.__name__}"]
+                res.reason = [
+                    f"source: URL returned HTTP status {response.status_code}, "
+                    "expected 200"
+                ]
+                return res
+        except requests.RequestException as exc:
+            res.status = True
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = [
+                f"source: URL request failed: {type(exc).__name__}: {exc}"
+            ]
+            return res
+        finally:
+            if response is not None:
+                response.close()
+
+        res.label = [QualityLabel.QUALITY_GOOD]
+        return res
 
 
 @Model.rule_register("QUALITY_BAD_TC609_0206", ["guobiao_data"])

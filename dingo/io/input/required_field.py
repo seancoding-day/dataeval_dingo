@@ -9,3 +9,4 @@ class RequiredField(Enum):
     METADATA = "metadata"
     TYPE = "type"
     DT = "dt"
+    SOURCE = "source"
