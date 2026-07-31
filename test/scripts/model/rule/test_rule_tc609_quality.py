@@ -387,50 +387,75 @@ def test_safety_compliance_has_usable_default_words(monkeypatch):
     assert "RuleUnsafeWords: 制作炸弹" in result.reason
 
 
-def test_annotation_compliance_accepts_allowed_content(monkeypatch):
-    monkeypatch.setattr(
-        Rule_TC609_0203_AnnotationCompliance,
-        "dynamic_config",
-        EvaluatorRuleArgs(key_list=["positive", "negative"]),
-    )
-
+def test_annotation_compliance_accepts_valid_metadata():
     result = Rule_TC609_0203_AnnotationCompliance.eval(
-        Data(content="positive")
+        Data(
+            annotation={
+                "label": [
+                    {
+                        "iscrowd": 0,
+                        "bbox": [20, 20, 20, 20],
+                        "category": "human",
+                    }
+                ],
+                "annotation_method": "人工标注",
+                "annotator": "普通标注员",
+            }
+        )
     )
 
     assert result.status is False
     assert result.label == [QualityLabel.QUALITY_GOOD]
 
 
-def test_annotation_compliance_rejects_unknown_content(monkeypatch):
-    monkeypatch.setattr(
-        Rule_TC609_0203_AnnotationCompliance,
-        "dynamic_config",
-        EvaluatorRuleArgs(key_list=["positive", "negative"]),
+def test_annotation_compliance_accepts_none_for_unannotated_data():
+    result = Rule_TC609_0203_AnnotationCompliance.eval(
+        Data(annotation=None)
     )
 
+    assert result.status is False
+    assert result.label == [QualityLabel.QUALITY_GOOD]
+
+
+def test_annotation_compliance_declares_required_field():
+    assert Rule_TC609_0203_AnnotationCompliance._required_fields == [
+        RequiredField.ANNOTATION
+    ]
+
+
+def test_annotation_compliance_reports_invalid_nested_metadata():
     result = Rule_TC609_0203_AnnotationCompliance.eval(
-        Data(content="neutral")
+        Data(
+            annotation={
+                "label": [],
+                "annotation_method": "众包标注",
+                "annotator": 1,
+            }
+        )
     )
 
     assert result.status is True
-    assert result.label == [
-        "QUALITY_BAD_TC609_0203.Rule_TC609_0203_AnnotationCompliance"
-    ]
     assert result.reason == [
-        "content: value 'neutral' is not in dynamic_config.key_list"
+        "annotation.label: empty value is not allowed",
+        (
+            "annotation.annotation_method: unsupported value '众包标注'; "
+            "allowed values: 人工标注, 其他, 半自动标注, 自动标注"
+        ),
+        "annotation.annotator: expected str or None, got int",
     ]
 
 
-def test_annotation_compliance_requires_allowed_values(monkeypatch):
-    monkeypatch.setattr(
-        Rule_TC609_0203_AnnotationCompliance,
-        "dynamic_config",
-        EvaluatorRuleArgs(key_list=[]),
+def test_annotation_compliance_requires_all_nested_fields():
+    result = Rule_TC609_0203_AnnotationCompliance.eval(
+        Data(annotation={})
     )
 
-    with pytest.raises(ValueError, match="non-empty dynamic_config.key_list"):
-        Rule_TC609_0203_AnnotationCompliance.eval(Data(content="positive"))
+    assert result.status is True
+    assert result.reason == [
+        "annotation.label: required field is missing",
+        "annotation.annotation_method: required field is missing",
+        "annotation.annotator: required field is missing",
+    ]
 
 
 def test_content_cleanliness_propagates_empty_watermark_config(monkeypatch):

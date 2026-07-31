@@ -164,7 +164,7 @@ This document provides comprehensive information about all quality metrics used 
 | Type | Metric | Description | Paper Source | Evaluation Results | Examples |
 |------|--------|-------------|--------------|-------------------|----------|
 | `QUALITY_BAD_TC609_0202` | Rule_TC609_0202_SafetyCompliance | Combines unsafe-word, PII, and identity-card detection. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0203` | Rule_TC609_0203_AnnotationCompliance | Checks whether `content` belongs to the annotation values configured in `key_list`. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0203` | Rule_TC609_0203_AnnotationCompliance | Checks TC609 annotation metadata fields, types, and enumerated values. | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0204` | Rule_TC609_0204_StructuralCompleteness | Checks fields configured in `key_list` for missing values. `allow_none` and `allow_empty` control whether `None` and empty strings/lists/dicts are accepted. | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0205` | Rule_TC609_0205_ContentAuthenticity | Requires `content` and `source`, and checks whether the HTTP or HTTPS `source` returns status 200. | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0204` | Rule_TC609_0204_StructuralCompleteness | Combines null-content and short-content checks. | Internal Implementation | N/A | N/A |

@@ -305,38 +305,92 @@ class Rule_TC609_0202_SafetyCompliance(Rule_TC609_Composite):
 
 @Model.rule_register("QUALITY_BAD_TC609_0203", ["guobiao_data"])
 class Rule_TC609_0203_AnnotationCompliance(BaseRule):
-    """Check whether content is one of the configured annotation values."""
+    """Check annotation metadata against TC609 format requirements."""
 
-    dynamic_config = EvaluatorRuleArgs(key_list=[])
-    _required_fields = [RequiredField.CONTENT]
+    _annotation_methods = {
+        "人工标注",
+        "自动标注",
+        "半自动标注",
+        "其他",
+    }
+    _annotator_types = {
+        "普通标注员",
+        "专业标注员",
+        "行业领域专家",
+        "其他",
+    }
+    _required_fields = [RequiredField.ANNOTATION]
     _metric_info = _tc609_metric_info(
         "0203",
         "Rule_TC609_0203_AnnotationCompliance",
-        "Checks whether content belongs to a user-provided annotation value list.",
+        "Checks annotation metadata fields, types, and enumerated values.",
         "covered",
     )
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
-        allowed_values = cls.dynamic_config.key_list or []
-        if not allowed_values:
-            raise ValueError(
-                "Rule_TC609_0203_AnnotationCompliance requires a non-empty "
-                "dynamic_config.key_list"
-            )
-
         res = EvalDetail(metric=cls.__name__)
-        content = getattr(input_data, "content", None)
-        if content not in allowed_values:
+        reasons = []
+        annotation = input_data.annotation
+
+        if annotation is None:
+            res.label = [QualityLabel.QUALITY_GOOD]
+            return res
+
+        if not isinstance(annotation, dict):
             res.status = True
             res.label = [f"{cls.metric_type}.{cls.__name__}"]
             res.reason = [
-                f"content: value {content!r} is not in dynamic_config.key_list"
+                "annotation: expected dict or None, "
+                f"got {type(annotation).__name__}"
             ]
+            return res
+
+        if "label" not in annotation:
+            res.status = True
+            reasons.append("annotation.label: required field is missing")
+        elif not isinstance(annotation["label"], list):
+            res.status = True
+            reasons.append(
+                "annotation.label: expected list, "
+                f"got {type(annotation['label']).__name__}"
+            )
+        elif not annotation["label"]:
+            res.status = True
+            reasons.append("annotation.label: empty value is not allowed")
+
+        for field_name, allowed_values in (
+            ("annotation_method", cls._annotation_methods),
+            ("annotator", cls._annotator_types),
+        ):
+            qualified_name = f"annotation.{field_name}"
+            if field_name not in annotation:
+                res.status = True
+                reasons.append(f"{qualified_name}: required field is missing")
+                continue
+
+            value = annotation[field_name]
+            if value is None:
+                continue
+            if not isinstance(value, str):
+                res.status = True
+                reasons.append(
+                    f"{qualified_name}: expected str or None, "
+                    f"got {type(value).__name__}"
+                )
+            elif value not in allowed_values:
+                res.status = True
+                reasons.append(
+                    f"{qualified_name}: unsupported value {value!r}; "
+                    f"allowed values: {', '.join(sorted(allowed_values))}"
+                )
+
+        if res.status:
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = reasons
         else:
             res.label = [QualityLabel.QUALITY_GOOD]
         return res
-
 
 @Model.rule_register("QUALITY_BAD_TC609_0204", ["guobiao_data"])
 class Rule_TC609_0204_StructuralCompleteness(BaseRule):

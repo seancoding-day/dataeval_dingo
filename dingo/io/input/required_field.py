@@ -10,3 +10,4 @@ class RequiredField(Enum):
     TYPE = "type"
     DT = "dt"
     SOURCE = "source"
+    ANNOTATION = "annotation"
