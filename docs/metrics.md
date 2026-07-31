@@ -30,6 +30,15 @@ This document provides comprehensive information about all quality metrics used 
 | `LLMTextQualityV5` | LLMTextQualityV5 | Impact-driven text quality evaluation for LLM pretraining, focusing on structural completeness, readability, diversit... | [WanJuanSiLu: A High-Quality Open-Source Webtext Dataset for Low-Resource Languages](https://arxiv.org/abs/2501.14506) (Yu et al., 2025) | [📊 See Results](eval/prompt/redpajama_data_evaluated_by_prompt.md) | [📝 View Example](../examples/llm_and_rule/llm_local.py) |
 | `LLMTextTable` | LLMTextTable | Impact-driven text quality evaluation for LLM pretraining, focusing on structural completeness, readability, diversit... | [WanJuanSiLu: A High-Quality Open-Source Webtext Dataset for Low-Resource Languages](https://arxiv.org/abs/2501.14506) (Yu et al., 2025) | [📊 See Results](eval/prompt/redpajama_data_evaluated_by_prompt.md) | [📝 View Example](../examples/llm_and_rule/llm_local.py) |
 
+### National Standard LLM Assessment Metrics
+
+| Type | Metric | Description | Source | Evaluation Results | Examples |
+|------|--------|-------------|--------|-------------------|----------|
+| `LLM_TC609_0101_DocBasicInfoCompleteness` | LLM_TC609_0101_DocBasicInfoCompleteness | Uses an LLM to assess dataset scale, format, file structure, access channel, and technical support in dataset documentation. | TC609 | N/A | [📝 View Example](../examples/guobiao/example_doc3.py) |
+| `LLM_TC609_0102_DocContentFeatureCompleteness` | LLM_TC609_0102_DocContentFeatureCompleteness | Uses an LLM to assess modality, distribution, label statistics, sample examples, and limitations. | TC609 | N/A | [📝 View Example](../examples/guobiao/example_doc3.py) |
+| `LLM_TC609_0103_DocConstructionProcessCompleteness` | LLM_TC609_0103_DocConstructionProcessCompleteness | Uses an LLM to assess source, collection, processing, annotation, and version control. | TC609 | N/A | [📝 View Example](../examples/guobiao/example_doc3.py) |
+| `LLM_TC609_0104_DocApplicationCompleteness` | LLM_TC609_0104_DocApplicationCompleteness | Uses an LLM to assess license, target scenarios, evaluation method, benchmark results, and typical cases. | TC609 | N/A | [📝 View Example](../examples/guobiao/example_doc3.py) |
+
 ### SFT Data Assessment Metrics
 
 | Type | Metric | Description | Paper Source | Evaluation Results | Examples |
