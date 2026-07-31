@@ -827,7 +827,15 @@ class Rule_TC609_0207_DataTypeConsistency(BaseRule):
 class Rule_TC609_0208_ContentCleanliness(Rule_TC609_Composite):
     """0208: Content cleanliness, composed from available cleaning rules."""
 
-    dynamic_config = EvaluatorRuleArgs(key_list=[])
+    dynamic_config = EvaluatorRuleArgs(
+        key_list=[
+            "版权所有",
+            "Copyright",
+            "未经授权不得转载",
+            "禁止转载",
+            "仅供学习交流",
+        ]
+    )
     component_rules = (
         "dingo.model.rule.rule_common.RuleAbnormalChar",
         "dingo.model.rule.rule_common.RuleAbnormalHtml",
@@ -835,7 +843,7 @@ class Rule_TC609_0208_ContentCleanliness(Rule_TC609_Composite):
         "dingo.model.rule.rule_common.RuleContentNull",
         "dingo.model.rule.rule_common.RuleWatermark",
     )
-    _required_fields = [RequiredField.CONTENT]
+    _required_fields = [RequiredField.DATA_CONTENT]
     _metric_info = _tc609_metric_info(
         "0208",
         "Rule_TC609_0208_ContentCleanliness",
@@ -845,11 +853,62 @@ class Rule_TC609_0208_ContentCleanliness(Rule_TC609_Composite):
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
+        res = EvalDetail(metric=cls.__name__)
+        reasons = []
+        if not isinstance(input_data.data_content, list):
+            res.status = True
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = [
+                "data_content: expected list, "
+                f"got {type(input_data.data_content).__name__}"
+            ]
+            return res
+
+        texts = []
+        for index, item in enumerate(input_data.data_content):
+            if not isinstance(item, dict):
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}]: expected dict, "
+                    f"got {type(item).__name__}"
+                )
+                continue
+            media_type = item.get("media_type")
+            if not isinstance(media_type, str) or not media_type.strip():
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}].media_type: expected non-empty str"
+                )
+                continue
+            if media_type.strip().lower() != "text":
+                continue
+            content = item.get("content")
+            if not isinstance(content, str) or not content.strip():
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}].content: expected non-empty str"
+                )
+                continue
+            texts.append(content.strip())
+
+        if not texts:
+            res.status = True
+            reasons.append(
+                "data_content: at least one text item is required"
+            )
+        if res.status:
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = reasons
+            return res
+
         rule_watermark = cls._resolve_rule(cls.component_rules[-1])
         rule_watermark.dynamic_config = EvaluatorRuleArgs(
             key_list=cls.dynamic_config.key_list or [],
         )
-        return super().eval(input_data)
+        text_input = input_data.model_copy(
+            update={"content": "\n".join(texts)}
+        )
+        return super().eval(text_input)
 
 
 @Model.rule_register("QUALITY_BAD_TC609_02080101", ["pretrain", "guobiao_text"])

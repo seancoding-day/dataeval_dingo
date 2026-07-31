@@ -470,7 +470,13 @@ def test_content_cleanliness_propagates_empty_watermark_config(monkeypatch):
         ValueError,
         match="RuleWatermark requires non-empty dynamic_config.key_list",
     ):
-        Rule_TC609_0208_ContentCleanliness.eval(Data(content="safe text"))
+        Rule_TC609_0208_ContentCleanliness.eval(
+            Data(
+                data_content=[
+                    {"media_type": "text", "content": "safe text"}
+                ]
+            )
+        )
 
 
 def test_content_cleanliness_passes_key_list_to_watermark(monkeypatch):
@@ -486,7 +492,13 @@ def test_content_cleanliness_passes_key_list_to_watermark(monkeypatch):
     )
 
     result = Rule_TC609_0208_ContentCleanliness.eval(
-        Data(content="text with DINGO-WATERMARK")
+        Data(
+            data_content=[
+                {"media_type": "text", "content": "text with"},
+                {"media_type": "image", "content": "DINGO-WATERMARK"},
+                {"media_type": "text", "content": "DINGO-WATERMARK"},
+            ]
+        )
     )
 
     assert RuleWatermark.dynamic_config.key_list == ["DINGO-WATERMARK"]
@@ -502,11 +514,50 @@ def test_content_cleanliness_returns_good_without_watermark(monkeypatch):
     )
 
     result = Rule_TC609_0208_ContentCleanliness.eval(
-        Data(content="ordinary clean text")
+        Data(
+            data_content=[
+                {"media_type": "text", "content": "ordinary"},
+                {"media_type": "text", "content": "clean text"},
+                {"media_type": "image", "content": "DINGO-WATERMARK"},
+            ]
+        )
     )
 
     assert result.status is False
     assert result.label == [QualityLabel.QUALITY_GOOD]
+
+
+def test_content_cleanliness_has_usable_default_watermarks(monkeypatch):
+    assert Rule_TC609_0208_ContentCleanliness.dynamic_config.key_list
+
+    result = Rule_TC609_0208_ContentCleanliness.eval(
+        Data(
+            data_content=[
+                {
+                    "media_type": "text",
+                    "content": "本文版权所有，未经授权不得转载。",
+                }
+            ]
+        )
+    )
+
+    assert result.status is True
+    assert "RuleWatermark: 版权所有" in result.reason
+
+
+def test_content_cleanliness_requires_text_content():
+    result = Rule_TC609_0208_ContentCleanliness.eval(
+        Data(
+            data_content=[
+                {"media_type": "image", "content": "image.png"}
+            ]
+        )
+    )
+
+    assert result.status is True
+    assert result.reason == [
+        "data_content: at least one text item is required"
+    ]
 
 
 def test_structural_completeness_accepts_present_values(monkeypatch):
