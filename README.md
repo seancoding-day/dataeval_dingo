@@ -1,5 +1,3 @@
-[![MCP Toplist](https://mcptoplist.com/badge/glama%2FMigoXLab%2Fdingo.svg)](https://mcptoplist.com/server/glama%2FMigoXLab%2Fdingo)
-
 <!-- SEO Meta Information and Structured Data -->
 <div itemscope itemtype="https://schema.org/SoftwareApplication" align="center" xmlns="http://www.w3.org/1999/html">
   <meta itemprop="name" content="Dingo: A Comprehensive AI Data Quality Evaluation Tool">
@@ -30,6 +28,7 @@
   <a href="https://deepwiki.com/MigoXLab/dingo"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
   <a href="https://archestra.ai/mcp-catalog/dataeval__dingo"><img src="https://archestra.ai/mcp-catalog/api/badge/quality/DataEval/dingo" alt="Trust Score"></a>
   <a href="https://clawhub.ai/e06084/dingo"><img src="https://img.shields.io/badge/ClawHub-Skill-orange?logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHRleHQgeT0iMTgiIGZvbnQtc2l6ZT0iMTYiPvCfpp48L3RleHQ+PC9zdmc+" alt="ClawHub Skill"></a>
+  <a href="https://mcptoplist.com/server/glama%2FMigoXLab%2Fdingo"><img src="https://mcptoplist.com/badge/glama%2FMigoXLab%2Fdingo.svg" alt="MCP Toplist"></a>
 </p>
 
 </div>
