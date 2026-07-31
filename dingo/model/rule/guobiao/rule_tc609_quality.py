@@ -259,7 +259,18 @@ class Rule_TC609_0202_SafetyCompliance(Rule_TC609_Composite):
     """0202: Safety compliance, composed from safety and PII rules."""
 
     dynamic_config = EvaluatorRuleArgs(
-        key_list=[],
+        key_list=[
+            "制作炸弹",
+            "购买毒品",
+            "贩卖毒品",
+            "实施诈骗",
+            "洗钱教程",
+            "自杀方法",
+            "色情交易",
+            "儿童色情",
+            "恐怖袭击",
+            "非法枪支",
+        ],
         refer_path=[],
     )
     component_rules = (
@@ -278,10 +289,17 @@ class Rule_TC609_0202_SafetyCompliance(Rule_TC609_Composite):
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         rule_unsafe_words = cls._resolve_rule(cls.component_rules[0])
-        rule_unsafe_words.dynamic_config = EvaluatorRuleArgs(
+        unsafe_words_config = EvaluatorRuleArgs(
             key_list=cls.dynamic_config.key_list or [],
             refer_path=cls.dynamic_config.refer_path or [],
         )
+        if (
+            getattr(rule_unsafe_words, "dynamic_config", None)
+            != unsafe_words_config
+        ):
+            rule_unsafe_words._unsafe_words_list = None
+            rule_unsafe_words._unsafe_words_automaton = None
+        rule_unsafe_words.dynamic_config = unsafe_words_config
         return super().eval(input_data)
 
 

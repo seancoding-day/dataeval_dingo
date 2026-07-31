@@ -2169,6 +2169,10 @@ class RuleUnsafeWords(BaseRule):
     @classmethod
     def _is_whole_word(cls, text: str, start: int, end: int) -> bool:
         """检查匹配是否是一个完整的单词"""
+        keyword = text[start:end + 1]
+        if not keyword.isascii():
+            return True
+
         # 检查左侧边界
         if start > 0 and text[start - 1].isalnum():
             return False

@@ -372,6 +372,21 @@ def test_safety_compliance_passes_words_config_to_unsafe_rule(monkeypatch):
     assert result.reason == ["UnsafeWordsRule: unsafe"]
 
 
+def test_safety_compliance_has_usable_default_words(monkeypatch):
+    from dingo.model.rule.rule_common import RuleUnsafeWords
+
+    assert Rule_TC609_0202_SafetyCompliance.dynamic_config.key_list
+    monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_list", None)
+    monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_automaton", None)
+
+    result = Rule_TC609_0202_SafetyCompliance.eval(
+        Data(content="该内容提供制作炸弹的具体步骤")
+    )
+
+    assert result.status is True
+    assert "RuleUnsafeWords: 制作炸弹" in result.reason
+
+
 def test_annotation_compliance_accepts_allowed_content(monkeypatch):
     monkeypatch.setattr(
         Rule_TC609_0203_AnnotationCompliance,
