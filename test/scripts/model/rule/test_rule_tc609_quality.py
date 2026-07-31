@@ -527,6 +527,37 @@ def test_structural_completeness_accepts_present_values(monkeypatch):
     assert result.label == [QualityLabel.QUALITY_GOOD]
 
 
+def test_structural_completeness_has_tc609_required_fields_by_default():
+    assert Rule_TC609_0204_StructuralCompleteness.dynamic_config.key_list == [
+        "id",
+        "data_content",
+        "original_time",
+        "last_modified_time",
+        "version",
+        "license",
+        "source",
+        "source_details",
+        "generated_data_indicator",
+    ]
+
+    result = Rule_TC609_0204_StructuralCompleteness.eval(
+        Data(
+            id="dataset-id",
+            data_content=[{"media_type": "text", "content": "example"}],
+            original_time="2025-01-01",
+            last_modified_time="2025-01-01",
+            version="1.0.0",
+            license="其他",
+            source="互联网",
+            source_details="https://example.com/data",
+            generated_data_indicator=0,
+        )
+    )
+
+    assert result.status is False
+    assert result.label == [QualityLabel.QUALITY_GOOD]
+
+
 def test_structural_completeness_reports_missing_none_and_empty(monkeypatch):
     monkeypatch.setattr(
         Rule_TC609_0204_StructuralCompleteness,

@@ -397,7 +397,17 @@ class Rule_TC609_0204_StructuralCompleteness(BaseRule):
     """Check required fields for missing, None, and empty values."""
 
     dynamic_config = EvaluatorRuleArgs(
-        key_list=[],
+        key_list=[
+            "id",
+            "data_content",
+            "original_time",
+            "last_modified_time",
+            "version",
+            "license",
+            "source",
+            "source_details",
+            "generated_data_indicator",
+        ],
         allow_none=False,
         allow_empty=False,
     )
