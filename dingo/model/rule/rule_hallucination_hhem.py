@@ -163,7 +163,7 @@ class RuleHallucinationHHEM(BaseRule):
 
             # Create result
             result = EvalDetail(metric=cls.__name__)
-            # result.score = avg_hallucination_score
+            result.score = avg_hallucination_score
 
             # Determine if hallucination detected based on threshold
             if avg_hallucination_score > cls.dynamic_config.threshold:
