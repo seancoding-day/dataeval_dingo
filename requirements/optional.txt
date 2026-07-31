@@ -14,5 +14,3 @@ tiktoken
 torch>=1.7.1
 torchvision
 tqdm
-
-git+https://github.com/openai/CLIP.git
