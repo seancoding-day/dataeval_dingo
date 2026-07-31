@@ -310,7 +310,10 @@ def test_composite_rule_maps_component_failure_to_tc609_label(monkeypatch):
     )
 
     result = Rule_TC609_0202_SafetyCompliance.eval(
-        Data(data_id="safety", content="test")
+        Data(
+            data_id="safety",
+            data_content=[{"media_type": "text", "content": "test"}],
+        )
     )
 
     assert result.status is True
@@ -365,7 +368,13 @@ def test_safety_compliance_passes_words_config_to_unsafe_rule(monkeypatch):
     )
 
     result = Rule_TC609_0202_SafetyCompliance.eval(
-        Data(content="unsafe")
+        Data(
+            data_content=[
+                {"media_type": "text", "content": "safe"},
+                {"media_type": "image", "content": "unsafe"},
+                {"media_type": "text", "content": "unsafe"},
+            ]
+        )
     )
 
     assert UnsafeWordsRule.dynamic_config.key_list == ["unsafe"]
@@ -381,11 +390,39 @@ def test_safety_compliance_has_usable_default_words(monkeypatch):
     monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_automaton", None)
 
     result = Rule_TC609_0202_SafetyCompliance.eval(
-        Data(content="该内容提供制作炸弹的具体步骤")
+        Data(
+            data_content=[
+                {
+                    "media_type": "text",
+                    "content": "该内容提供制作炸弹的具体步骤",
+                }
+            ]
+        )
     )
 
     assert result.status is True
     assert "RuleUnsafeWords: 制作炸弹" in result.reason
+
+
+def test_safety_compliance_requires_text_content():
+    result = Rule_TC609_0202_SafetyCompliance.eval(
+        Data(
+            data_content=[
+                {"media_type": "image", "content": "制作炸弹"}
+            ]
+        )
+    )
+
+    assert result.status is True
+    assert result.reason == [
+        "data_content: at least one text item is required"
+    ]
+
+
+def test_safety_compliance_declares_data_content():
+    assert Rule_TC609_0202_SafetyCompliance._required_fields == [
+        RequiredField.DATA_CONTENT
+    ]
 
 
 def test_annotation_compliance_accepts_valid_metadata():

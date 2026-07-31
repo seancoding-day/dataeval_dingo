@@ -91,7 +91,7 @@ The specific rules for each quality metric are as follows:
 | Rule_TC609_0103_DocConstructionProcessCompleteness | TC609_0103 | Checks whether dataset documentation covers construction-process aspects such as data source, collection, processing, annotation, and version control | TC609-5-2025-04 High-quality dataset quality evaluation specification |
 | Rule_TC609_0104_DocApplicationCompleteness | TC609_0104 | Checks whether dataset documentation covers application aspects such as license, scenarios, evaluation method, benchmark, and cases | TC609-5-2025-04 High-quality dataset quality evaluation specification |
 | Rule_TC609_0201_FormatCompliance | TC609_0201 | Combines existing NLP, SFT, image, audio, and video format rules. | TC609-5-2025-04 High-quality dataset quality evaluation specification |
-| Rule_TC609_0202_SafetyCompliance | TC609_0202 | Combines unsafe-word, PII, and identity-card detection. | TC609-5-2025-04 High-quality dataset quality evaluation specification |
+| Rule_TC609_0202_SafetyCompliance | TC609_0202 | Combines unsafe-word, PII, and identity-card detection for text items in `data_content`. | TC609-5-2025-04 High-quality dataset quality evaluation specification |
 | Rule_TC609_0203_AnnotationCompliance | TC609_0203 | Checks annotation metadata fields, types, and enumerated values. | TC609-5-2025-02 High-quality dataset format requirements |
 | Rule_TC609_0204_StructuralCompleteness | TC609_0204 | Combines null-content and short-content checks. | TC609-5-2025-04 High-quality dataset quality evaluation specification |
 | Rule_TC609_0205_ContentAuthenticity | TC609_0205 | Checks source traceability metadata and validates URL syntax when applicable. | TC609-5-2025-02 High-quality dataset format requirements |
