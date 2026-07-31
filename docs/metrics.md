@@ -115,7 +115,6 @@ This document provides comprehensive information about all quality metrics used 
 | `QUALITY_BAD_TC609_0102` | Rule_TC609_0102_DocContentFeatureCompleteness | Checks whether dataset documentation covers content-feature aspects such as modality, distribution, labels, examples,... | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0103` | Rule_TC609_0103_DocConstructionProcessCompleteness | Checks whether dataset documentation covers construction-process aspects such as data source, collection, processing,... | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0104` | Rule_TC609_0104_DocApplicationCompleteness | Checks whether dataset documentation covers application aspects such as license, scenarios, evaluation method, benchm... | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0201` | Rule_TC609_0201_FormatCompliance | Checks required fields and types against `field_schema`. Extra fields are allowed by default and can be rejected with `allow_extra=false`. Supports `str`, `int`, `float`, `bool`, `list`, `dict`, and nullable `Optional[...]` variants. | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0207` | Rule_TC609_0207_DataTypeConsistency | Uses a local zero-shot classifier to check whether content belongs to the type declared in the record | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_02080101` | Rule_TC609_02080101_TextPerplexity | Calculates text perplexity with a causal language model and flags text whose PPL exceeds the configured threshold | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0303` | Rule_TC609_0303_DataTimeRange | Checks whether created and updated timestamps are within configured time ranges | Internal Implementation | N/A | N/A |
@@ -163,12 +162,12 @@ This document provides comprehensive information about all quality metrics used 
 
 | Type | Metric | Description | Paper Source | Evaluation Results | Examples |
 |------|--------|-------------|--------------|-------------------|----------|
+| `QUALITY_BAD_TC609_0201` | Rule_TC609_0201_FormatCompliance | Checks required fields and their types against a user-provided schema. | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0202` | Rule_TC609_0202_SafetyCompliance | Combines unsafe-word, PII, and identity-card detection. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0203` | Rule_TC609_0203_AnnotationCompliance | Checks whether `content` belongs to the annotation values configured in `key_list`. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0204` | Rule_TC609_0204_StructuralCompleteness | Checks fields configured in `key_list` for missing values. `allow_none` and `allow_empty` control whether `None` and empty strings/lists/dicts are accepted. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0205` | Rule_TC609_0205_ContentAuthenticity | Requires `content` and `source`, and checks whether the HTTP or HTTPS `source` returns status 200. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0204` | Rule_TC609_0204_StructuralCompleteness | Combines null-content and short-content checks. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0206` | Rule_TC609_0206_ContentConsistency | Uses a local multilingual NLI model to check semantic consistency among string fields configured in `key_list`. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0203` | Rule_TC609_0203_AnnotationCompliance | Checks whether content belongs to a user-provided annotation value list. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0204` | Rule_TC609_0204_StructuralCompleteness | Checks configured fields for missing, None, and empty values. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0205` | Rule_TC609_0205_ContentAuthenticity | Checks whether source is an HTTP or HTTPS URL that returns status 200. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0206` | Rule_TC609_0206_ContentConsistency | Uses a local model to check semantic consistency among configured string fields. | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_02080102` | Rule_TC609_02080102_KnowledgeInformationDensity | Combines alphabetic-word, stop-word, and unique-word ratio checks. | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_02080103` | Rule_TC609_02080103_RepeatedContent | Combines document-text and formula repetition checks. | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_02080104` | Rule_TC609_02080104_TextCompleteness | Combines null, short, ellipsis-ending, and terminal-ending checks. | Internal Implementation | N/A | N/A |

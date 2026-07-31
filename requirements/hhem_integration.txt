@@ -2,7 +2,10 @@
 # Required for Vectara HHEM-2.1-Open hallucination detection model
 
 # Core transformers library for HHEM model
-transformers>=4.30.0
+# 上限 <4.49：HHEM 官方 remote code (modeling_hhem_v2.py) 为旧版 transformers 编写，
+# transformers 4.49+ 的加载流程会访问 all_tied_weights_keys 属性，旧 remote code 未实现，
+# 导致 "'HHEMv2ForSequenceClassification' object has no attribute 'all_tied_weights_keys'"。
+transformers>=4.30.0,<4.49
 
 # PyTorch (CPU version should be sufficient for HHEM)
 torch>=1.12.0

@@ -4,7 +4,6 @@
 ftfy
 imagededup
 google-api-python-client
-lmdeploy
 opencv-python-headless
 pyiqa
 pyspark==3.4.1

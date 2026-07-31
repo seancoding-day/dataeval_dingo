@@ -23,7 +23,13 @@ class BaseLmdeployApiClient(BaseLLM):
 
     @classmethod
     def create_client(cls):
-        from lmdeploy.serve.openai.api_client import APIClient
+        try:
+            from lmdeploy.serve.openai.api_client import APIClient
+        except ImportError as exc:
+            raise ImportError(
+                "lmdeploy is required for the lmdeploy API client. "
+                "Install with: pip install dingo-python[lmdeploy] (or pip install lmdeploy)"
+            ) from exc
 
         if not cls.dynamic_config.api_url:
             raise ValueError("api_url cannot be empty in llm config.")
