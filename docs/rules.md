@@ -94,7 +94,7 @@ The specific rules for each quality metric are as follows:
 | Rule_TC609_0202_SafetyCompliance | TC609_0202 | Combines unsafe-word, PII, and identity-card detection. | TC609-5-2025-04 High-quality dataset quality evaluation specification |
 | Rule_TC609_0203_AnnotationCompliance | TC609_0203 | Checks annotation metadata fields, types, and enumerated values. | TC609-5-2025-02 High-quality dataset format requirements |
 | Rule_TC609_0204_StructuralCompleteness | TC609_0204 | Combines null-content and short-content checks. | TC609-5-2025-04 High-quality dataset quality evaluation specification |
-| Rule_TC609_0205_ContentAuthenticity | TC609_0205 | Uses HHEM consistency checking as partial evidence of authenticity. | TC609-5-2025-04 High-quality dataset quality evaluation specification |
+| Rule_TC609_0205_ContentAuthenticity | TC609_0205 | Checks source traceability metadata and validates URL syntax when applicable. | TC609-5-2025-02 High-quality dataset format requirements |
 | Rule_TC609_0206_ContentConsistency | TC609_0206 | Combines structured-field and image-text consistency checks. | TC609-5-2025-04 High-quality dataset quality evaluation specification |
 | Rule_TC609_0207_DataTypeConsistency | TC609_0207 | Uses a local zero-shot classifier to check whether content belongs to the type declared in the record | TC609-5-2025-04 High-quality dataset quality evaluation specification |
 | Rule_TC609_02080101_TextPerplexity | TC609_02080101 | Calculates text perplexity with a causal language model and flags text whose PPL exceeds the configured threshold | TC609-5-2025-04 High-quality dataset quality evaluation specification |

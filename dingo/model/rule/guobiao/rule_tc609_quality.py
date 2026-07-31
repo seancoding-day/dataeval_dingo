@@ -463,72 +463,67 @@ class Rule_TC609_0204_StructuralCompleteness(BaseRule):
 
 @Model.rule_register("QUALITY_BAD_TC609_0205", ["guobiao_data"])
 class Rule_TC609_0205_ContentAuthenticity(BaseRule):
-    """Check whether a record's HTTP or HTTPS source returns status 200."""
+    """Check whether source metadata provides valid traceability information."""
 
-    _required_fields = [RequiredField.CONTENT, RequiredField.SOURCE]
-    dynamic_config = EvaluatorRuleArgs(timeout=10)
+    _required_fields = [
+        RequiredField.SOURCE,
+        RequiredField.SOURCE_DETAILS,
+    ]
     _metric_info = _tc609_metric_info(
         "0205",
         "Rule_TC609_0205_ContentAuthenticity",
-        "Checks whether source is an HTTP or HTTPS URL that returns status 200.",
+        "Checks source and source_details, including URL format when applicable.",
         "covered",
     )
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
-        source = getattr(input_data, "source", None)
         res = EvalDetail(metric=cls.__name__)
-        if not (
-            isinstance(source, str)
-            and source
-            and source.lower().startswith(("http://", "https://"))
-        ):
+        source = input_data.source
+        source_details = input_data.source_details
+
+        if not isinstance(source, str) or not source.strip():
             res.status = True
             res.label = [f"{cls.metric_type}.{cls.__name__}"]
-            res.reason = ["source: expected a valid HTTP or HTTPS URL"]
+            res.reason = ["source: expected a non-empty string"]
             return res
 
-        import requests
+        if not isinstance(source_details, str) or not source_details.strip():
+            res.status = True
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = ["source_details: expected a non-empty string"]
+            return res
 
-        timeout = getattr(cls.dynamic_config, "timeout")
-        if (
-            isinstance(timeout, bool)
-            or not isinstance(timeout, int)
-            or timeout <= 0
-        ):
-            raise ValueError(
-                "Rule_TC609_0205_ContentAuthenticity requires "
-                "dynamic_config.timeout to be a positive integer"
-            )
-        response = None
-        try:
-            response = requests.get(
-                source,
-                timeout=timeout,
-                allow_redirects=True,
-                stream=True,
-            )
-            if response.status_code != 200:
+        if source.strip() == "互联网":
+            if not cls._is_valid_http_url(source_details):
                 res.status = True
                 res.label = [f"{cls.metric_type}.{cls.__name__}"]
                 res.reason = [
-                    f"source: URL returned HTTP status {response.status_code}, "
-                    "expected 200"
+                    "source_details: expected a valid HTTP or HTTPS URL"
                 ]
                 return res
-        except requests.RequestException as exc:
-            res.status = True
-            res.label = [f"{cls.metric_type}.{cls.__name__}"]
-            res.reason = [
-                f"source: URL request failed: {type(exc).__name__}: {exc}"
-            ]
-            return res
-        finally:
-            if response is not None:
-                response.close()
 
         res.label = [QualityLabel.QUALITY_GOOD]
         return res
+
+    @staticmethod
+    def _is_valid_http_url(value):
+        from urllib.parse import urlparse
+
+        if any(character.isspace() for character in value):
+            return False
+        try:
+            parsed = urlparse(value)
+            if (
+                parsed.scheme.lower() not in {"http", "https"}
+                or not parsed.netloc
+                or not parsed.hostname
+            ):
+                return False
+            parsed.port
+        except ValueError:
+            return False
+        return True
 
 
 @Model.rule_register("QUALITY_BAD_TC609_0206", ["guobiao_data"])

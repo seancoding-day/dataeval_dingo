@@ -618,136 +618,78 @@ def test_structural_completeness_requires_key_list(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "source",
+    "source_details",
     [
         "https://example.com/data/1",
         "http://localhost:8080/record?id=1",
     ],
 )
-def test_content_authenticity_accepts_source_returning_200(source, monkeypatch):
-    class Response:
-        status_code = 200
-
-        def close(self):
-            pass
-
-    monkeypatch.setattr("requests.get", lambda *args, **kwargs: Response())
+def test_content_authenticity_accepts_valid_internet_url(source_details):
     result = Rule_TC609_0205_ContentAuthenticity.eval(
-        Data(content="example", source=source)
+        Data(source="互联网", source_details=source_details)
     )
 
     assert result.status is False
     assert result.label == [QualityLabel.QUALITY_GOOD]
 
 
-def test_content_authenticity_rejects_source_not_returning_200(monkeypatch):
-    class Response:
-        status_code = 404
-
-        def close(self):
-            pass
-
-    monkeypatch.setattr("requests.get", lambda *args, **kwargs: Response())
+def test_content_authenticity_accepts_non_url_source_details():
     result = Rule_TC609_0205_ContentAuthenticity.eval(
-        Data(content="example", source="https://example.com/missing")
-    )
-
-    assert result.status is True
-    assert result.reason == [
-        "source: URL returned HTTP status 404, expected 200"
-    ]
-
-
-def test_content_authenticity_rejects_request_failure(monkeypatch):
-    import requests
-
-    def raise_timeout(*args, **kwargs):
-        raise requests.Timeout("timed out")
-
-    monkeypatch.setattr("requests.get", raise_timeout)
-    result = Rule_TC609_0205_ContentAuthenticity.eval(
-        Data(content="example", source="https://example.com/slow")
-    )
-
-    assert result.status is True
-    assert result.reason == [
-        "source: URL request failed: Timeout: timed out"
-    ]
-
-
-@pytest.mark.parametrize("timeout", [10.0, "10", 0, -1, True, None])
-def test_content_authenticity_requires_positive_integer_timeout(
-    timeout, monkeypatch
-):
-    monkeypatch.setattr(
-        Rule_TC609_0205_ContentAuthenticity,
-        "dynamic_config",
-        EvaluatorRuleArgs(timeout=timeout),
-    )
-
-    with pytest.raises(ValueError, match="positive integer"):
-        Rule_TC609_0205_ContentAuthenticity.eval(
-            Data(content="example", source="https://example.com/data")
+        Data(
+            source="图书",
+            source_details="ISBN 978-7-121-15535-2，第 10 页",
         )
-
-
-@pytest.mark.parametrize(
-    "source",
-    [
-        None,
-        "",
-        "example.com/data/1",
-        "ftp://example.com/data/1",
-    ],
-)
-def test_content_authenticity_rejects_source_without_http_prefix(source):
-    result = Rule_TC609_0205_ContentAuthenticity.eval(
-        Data(content="example", source=source)
     )
 
-    assert result.status is True
-    assert result.label == [
-        "QUALITY_BAD_TC609_0205.Rule_TC609_0205_ContentAuthenticity"
-    ]
-    assert result.reason == [
-        "source: expected a valid HTTP or HTTPS URL"
-    ]
+    assert result.status is False
+    assert result.label == [QualityLabel.QUALITY_GOOD]
 
 
 @pytest.mark.parametrize(
-    "source",
+    "source, source_details, reason",
     [
-        "https://",
-        "https://exa mple.com/data/1",
-        "https://example.com:invalid/data/1",
+        (None, "detail", "source: expected a non-empty string"),
+        ("", "detail", "source: expected a non-empty string"),
+        ("图书", None, "source_details: expected a non-empty string"),
+        ("图书", "", "source_details: expected a non-empty string"),
     ],
 )
-def test_content_authenticity_handles_prefixed_url_request_failure(
-    source, monkeypatch
+def test_content_authenticity_rejects_empty_source_metadata(
+    source, source_details, reason
 ):
-    import requests
-
-    def raise_invalid_url(*args, **kwargs):
-        raise requests.exceptions.InvalidURL("failed to parse URL")
-
-    monkeypatch.setattr("requests.get", raise_invalid_url)
     result = Rule_TC609_0205_ContentAuthenticity.eval(
-        Data(content="example", source=source)
+        Data(source=source, source_details=source_details)
     )
 
     assert result.status is True
-    assert result.label == [
-        "QUALITY_BAD_TC609_0205.Rule_TC609_0205_ContentAuthenticity"
-    ]
+    assert result.reason == [reason]
+
+
+@pytest.mark.parametrize(
+    "source, source_details",
+    [
+        ("互联网", "example.com/data/1"),
+        ("互联网", "ftp://example.com/data/1"),
+        ("互联网", "https://"),
+        ("互联网", "https://exa mple.com/data/1"),
+        ("互联网", "https://example.com:invalid/data/1"),
+    ],
+)
+def test_content_authenticity_rejects_invalid_url(source, source_details):
+    result = Rule_TC609_0205_ContentAuthenticity.eval(
+        Data(source=source, source_details=source_details)
+    )
+
+    assert result.status is True
     assert result.reason == [
-        "source: URL request failed: InvalidURL: failed to parse URL"
+        "source_details: expected a valid HTTP or HTTPS URL"
     ]
 
 
 def test_content_authenticity_declares_required_fields():
     assert Rule_TC609_0205_ContentAuthenticity._required_fields == [
-        RequiredField.CONTENT,
         RequiredField.SOURCE,
+        RequiredField.SOURCE_DETAILS,
     ]
 
 
