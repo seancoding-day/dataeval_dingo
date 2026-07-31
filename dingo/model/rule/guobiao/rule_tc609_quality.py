@@ -10,6 +10,7 @@ from dingo.model.rule.base import BaseRule
 from dingo.model.rule.guobiao.rule_tc609_quality_base import (
     Rule_TC609_01_DocCompleteness,
     Rule_TC609_Composite,
+    TC609_DATASET_TYPE_DESCRIPTIONS,
     _tc609_metric_info,
     _TC609PlaceholderBase,
     calculate_text_consistency,
@@ -644,30 +645,18 @@ class Rule_TC609_0206_ContentConsistency(BaseRule):
 
 @Model.rule_register("QUALITY_BAD_TC609_0207", ["guobiao_data"])
 class Rule_TC609_0207_DataTypeConsistency(BaseRule):
-    """Check whether content belongs to the type declared in ``input_data.type``.
+    """Check whether text content matches the configured dataset type."""
 
-    A local zero-shot classifier evaluates the hypothesis ``这段文本属于{type}类型``.
-    The declared type may be any non-empty string, such as ``医疗`` or ``金融``.
-    """
+    _metric_info = _tc609_metric_info(
+        "0207",
+        "Rule_TC609_0207_DataTypeConsistency",
+        "Checks whether text content matches the configured dataset type.",
+        "partial",
+    )
 
-    _metric_info = {
-        "category": "National Standard Data Quality Metrics",
-        "quality_dimension": "TYPE_CONSISTENCY",
-        "metric_name": "Rule_TC609_0207_DataTypeConsistency",
-        "description": (
-            "Uses a local zero-shot classifier to check whether content belongs "
-            "to the type declared in the record"
-        ),
-        "paper_title": "High-quality dataset quality evaluation specification",
-        "paper_url": "",
-        "paper_authors": "SAC/TC609",
-        "evaluation_results": "",
-        "standard_code": "0207",
-        "coverage": "partial",
-    }
-
-    _required_fields = [RequiredField.CONTENT, RequiredField.TYPE]
+    _required_fields = [RequiredField.DATA_CONTENT]
     dynamic_config = EvaluatorRuleArgs(
+        dataset_type="通识数据集",
         threshold=0.5,
         model="MoritzLaurer/mDeBERTa-v3-base-mnli-xnli",
         device=-1,
@@ -711,45 +700,53 @@ class Rule_TC609_0207_DataTypeConsistency(BaseRule):
         return cls._classifier
 
     @classmethod
-    def _calculate_match_score(
-        cls, content, declared_type, model_name, device
-    ):
+    def _classify_dataset_type(cls, content, model_name, device):
         classifier = cls._get_classifier(model_name, device)
+        dataset_types = list(TC609_DATASET_TYPE_DESCRIPTIONS)
+        descriptions = [
+            TC609_DATASET_TYPE_DESCRIPTIONS[dataset_type]
+            for dataset_type in dataset_types
+        ]
         result = classifier(
             content,
-            candidate_labels=[declared_type],
-            hypothesis_template="这段文本属于{}类型。",
-            multi_label=True,
+            candidate_labels=descriptions,
+            hypothesis_template="这段文本符合以下数据集类型要求：{}",
+            multi_label=False,
             truncation=True,
         )
         labels = result.get("labels", [])
         scores = result.get("scores", [])
-        if not labels or not scores or labels[0] != declared_type:
+        if len(labels) != len(descriptions) or len(scores) != len(descriptions):
             raise RuntimeError("Zero-shot classifier returned an invalid result")
-        score = float(scores[0])
-        if not math.isfinite(score) or not 0.0 <= score <= 1.0:
-            raise RuntimeError(
-                f"Zero-shot classifier returned an invalid score: {score}"
-            )
-        return score
+
+        scores_by_type = {}
+        for label, score in zip(labels, scores):
+            score = float(score)
+            if (
+                label not in descriptions
+                or not math.isfinite(score)
+                or not 0.0 <= score <= 1.0
+            ):
+                raise RuntimeError(
+                    "Zero-shot classifier returned an invalid result"
+                )
+            dataset_type = dataset_types[descriptions.index(label)]
+            scores_by_type[dataset_type] = score
+        if len(scores_by_type) != len(dataset_types):
+            raise RuntimeError("Zero-shot classifier returned an invalid result")
+        predicted_type = dataset_types[descriptions.index(labels[0])]
+        return predicted_type, scores_by_type
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         res = EvalDetail(metric=cls.__name__)
-        declared_type = getattr(input_data, "type", None)
-        content = getattr(input_data, "content", None)
-
-        if not isinstance(declared_type, str) or not declared_type.strip():
-            res.status = True
-            res.label = [f"{cls.metric_type}.{cls.__name__}"]
-            res.reason = ["Data type is missing or empty"]
-            return res
-
-        if not isinstance(content, str) or not content.strip():
-            res.status = True
-            res.label = [f"{cls.metric_type}.{cls.__name__}"]
-            res.reason = ["Content is missing or empty"]
-            return res
+        dataset_type = cls.dynamic_config.dataset_type
+        if dataset_type not in TC609_DATASET_TYPE_DESCRIPTIONS:
+            raise ValueError(
+                "Rule_TC609_0207_DataTypeConsistency "
+                "dynamic_config.dataset_type must be one of: "
+                f"{', '.join(TC609_DATASET_TYPE_DESCRIPTIONS)}"
+            )
 
         threshold = cls.dynamic_config.threshold
         if threshold is None or not 0 < threshold <= 1:
@@ -757,25 +754,71 @@ class Rule_TC609_0207_DataTypeConsistency(BaseRule):
                 "Rule_TC609_0207_DataTypeConsistency dynamic_config.threshold must be in (0, 1]"
             )
 
-        model_name = cls.dynamic_config.model
-        device = cls.dynamic_config.device
-        score = cls._calculate_match_score(
-            content, declared_type, model_name, device
-        )
-        res.score = score
+        texts = []
+        reasons = []
+        if not isinstance(input_data.data_content, list):
+            res.status = True
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = [
+                "data_content: expected list, "
+                f"got {type(input_data.data_content).__name__}"
+            ]
+            return res
+        for index, item in enumerate(input_data.data_content):
+            if not isinstance(item, dict):
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}]: expected dict, "
+                    f"got {type(item).__name__}"
+                )
+                continue
+            media_type = item.get("media_type")
+            if not isinstance(media_type, str) or not media_type.strip():
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}].media_type: "
+                    "expected non-empty str"
+                )
+                continue
+            if media_type.strip().lower() != "text":
+                continue
+            content = item.get("content")
+            if not isinstance(content, str) or not content.strip():
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}].content: expected non-empty str"
+                )
+                continue
+            texts.append(content.strip())
 
-        if score >= threshold:
+        if not texts:
+            res.status = True
+            reasons.append("data_content: at least one text item is required")
+        if res.status:
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = reasons
+            return res
+
+        predicted_type, scores_by_type = cls._classify_dataset_type(
+            "\n".join(texts),
+            cls.dynamic_config.model,
+            cls.dynamic_config.device,
+        )
+        res.score = scores_by_type[dataset_type]
+
+        if predicted_type == dataset_type and res.score >= threshold:
             res.label = [QualityLabel.QUALITY_GOOD]
             res.reason = [
-                f"Content matches declared type {declared_type} "
-                f"(score: {score:.4f}, threshold: {threshold:.4f})"
+                f"Text content matches dataset type {dataset_type} "
+                f"(score: {res.score:.4f}, threshold: {threshold:.4f})"
             ]
         else:
             res.status = True
             res.label = [f"{cls.metric_type}.{cls.__name__}"]
             res.reason = [
-                f"Content does not match declared type {declared_type} "
-                f"(score: {score:.4f}, threshold: {threshold:.4f})"
+                f"Text content does not match dataset type {dataset_type}; "
+                f"predicted type: {predicted_type} "
+                f"(score: {res.score:.4f}, threshold: {threshold:.4f})"
             ]
         return res
 

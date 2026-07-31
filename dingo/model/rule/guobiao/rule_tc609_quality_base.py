@@ -9,6 +9,13 @@ from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model.rule.base import BaseRule
 
 
+TC609_DATASET_TYPE_DESCRIPTIONS = {
+    "通识数据集": "面向普通公众，内容属于跨行业普遍适用、无需特定行业背景即可理解的通用知识",
+    "行业通识数据集": "面向特定行业，内容属于该行业从业者普遍需要掌握的基础知识、通用规范或常见实践",
+    "行业专识数据集": "面向特定行业的专业人员，内容包含需要行业专业背景才能理解或应用的专业概念、方法、技术或经验",
+}
+
+
 def _tc609_metric_info(code, name, description, coverage):
     """Build consistent documentation metadata for TC609 rules."""
     return {

@@ -116,7 +116,7 @@ This document provides comprehensive information about all quality metrics used 
 | `QUALITY_BAD_TC609_0103` | Rule_TC609_0103_DocConstructionProcessCompleteness | Checks whether dataset documentation covers construction-process aspects such as data source, collection, processing,... | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0104` | Rule_TC609_0104_DocApplicationCompleteness | Checks whether dataset documentation covers application aspects such as license, scenarios, evaluation method, benchm... | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0201` | Rule_TC609_0201_FormatCompliance | Checks required fields and types against `field_schema`. Extra fields are allowed by default and can be rejected with `allow_extra=false`. Supports `str`, `int`, `float`, `bool`, `list`, `dict`, and nullable `Optional[...]` variants. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0207` | Rule_TC609_0207_DataTypeConsistency | Uses a local zero-shot classifier to check whether content belongs to the type declared in the record | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0207` | Rule_TC609_0207_DataTypeConsistency | Checks whether text items in `data_content` match the configured dataset type | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_02080101` | Rule_TC609_02080101_TextPerplexity | Calculates text perplexity with a causal language model and flags text whose PPL exceeds the configured threshold | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0303` | Rule_TC609_0303_DataTimeRange | Checks whether created and updated timestamps are within configured time ranges | Internal Implementation | N/A | N/A |
 
