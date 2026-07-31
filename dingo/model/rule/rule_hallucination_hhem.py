@@ -12,6 +12,7 @@ Key advantages of HHEM-2.1-Open:
 """
 
 import json
+from threading import Lock
 from typing import List
 
 from dingo.config.input_args import EvaluatorRuleArgs
@@ -48,28 +49,52 @@ class RuleHallucinationHHEM(BaseRule):
     _required_fields = [RequiredField.CONTENT, RequiredField.CONTEXT]
     dynamic_config = EvaluatorRuleArgs(threshold=0.5)
     model = None
+    _load_lock = Lock()
+    _model_repo_id = "vectara/hallucination_evaluation_model"
 
     @classmethod
     def load_model(cls):
         """Load HHEM-2.1-Open model"""
         if cls.model is None:
-            try:
-                from transformers import AutoModelForSequenceClassification
+            with cls._load_lock:
+                if cls.model is not None:
+                    return
+                try:
+                    from huggingface_hub import snapshot_download
+                    from transformers import AutoModelForSequenceClassification
 
-                log.info("Loading HHEM-2.1-Open model...")
-                cls.model = AutoModelForSequenceClassification.from_pretrained(
-                    'vectara/hallucination_evaluation_model',
-                    trust_remote_code=True
-                )
-                log.info("✅ HHEM-2.1-Open model loaded successfully")
+                    log.info("Loading HHEM-2.1-Open model...")
+                    try:
+                        model_path = snapshot_download(
+                            repo_id=cls._model_repo_id,
+                            repo_type="model",
+                            local_files_only=True,
+                        )
+                    except Exception:
+                        model_path = snapshot_download(
+                            repo_id=cls._model_repo_id,
+                            repo_type="model",
+                        )
 
-            except ImportError:
-                raise ImportError(
-                    "transformers library is required for HHEM model. "
-                    "Install with: pip install transformers"
-                )
-            except Exception as e:
-                raise RuntimeError(f"Failed to load HHEM model: {e}")
+                    cls.model = AutoModelForSequenceClassification.from_pretrained(
+                        model_path,
+                        trust_remote_code=True,
+                        local_files_only=True,
+                    )
+                    log.info("✅ HHEM-2.1-Open model loaded successfully")
+
+                except ImportError:
+                    raise ImportError(
+                        "transformers and huggingface_hub are required for HHEM model. "
+                        "Install with: pip install transformers huggingface_hub"
+                    )
+                except Exception as e:
+                    raise RuntimeError(
+                        "Failed to load HHEM model. "
+                        "The first run requires network access to download "
+                        f"'{cls._model_repo_id}', or a populated Hugging Face cache. "
+                        f"Original error: {e}"
+                    ) from e
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:

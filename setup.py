@@ -11,6 +11,7 @@ def _read_requirements(path):
 
 requirements = _read_requirements("./requirements/runtime.txt")
 
+optional_requirements = _read_requirements("./requirements/optional.txt")
 agent_requirements = _read_requirements("./requirements/agent.txt")
 hhem_requirements = _read_requirements("./requirements/hhem_integration.txt")
 litellm_requirements = ["litellm>=1.80.0,<1.87.0"]
@@ -18,11 +19,12 @@ retrieval_requirements = _read_requirements("./requirements/retrieval.txt")
 
 
 extras_require = {
+    'optional': optional_requirements,
     'agent': agent_requirements,
     'hhem': hhem_requirements,
     'litellm': litellm_requirements,
     'retrieval': retrieval_requirements,
-    'all': hhem_requirements + agent_requirements + litellm_requirements + retrieval_requirements,
+    'all': optional_requirements + hhem_requirements + agent_requirements + litellm_requirements + retrieval_requirements,
 }
 
 

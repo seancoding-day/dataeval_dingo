@@ -67,6 +67,19 @@ pip install transformers torch
 pip install -r requirements/hhem_integration.txt
 ```
 
+#### 模型下载与镜像
+
+首次运行会自动从 Hugging Face 下载 HHEM-2.1-Open 模型（约 400MB），之后从本地缓存加载，无需重复下载。
+
+如果无法访问 `huggingface.co`（如国内网络），可在运行前设置镜像环境变量，让下载走 [hf-mirror.com](https://hf-mirror.com)：
+
+```bash
+# 设置镜像后再运行 dingo（对 huggingface_hub / transformers / datasets 全部生效）
+export HF_ENDPOINT=https://hf-mirror.com
+```
+
+> 说明：Dingo 不会强制修改该变量，以免影响能直连官网的环境（如 CI）；是否使用镜像由你自行控制。也可用 `huggingface-cli download vectara/hallucination_evaluation_model` 提前手动下载。
+
 #### 基本使用
 
 ```python
