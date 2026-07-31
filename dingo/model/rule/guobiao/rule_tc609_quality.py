@@ -168,7 +168,19 @@ class Rule_TC609_0201_FormatCompliance(BaseRule):
         "Optional[dict]": {"expected_type": dict, "allow_none": True},
     }
     dynamic_config = EvaluatorRuleArgs(
-        field_schema=None,
+        field_schema={
+            "id": "str",
+            "rid": "Optional[list]",
+            "data_content": "list",
+            "annotation": "Optional[dict]",
+            "original_time": "str",
+            "last_modified_time": "str",
+            "version": "str",
+            "license": "str",
+            "source": "str",
+            "source_details": "str",
+            "generated_data_indicator": "int",
+        },
         allow_extra=True,
     )
     _metric_info = _tc609_metric_info(

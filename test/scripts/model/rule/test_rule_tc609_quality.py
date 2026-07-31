@@ -93,6 +93,61 @@ def test_format_compliance_accepts_matching_record(monkeypatch):
     assert result.label == [QualityLabel.QUALITY_GOOD]
 
 
+def test_format_compliance_default_schema_matches_tc609_metadata():
+    assert Rule_TC609_0201_FormatCompliance.dynamic_config.field_schema == {
+        "id": "str",
+        "rid": "Optional[list]",
+        "data_content": "list",
+        "annotation": "Optional[dict]",
+        "original_time": "str",
+        "last_modified_time": "str",
+        "version": "str",
+        "license": "str",
+        "source": "str",
+        "source_details": "str",
+        "generated_data_indicator": "int",
+    }
+
+    result = Rule_TC609_0201_FormatCompliance.eval(
+        Data(
+            id="d6c9a4d5e57597df8fe30f09ae44c985",
+            rid=None,
+            data_content=[
+                {
+                    "media_type": "image",
+                    "content": "../data/images/streetscape.jpg",
+                }
+            ],
+            annotation=None,
+            original_time="2025-1-1",
+            last_modified_time="2025-1-1",
+            version="1.0.0-alpha",
+            license="其他",
+            source="互联网",
+            source_details="https://example.com/image.jpg",
+            generated_data_indicator=0,
+        )
+    )
+
+    assert result.status is False
+    assert result.label == [QualityLabel.QUALITY_GOOD]
+
+
+def test_format_compliance_default_schema_requires_mandatory_fields():
+    result = Rule_TC609_0201_FormatCompliance.eval(
+        Data(
+            id="dataset-id",
+            data_content={},
+        )
+    )
+
+    assert result.status is True
+    assert "data_content: expected list, got dict" in result.reason
+    assert "rid: required field is missing" in result.reason
+    assert "annotation: required field is missing" in result.reason
+    assert "original_time: required field is missing" in result.reason
+
+
 def test_format_compliance_reports_missing_and_wrong_type(monkeypatch):
     monkeypatch.setattr(
         Rule_TC609_0201_FormatCompliance,
