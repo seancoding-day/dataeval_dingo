@@ -7,7 +7,13 @@ from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model.model import Model
 from dingo.model.rule.base import BaseRule
-from dingo.model.rule.guobiao.rule_tc609_quality_base import Rule_TC609_01_DocCompleteness, Rule_TC609_Composite, _tc609_metric_info, _TC609PlaceholderBase
+from dingo.model.rule.guobiao.rule_tc609_quality_base import (
+    Rule_TC609_01_DocCompleteness,
+    Rule_TC609_Composite,
+    _tc609_metric_info,
+    _TC609PlaceholderBase,
+    calculate_text_consistency,
+)
 
 
 @Model.rule_register("QUALITY_BAD_TC609_0101", ["guobiao_doc"])
@@ -528,158 +534,110 @@ class Rule_TC609_0205_ContentAuthenticity(BaseRule):
 
 @Model.rule_register("QUALITY_BAD_TC609_0206", ["guobiao_data"])
 class Rule_TC609_0206_ContentConsistency(BaseRule):
-    """Check semantic consistency among string fields configured in key_list."""
+    """Check semantic consistency among text items in data_content."""
 
     dynamic_config = EvaluatorRuleArgs(
-        key_list=[],
         threshold=0.5,
-        model="MoritzLaurer/mDeBERTa-v3-base-mnli-xnli",
+        model="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
         device=-1,
+        batch_size=16,
+        max_length=512,
+        consensus_keep_ratio=0.8,
     )
     _metric_info = _tc609_metric_info(
         "0206",
         "Rule_TC609_0206_ContentConsistency",
-        "Uses a local model to check semantic consistency among configured string fields.",
-        "covered",
+        "Checks semantic consistency among text items in data_content.",
+        "partial",
     )
-
-    _model_name = None
-    _model_device = None
-    _classifier = None
-
-    @classmethod
-    def _get_classifier(cls, model_name, device):
-        if (
-            cls._model_name == model_name
-            and cls._model_device == device
-            and cls._classifier is not None
-        ):
-            return cls._classifier
-
-        required_packages = ("torch", "transformers")
-        missing_packages = [
-            package
-            for package in required_packages
-            if importlib.util.find_spec(package) is None
-        ]
-        if missing_packages:
-            raise ImportError(
-                "Rule_TC609_0206_ContentConsistency requires optional packages: "
-                f"{', '.join(missing_packages)}. "
-                'Install them with: pip install "dingo-python[hhem]"'
-            )
-
-        from transformers import pipeline
-
-        cls._classifier = pipeline(
-            "zero-shot-classification",
-            model=model_name,
-            device=device,
-        )
-        cls._model_name = model_name
-        cls._model_device = device
-        return cls._classifier
-
-    @classmethod
-    def _calculate_consistency_score(
-        cls, reference, candidate, model_name, device
-    ):
-        classifier = cls._get_classifier(model_name, device)
-        result = classifier(
-            reference,
-            candidate_labels=[candidate],
-            hypothesis_template="这段文本与以下内容语义一致：{}",
-            multi_label=True,
-            truncation=True,
-        )
-        labels = result.get("labels", [])
-        scores = result.get("scores", [])
-        if not labels or not scores or labels[0] != candidate:
-            raise RuntimeError("Zero-shot classifier returned an invalid result")
-
-        score = float(scores[0])
-        if not math.isfinite(score) or not 0.0 <= score <= 1.0:
-            raise RuntimeError(
-                f"Zero-shot classifier returned an invalid score: {score}"
-            )
-        return score
+    _required_fields = [RequiredField.DATA_CONTENT]
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
-        key_list = cls.dynamic_config.key_list
-        if not isinstance(key_list, list) or len(key_list) < 2:
-            raise ValueError(
-                "Rule_TC609_0206_ContentConsistency requires "
-                "dynamic_config.key_list to contain at least two fields"
-            )
-        if (
-            any(not isinstance(key, str) or not key for key in key_list)
-            or len(set(key_list)) != len(key_list)
-        ):
-            raise ValueError(
-                "Rule_TC609_0206_ContentConsistency requires "
-                "dynamic_config.key_list to contain unique non-empty strings"
-            )
-
-        threshold = cls.dynamic_config.threshold
-        if (
-            isinstance(threshold, bool)
-            or not isinstance(threshold, (int, float))
-            or not 0 < threshold <= 1
-        ):
-            raise ValueError(
-                "Rule_TC609_0206_ContentConsistency requires "
-                "dynamic_config.threshold to be in (0, 1]"
-            )
-
-        record = input_data.model_dump()
-        invalid_fields = [
-            field
-            for field in key_list
-            if field not in record or not isinstance(record[field], str)
-        ]
         res = EvalDetail(metric=cls.__name__)
-        if invalid_fields:
+        data_content = input_data.data_content
+        if not isinstance(data_content, list) or not data_content:
             res.status = True
             res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = ["data_content: expected a non-empty list"]
+            return res
+
+        texts = []
+        text_indexes = []
+        reasons = []
+        for index, item in enumerate(data_content):
+            if not isinstance(item, dict):
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}]: expected dict, "
+                    f"got {type(item).__name__}"
+                )
+                continue
+
+            media_type = item.get("media_type")
+            if not isinstance(media_type, str) or not media_type.strip():
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}].media_type: "
+                    "expected a non-empty string"
+                )
+                continue
+            if media_type.strip().lower() != "text":
+                continue
+
+            content = item.get("content")
+            if not isinstance(content, str) or not content.strip():
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}].content: "
+                    "expected a non-empty string for text media"
+                )
+                continue
+            texts.append(content)
+            text_indexes.append(index)
+
+        if res.status:
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = reasons
+            return res
+
+        if len(texts) < 2:
+            res.label = [QualityLabel.QUALITY_GOOD]
             res.reason = [
-                f"{field}: field must exist and its value must be str"
-                for field in invalid_fields
+                "Fewer than two text items; consistency comparison is not needed"
             ]
             return res
 
-        reference_field = key_list[0]
-        pair_scores = []
-        for candidate_field in key_list[1:]:
-            score = cls._calculate_consistency_score(
-                record[reference_field],
-                record[candidate_field],
-                cls.dynamic_config.model,
-                cls.dynamic_config.device,
-            )
-            pair_scores.append((candidate_field, score))
-
-        minimum_score = min(score for _, score in pair_scores)
-        res.score = minimum_score
-        inconsistent_pairs = [
-            (candidate_field, score)
-            for candidate_field, score in pair_scores
-            if score < threshold
-        ]
-        if inconsistent_pairs:
+        result = calculate_text_consistency(
+            texts=texts,
+            model_name=cls.dynamic_config.model,
+            device=cls.dynamic_config.device,
+            threshold=cls.dynamic_config.threshold,
+            batch_size=getattr(cls.dynamic_config, "batch_size", 16),
+            max_length=getattr(cls.dynamic_config, "max_length", 512),
+            consensus_keep_ratio=getattr(
+                cls.dynamic_config,
+                "consensus_keep_ratio",
+                0.8,
+            ),
+        )
+        res.score = result["score"]
+        if not result["is_consistent"]:
             res.status = True
             res.label = [f"{cls.metric_type}.{cls.__name__}"]
             res.reason = [
-                f"{reference_field} and {candidate_field} are inconsistent "
-                f"(score: {score:.4f}, threshold: {threshold:.4f})"
-                for candidate_field, score in inconsistent_pairs
+                "Text items in data_content are inconsistent "
+                f"(score: {res.score:.4f}, "
+                f"threshold: {cls.dynamic_config.threshold:.4f}, "
+                "outlier indexes: "
+                f"{[text_indexes[index] for index in result['outlier_indexes']]})"
             ]
         else:
             res.label = [QualityLabel.QUALITY_GOOD]
             res.reason = [
-                f"Configured fields are consistent "
-                f"(minimum score: {minimum_score:.4f}, "
-                f"threshold: {threshold:.4f})"
+                "Text items in data_content are consistent "
+                f"(score: {res.score:.4f}, "
+                f"threshold: {cls.dynamic_config.threshold:.4f})"
             ]
         return res
 

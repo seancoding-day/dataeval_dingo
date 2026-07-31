@@ -168,7 +168,7 @@ This document provides comprehensive information about all quality metrics used 
 | `QUALITY_BAD_TC609_0204` | Rule_TC609_0204_StructuralCompleteness | Checks fields configured in `key_list` for missing values. `allow_none` and `allow_empty` control whether `None` and empty strings/lists/dicts are accepted. | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0205` | Rule_TC609_0205_ContentAuthenticity | Requires `source` and `source_details`; validates non-empty traceability information and HTTP/HTTPS URL syntax when applicable. | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0204` | Rule_TC609_0204_StructuralCompleteness | Combines null-content and short-content checks. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0206` | Rule_TC609_0206_ContentConsistency | Uses a local multilingual NLI model to check semantic consistency among string fields configured in `key_list`. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0206` | Rule_TC609_0206_ContentConsistency | Uses multilingual text embeddings to check consistency among text items in `data_content`; multiple texts use robust-center aggregation instead of all-pairs comparison. | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_02080102` | Rule_TC609_02080102_KnowledgeInformationDensity | Combines alphabetic-word, stop-word, and unique-word ratio checks. | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_02080103` | Rule_TC609_02080103_RepeatedContent | Combines document-text and formula repetition checks. | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_02080104` | Rule_TC609_02080104_TextCompleteness | Combines null, short, ellipsis-ending, and terminal-ending checks. | Internal Implementation | N/A | N/A |

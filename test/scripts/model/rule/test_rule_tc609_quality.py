@@ -8,6 +8,7 @@ from dingo.io.input import RequiredField
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model.model import Model
 from dingo.model.rule.guobiao import rule_tc609_quality
+from dingo.model.rule.guobiao import rule_tc609_quality_base
 from dingo.model.rule.guobiao.rule_tc609_quality import (Rule_TC609_0201_FormatCompliance, Rule_TC609_0202_SafetyCompliance, Rule_TC609_0203_AnnotationCompliance,
                                                          Rule_TC609_0204_StructuralCompleteness, Rule_TC609_0205_ContentAuthenticity, Rule_TC609_0206_ContentConsistency,
                                                          Rule_TC609_0208_ContentCleanliness, Rule_TC609_0301_ContentDiversity)
@@ -693,105 +694,185 @@ def test_content_authenticity_declares_required_fields():
     ]
 
 
-def test_content_consistency_accepts_consistent_string_fields(monkeypatch):
+def test_content_consistency_accepts_consistent_text_items(monkeypatch):
     monkeypatch.setattr(
         Rule_TC609_0206_ContentConsistency,
         "dynamic_config",
         EvaluatorRuleArgs(
-            key_list=["title", "content", "summary"],
             threshold=0.5,
             model="test-model",
             device=-1,
         ),
     )
-    scores = iter([0.9, 0.8])
     monkeypatch.setattr(
-        Rule_TC609_0206_ContentConsistency,
-        "_calculate_consistency_score",
-        classmethod(lambda cls, *args: next(scores)),
+        rule_tc609_quality,
+        "calculate_text_consistency",
+        lambda **kwargs: {
+            "score": 0.85,
+            "is_consistent": True,
+            "item_scores": [0.9, 0.85, 0.8],
+            "outlier_indexes": [],
+        },
     )
 
     result = Rule_TC609_0206_ContentConsistency.eval(
-        Data(title="健康", content="健康知识", summary="健康摘要")
+        Data(
+            data_content=[
+                {"media_type": "text", "content": "海底管道砂袋防护"},
+                {"media_type": "image", "content": "pipeline.jpg"},
+                {"media_type": "text", "content": "砂袋用于保护海底管道"},
+                {"media_type": "text", "content": "模拟砂袋周围流场"},
+            ]
+        )
     )
 
     assert result.status is False
-    assert result.score == 0.8
+    assert result.score == 0.85
     assert result.label == [QualityLabel.QUALITY_GOOD]
 
 
-def test_content_consistency_rejects_inconsistent_string_fields(monkeypatch):
+def test_content_consistency_rejects_inconsistent_text_items(monkeypatch):
     monkeypatch.setattr(
         Rule_TC609_0206_ContentConsistency,
         "dynamic_config",
         EvaluatorRuleArgs(
-            key_list=["title", "content"],
             threshold=0.5,
             model="test-model",
             device=-1,
         ),
     )
     monkeypatch.setattr(
-        Rule_TC609_0206_ContentConsistency,
-        "_calculate_consistency_score",
-        classmethod(lambda cls, *args: 0.2),
+        rule_tc609_quality,
+        "calculate_text_consistency",
+        lambda **kwargs: {
+            "score": 0.2,
+            "is_consistent": False,
+            "item_scores": [0.9, 0.2],
+            "outlier_indexes": [1],
+        },
     )
 
     result = Rule_TC609_0206_ContentConsistency.eval(
-        Data(title="健康", content="金融市场")
+        Data(
+            data_content=[
+                {"media_type": "text", "content": "健康知识"},
+                {"media_type": "image", "content": "health.jpg"},
+                {"media_type": "text", "content": "金融市场"},
+            ]
+        )
     )
 
     assert result.status is True
     assert result.score == 0.2
     assert result.reason == [
-        "title and content are inconsistent "
-        "(score: 0.2000, threshold: 0.5000)"
+        "Text items in data_content are inconsistent "
+        "(score: 0.2000, threshold: 0.5000, outlier indexes: [2])"
     ]
+
+
+def test_content_consistency_skips_comparison_for_one_text_item():
+    result = Rule_TC609_0206_ContentConsistency.eval(
+        Data(
+            data_content=[
+                {"media_type": "text", "content": "文本内容"},
+                {"media_type": "image", "content": "image.jpg"},
+            ]
+        )
+    )
+
+    assert result.status is False
+    assert result.score is None
+    assert result.label == [QualityLabel.QUALITY_GOOD]
 
 
 @pytest.mark.parametrize(
-    "data",
+    "data, reason",
     [
-        Data(title="健康"),
-        Data(title="健康", content=["健康知识"]),
-        Data(title="健康", content=None),
+        (
+            Data(data_content=[]),
+            "data_content: expected a non-empty list",
+        ),
+        (
+            Data(data_content=["text"]),
+            "data_content[0]: expected dict, got str",
+        ),
+        (
+            Data(data_content=[{"media_type": ["text"], "content": "文本"}]),
+            "data_content[0].media_type: expected a non-empty string",
+        ),
+        (
+            Data(data_content=[{"media_type": "text", "content": ""}]),
+            (
+                "data_content[0].content: "
+                "expected a non-empty string for text media"
+            ),
+        ),
     ],
 )
-def test_content_consistency_requires_existing_string_fields(data, monkeypatch):
-    monkeypatch.setattr(
-        Rule_TC609_0206_ContentConsistency,
-        "dynamic_config",
-        EvaluatorRuleArgs(
-            key_list=["title", "content"],
-            threshold=0.5,
-            model="test-model",
-            device=-1,
-        ),
-    )
-
+def test_content_consistency_rejects_invalid_data_content(data, reason):
     result = Rule_TC609_0206_ContentConsistency.eval(data)
 
     assert result.status is True
-    assert result.reason == [
-        "content: field must exist and its value must be str"
-    ]
+    assert result.reason == [reason]
 
 
-@pytest.mark.parametrize("key_list", [[], ["content"], ["content", "content"]])
-def test_content_consistency_rejects_invalid_key_list(key_list, monkeypatch):
+def test_calculate_text_consistency_compares_two_texts_directly(monkeypatch):
+    import torch
+
     monkeypatch.setattr(
-        Rule_TC609_0206_ContentConsistency,
-        "dynamic_config",
-        EvaluatorRuleArgs(
-            key_list=key_list,
-            threshold=0.5,
-            model="test-model",
-            device=-1,
+        rule_tc609_quality_base,
+        "_encode_texts",
+        lambda *args, **kwargs: torch.tensor(
+            [[1.0, 0.0], [0.8, 0.6]]
         ),
     )
 
-    with pytest.raises(ValueError, match="key_list"):
-        Rule_TC609_0206_ContentConsistency.eval(Data(content="example"))
+    result = rule_tc609_quality_base.calculate_text_consistency(
+        ["标题", "摘要"],
+        model_name="test-model",
+        threshold=0.75,
+    )
+
+    assert result["score"] == pytest.approx(0.8)
+    assert result["is_consistent"] is True
+    assert result["outlier_indexes"] == []
+
+
+def test_calculate_text_consistency_uses_robust_center(monkeypatch):
+    import torch
+
+    encoded = torch.tensor(
+        [
+            [1.0, 0.0],
+            [0.99, 0.1],
+            [0.98, -0.1],
+            [0.97, 0.05],
+            [0.0, 1.0],
+        ]
+    )
+    encoded = torch.nn.functional.normalize(encoded, p=2, dim=1)
+    monkeypatch.setattr(
+        rule_tc609_quality_base,
+        "_encode_texts",
+        lambda *args, **kwargs: encoded,
+    )
+
+    result = rule_tc609_quality_base.calculate_text_consistency(
+        ["文本1", "文本2", "文本3", "文本4", "离群文本"],
+        model_name="test-model",
+        threshold=0.5,
+        consensus_keep_ratio=0.8,
+    )
+
+    assert result["score"] < 0.5
+    assert result["is_consistent"] is False
+    assert result["outlier_indexes"] == [4]
+
+
+def test_content_consistency_declares_data_content_required():
+    assert Rule_TC609_0206_ContentConsistency._required_fields == [
+        RequiredField.DATA_CONTENT
+    ]
 
 
 def test_uncovered_rule_is_explicit_placeholder():

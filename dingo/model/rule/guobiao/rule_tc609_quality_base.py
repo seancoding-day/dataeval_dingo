@@ -25,6 +25,170 @@ def _tc609_metric_info(code, name, description, coverage):
     }
 
 
+_text_embedding_components = {}
+
+
+def _get_text_embedding_components(model_name, device):
+    """Load and cache a transformer model used for text embeddings."""
+    missing_packages = [
+        package
+        for package in ("torch", "transformers")
+        if importlib.util.find_spec(package) is None
+    ]
+    if missing_packages:
+        raise ImportError(
+            "Text consistency evaluation requires optional packages: "
+            f"{', '.join(missing_packages)}. "
+            'Install them with: pip install "dingo-python[hhem]"'
+        )
+
+    import torch
+    from transformers import AutoModel, AutoTokenizer
+
+    if device == -1:
+        torch_device = "cpu"
+    elif isinstance(device, int):
+        torch_device = f"cuda:{device}"
+    else:
+        torch_device = str(device)
+
+    cache_key = (model_name, torch_device)
+    if cache_key not in _text_embedding_components:
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model = AutoModel.from_pretrained(model_name)
+        model.to(torch_device)
+        model.eval()
+        _text_embedding_components[cache_key] = (
+            tokenizer,
+            model,
+            torch_device,
+        )
+    return _text_embedding_components[cache_key]
+
+
+def _encode_texts(texts, model_name, device, batch_size, max_length):
+    """Encode texts once in batches and return normalized sentence vectors."""
+    import torch
+    import torch.nn.functional as functional
+
+    tokenizer, model, torch_device = _get_text_embedding_components(
+        model_name,
+        device,
+    )
+    embeddings = []
+    for start in range(0, len(texts), batch_size):
+        batch = texts[start:start + batch_size]
+        encoded = tokenizer(
+            batch,
+            padding=True,
+            truncation=True,
+            max_length=max_length,
+            return_tensors="pt",
+        )
+        encoded = {
+            key: value.to(torch_device)
+            for key, value in encoded.items()
+        }
+        with torch.inference_mode():
+            hidden_state = model(**encoded).last_hidden_state
+        attention_mask = encoded["attention_mask"].unsqueeze(-1)
+        pooled = (
+            (hidden_state * attention_mask).sum(dim=1)
+            / attention_mask.sum(dim=1).clamp(min=1)
+        )
+        embeddings.append(functional.normalize(pooled, p=2, dim=1).cpu())
+    return torch.cat(embeddings, dim=0)
+
+
+def calculate_text_consistency(
+    texts,
+    model_name,
+    device=-1,
+    threshold=0.5,
+    batch_size=16,
+    max_length=512,
+    consensus_keep_ratio=0.8,
+):
+    """Calculate semantic consistency for two or more texts.
+
+    Two texts are compared directly. For three or more texts, every text is
+    compared with a robust semantic center so the calculation remains linear
+    in the number of texts rather than evaluating all text pairs.
+    """
+    if (
+        not isinstance(texts, list)
+        or len(texts) < 2
+        or any(not isinstance(text, str) or not text.strip() for text in texts)
+    ):
+        raise ValueError(
+            "calculate_text_consistency requires at least two non-empty texts"
+        )
+    if (
+        isinstance(threshold, bool)
+        or not isinstance(threshold, (int, float))
+        or not 0 <= threshold <= 1
+    ):
+        raise ValueError("threshold must be in [0, 1]")
+    if isinstance(batch_size, bool) or not isinstance(batch_size, int) or batch_size <= 0:
+        raise ValueError("batch_size must be a positive integer")
+    if isinstance(max_length, bool) or not isinstance(max_length, int) or max_length <= 0:
+        raise ValueError("max_length must be a positive integer")
+    if not 0 < consensus_keep_ratio <= 1:
+        raise ValueError("consensus_keep_ratio must be in (0, 1]")
+
+    import torch
+    import torch.nn.functional as functional
+
+    normalized_texts = [text.strip() for text in texts]
+    embeddings = _encode_texts(
+        normalized_texts,
+        model_name,
+        device,
+        batch_size,
+        max_length,
+    )
+
+    if len(normalized_texts) == 2:
+        score = float(torch.sum(embeddings[0] * embeddings[1]).item())
+        item_scores = [score, score]
+    else:
+        initial_center = functional.normalize(
+            embeddings.mean(dim=0),
+            p=2,
+            dim=0,
+        )
+        initial_scores = embeddings @ initial_center
+        keep_count = max(
+            2,
+            math.ceil(len(normalized_texts) * consensus_keep_ratio),
+        )
+        keep_indexes = torch.topk(initial_scores, keep_count).indices
+        robust_center = functional.normalize(
+            embeddings[keep_indexes].mean(dim=0),
+            p=2,
+            dim=0,
+        )
+        similarities = embeddings @ robust_center
+        score = float(torch.min(similarities).item())
+        item_scores = [float(value) for value in similarities.tolist()]
+
+    score = min(1.0, max(0.0, score))
+    item_scores = [
+        min(1.0, max(0.0, value))
+        for value in item_scores
+    ]
+    return {
+        "score": score,
+        "is_consistent": score >= threshold,
+        "item_scores": item_scores,
+        "outlier_indexes": [
+            index
+            for index, item_score in enumerate(item_scores)
+            if item_score < threshold
+        ],
+    }
+
+
 class Rule_TC609_Composite(BaseRule):
     """Base class for a TC609 metric composed from existing Dingo rules."""
 

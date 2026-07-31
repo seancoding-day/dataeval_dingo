@@ -12,3 +12,4 @@ class RequiredField(Enum):
     SOURCE = "source"
     SOURCE_DETAILS = "source_details"
     ANNOTATION = "annotation"
+    DATA_CONTENT = "data_content"
