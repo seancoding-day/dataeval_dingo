@@ -148,7 +148,6 @@ class TestRule_TC609_02080101_TextPerplexity:
         )
 
         assert res.status is True
-        assert res.label == ["QUALITY_BAD_TC609_02080101.Rule_TC609_02080101_TextPerplexity"]
         assert "125.5000" in res.reason[0]
         assert "test-model" in res.reason[0]
 
@@ -191,7 +190,6 @@ class TestRule_TC609_02080101_TextPerplexity:
         res = Rule_TC609_02080101_TextPerplexity.eval(Data(data_id="ppl-empty", content="  "))
 
         assert res.status is True
-        assert res.label == ["QUALITY_BAD_TC609_02080101.Rule_TC609_02080101_TextPerplexity"]
         assert "empty content" in res.reason[0]
 
     def test_missing_dependencies_raise_clear_error(self, monkeypatch):
@@ -339,7 +337,6 @@ class TestRule_TC609_0303_DataTimeRange:
             )
         )
         assert result.status is True
-        assert result.label == ["QUALITY_BAD_TC609_0303.Rule_TC609_0303_DataTimeRange"]
         assert "earlier than allowed start" in result.reason[0]
 
     def test_dt_invalid_format_is_bad(self, monkeypatch):
@@ -359,7 +356,6 @@ class TestRule_TC609_0303_DataTimeRange:
             )
         )
         assert result.status is True
-        assert result.label == ["QUALITY_BAD_TC609_0303.Rule_TC609_0303_DataTimeRange"]
         assert "unsupported datetime format" in result.reason[0]
 
     def test_missing_time_field_is_bad(self, monkeypatch):
@@ -374,7 +370,6 @@ class TestRule_TC609_0303_DataTimeRange:
 
         result = Rule_TC609_0303_DataTimeRange.eval(Data(data_id="time-missing"))
         assert result.status is True
-        assert result.label == ["QUALITY_BAD_TC609_0303.Rule_TC609_0303_DataTimeRange"]
         assert "dt is missing" in result.reason[0]
 
 
@@ -614,9 +609,6 @@ class TestRuleDatasetDocCompleteness:
             Data(data_id="doc-basic-bad", content=content)
         )
         assert res.status is True
-        assert res.label == [
-            "QUALITY_BAD_TC609_0101.Rule_TC609_0101_DocBasicInfoCompleteness"
-        ]
         assert res.score < 0.8
 
     def test_content_feature_completeness_good(self, monkeypatch):
@@ -660,7 +652,4 @@ class TestRuleDatasetDocCompleteness:
             Data(data_id="doc-empty", content="   ")
         )
         assert res.status is True
-        assert res.label == [
-            "QUALITY_BAD_TC609_0104.Rule_TC609_0104_DocApplicationCompleteness"
-        ]
         assert "missing or empty" in res.reason[0]

@@ -15,7 +15,7 @@ TC609_LLM_CLASSES = [
 def test_tc609_doc_llm_prompts_define_binary_json_output():
     for evaluator in TC609_LLM_CLASSES:
         assert '"score": 0' in evaluator.prompt
-        assert "至少 4 项" in evaluator.prompt
+        assert "至少4项" in evaluator.prompt
         assert "同义词、近义表达" in evaluator.prompt
         assert evaluator._required_fields
 

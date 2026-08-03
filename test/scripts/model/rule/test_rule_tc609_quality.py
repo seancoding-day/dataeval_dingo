@@ -14,7 +14,7 @@ from dingo.model.rule.guobiao.rule_tc609_quality import (Rule_TC609_0201_FormatC
 from dingo.model.rule.rule_common import RuleWatermark
 
 
-def test_tc609_quality_defines_all_standard_metrics():
+def test_unsupported_tc609_quality_metrics_are_not_registered():
     rule_classes = {
         name: cls
         for name, cls in inspect.getmembers(
@@ -26,7 +26,7 @@ def test_tc609_quality_defines_all_standard_metrics():
     }
 
     assert len(rule_classes) == 40
-    assert all(name in Model.rule_name_map for name in rule_classes)
+    assert all(name not in Model.rule_name_map for name in rule_classes)
 
     expected_primary_codes = {
         "0101", "0102", "0103", "0104",
@@ -41,28 +41,11 @@ def test_tc609_quality_defines_all_standard_metrics():
     assert actual_codes == expected_primary_codes
 
 
-def test_tc609_rules_are_grouped_by_evaluation_object():
-    expected_group_sizes = {
-        "guobiao_doc": 4,
-        "guobiao_data": 8,
-        "guobiao_text": 7,
-        "guobiao_image": 4,
-        "guobiao_video": 6,
-        "guobiao_audio": 6,
-        "guobiao_model": 5,
-    }
-
-    for group_name, expected_size in expected_group_sizes.items():
-        tc609_rules = [
-            rule
-            for rule in Model.rule_groups[group_name]
-            if rule.__name__.startswith("Rule_TC609_")
-        ]
-        assert len(tc609_rules) == expected_size
-
+def test_unsupported_tc609_rules_are_not_grouped():
     assert not any(
         rule.__name__.startswith("Rule_TC609_")
-        for rule in Model.rule_groups.get("guobiao", [])
+        for rules in Model.rule_groups.values()
+        for rule in rules
     )
 
 
@@ -904,7 +887,7 @@ def test_content_consistency_rejects_invalid_data_content(data, reason):
 
 
 def test_calculate_text_consistency_compares_two_texts_directly(monkeypatch):
-    import torch
+    torch = pytest.importorskip("torch")
 
     monkeypatch.setattr(
         rule_tc609_quality_base,
@@ -926,7 +909,7 @@ def test_calculate_text_consistency_compares_two_texts_directly(monkeypatch):
 
 
 def test_calculate_text_consistency_uses_robust_center(monkeypatch):
-    import torch
+    torch = pytest.importorskip("torch")
 
     encoded = torch.tensor(
         [
@@ -963,7 +946,7 @@ def test_content_consistency_declares_data_content_required():
 
 
 def test_uncovered_rule_is_explicit_placeholder():
-    assert Rule_TC609_0301_ContentDiversity.group == ["guobiao_model"]
+    assert Rule_TC609_0301_ContentDiversity.group == []
     with pytest.raises(NotImplementedError, match="placeholder"):
         Rule_TC609_0301_ContentDiversity.eval(
             Data(data_id="diversity", content="test")
