@@ -7,14 +7,8 @@ from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model.model import Model
 from dingo.model.rule.base import BaseRule
-from dingo.model.rule.guobiao.rule_tc609_quality_base import (
-    Rule_TC609_01_DocCompleteness,
-    Rule_TC609_Composite,
-    TC609_DATASET_TYPE_DESCRIPTIONS,
-    _tc609_metric_info,
-    _TC609PlaceholderBase,
-    calculate_text_consistency,
-)
+from dingo.model.rule.guobiao.rule_tc609_quality_base import (TC609_DATASET_TYPE_DESCRIPTIONS, Rule_TC609_01_DocCompleteness, Rule_TC609_Composite, _tc609_metric_info, _TC609PlaceholderBase,
+                                                              calculate_text_consistency)
 
 
 # @Model.rule_register("QUALITY_BAD_TC609_0101", ["guobiao_doc"])
@@ -449,6 +443,7 @@ class Rule_TC609_0203_AnnotationCompliance(BaseRule):
         else:
             res.label = [QualityLabel.QUALITY_GOOD]
         return res
+
 
 @Model.rule_register("QUALITY_BAD_TC609_0204", ["guobiao_data"])
 class Rule_TC609_0204_StructuralCompleteness(BaseRule):

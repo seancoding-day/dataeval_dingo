@@ -1,17 +1,8 @@
 from dingo.io.input import Data
-from dingo.model.llm.guobiao.llm_tc609_0101_doc_basic_info_completeness import (
-    LLM_TC609_0101_DocBasicInfoCompleteness,
-)
-from dingo.model.llm.guobiao.llm_tc609_0102_doc_content_feature_completeness import (
-    LLM_TC609_0102_DocContentFeatureCompleteness,
-)
-from dingo.model.llm.guobiao.llm_tc609_0103_doc_construction_process_completeness import (
-    LLM_TC609_0103_DocConstructionProcessCompleteness,
-)
-from dingo.model.llm.guobiao.llm_tc609_0104_doc_application_completeness import (
-    LLM_TC609_0104_DocApplicationCompleteness,
-)
-
+from dingo.model.llm.guobiao.llm_tc609_0101_doc_basic_info_completeness import LLM_TC609_0101_DocBasicInfoCompleteness
+from dingo.model.llm.guobiao.llm_tc609_0102_doc_content_feature_completeness import LLM_TC609_0102_DocContentFeatureCompleteness
+from dingo.model.llm.guobiao.llm_tc609_0103_doc_construction_process_completeness import LLM_TC609_0103_DocConstructionProcessCompleteness
+from dingo.model.llm.guobiao.llm_tc609_0104_doc_application_completeness import LLM_TC609_0104_DocApplicationCompleteness
 
 TC609_LLM_CLASSES = [
     LLM_TC609_0101_DocBasicInfoCompleteness,

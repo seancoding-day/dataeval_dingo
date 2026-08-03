@@ -8,7 +8,6 @@ from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model.rule.base import BaseRule
 
-
 TC609_DATASET_TYPE_DESCRIPTIONS = {
     "通识数据集": "面向普通公众，内容属于跨行业普遍适用、无需特定行业背景即可理解的通用知识",
     "行业通识数据集": "面向特定行业，内容属于该行业从业者普遍需要掌握的基础知识、通用规范或常见实践",
