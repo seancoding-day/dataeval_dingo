@@ -11,18 +11,24 @@ def _read_requirements(path):
 
 requirements = _read_requirements("./requirements/runtime.txt")
 
+optional_requirements = _read_requirements("./requirements/optional.txt")
 agent_requirements = _read_requirements("./requirements/agent.txt")
 hhem_requirements = _read_requirements("./requirements/hhem_integration.txt")
 litellm_requirements = ["litellm>=1.80.0,<1.87.0"]
 retrieval_requirements = _read_requirements("./requirements/retrieval.txt")
+# lmdeploy 单独成组：它硬性要求 transformers>=4.56，与 HHEM 需要的 transformers<4.49 冲突，
+# 因此不并入 optional/all，避免同一环境内 HHEM 无法加载。需要时单独 pip install dingo-python[lmdeploy]。
+lmdeploy_requirements = ["lmdeploy"]
 
 
 extras_require = {
+    'optional': optional_requirements,
     'agent': agent_requirements,
     'hhem': hhem_requirements,
     'litellm': litellm_requirements,
     'retrieval': retrieval_requirements,
-    'all': hhem_requirements + agent_requirements + litellm_requirements + retrieval_requirements,
+    'lmdeploy': lmdeploy_requirements,
+    'all': optional_requirements + hhem_requirements + agent_requirements + litellm_requirements + retrieval_requirements,
 }
 
 

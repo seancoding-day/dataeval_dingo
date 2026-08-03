@@ -20,10 +20,11 @@ class LLMPerspective(BaseLLM):
     def create_client(cls):
         try:
             from googleapiclient import discovery
-        except ImportError:
-            log.warning(
-                "=========== perspective register fail. Please check whether install googleapiclient. ==========="
-            )
+        except ImportError as exc:
+            raise ImportError(
+                "google-api-python-client is required for LLMPerspective. "
+                "Install with: pip install google-api-python-client"
+            ) from exc
 
         if cls.client is None:
             if not cls.dynamic_config.key:

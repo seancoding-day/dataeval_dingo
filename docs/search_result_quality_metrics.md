@@ -1,6 +1,6 @@
 ﻿# Search Result Quality 三指标评测说明
 
-本文档说明 meta search 检索结果的三类评测指标：相关性、内容有效性、权威性，以及对应的单项评测脚本和综合评测脚本。该方案面向无人工 GT 的检索结果质量检查，输入为 query 及其 top-k 检索结果，输出 query 级和 result 级分数，并按阈值生成 Dingo 风格的 good/bad 分类目录。
+本文档说明检索结果的三类评测指标：相关性、内容有效性、权威性，以及对应的单项评测脚本和端到端综合评测脚本。该方案面向无人工 GT 的检索结果质量检查，既可读取预计算的 query+results，也可从 query 文件直接请求 SciVerse Meta Search 或 OpenAlex，再通过 Dingo Executor 完成评测和分类。
 
 ## 1. 适用场景
 
@@ -22,7 +22,11 @@
 
 ## 2. 输入格式
 
-输入文件为 JSONL，每行一个 query 及其检索结果。
+综合脚本支持两种输入模式。
+
+### 2.1 预计算结果
+
+JSONL 每行一个 query 及其检索结果：
 
 ```json
 {"query": "PBPK Review", "results": [{"title": "...", "abstract": "..."}]}
@@ -47,6 +51,22 @@
 outputs/meta_search_97_query_results.jsonl
 ```
 
+### 2.2 端到端检索
+
+设置 `--retrieval-backend meta_search` 或 `openalex` 后，输入只需要包含 query。支持：
+
+- TXT：每行一个 query；
+- CSV：读取 `query`、`query_text` 或 `q` 列；
+- JSON/JSONL：字符串或包含上述 query 字段的对象。
+
+```json
+{"query": "PBPK相关综述"}
+```
+
+端到端模式使用后端默认相关度检索，不添加时间排序或业务过滤；`--top-k` 同时控制请求数量和评测数量。
+
+仓库提供了三条 query 的端到端测试输入：`test/data/test_search_queries.jsonl`。
+
 ## 3. 输出文件
 
 综合评测脚本 `sdk_eval_search_result.py` 会在 `--output-dir` 下生成一个时间戳子目录，核心结果都放在该子目录中，例如：
@@ -60,10 +80,12 @@ outputs/search_result_eval_97q/20260710_162652_1ac3f3be/
 | 文件 | 粒度 | 说明 |
 |---|---|---|
 | `summary.json` | 全局 | 指标均值、中位数、最小值、最大值、bad/good 数量、阈值、LLM 配置等 |
-| `query_scores.csv` | query 级 | 每个 query 的 rank-discount 汇总分、label、eval_status |
+| `query_scores.csv` | query 级 | 每个 query 的 top-k 排名加权平均分、label、eval_status |
 | `result_scores.csv` | result 级 | 每个 query 的每条 top-k 结果分数和诊断信息 |
 | `all_results.jsonl` | result 级原始明细 | executor 输出的逐条评测结果，保留三个指标的完整 `eval_details` |
-| `bad/` | query 级分类 | 低于阈值或运行异常的 query 记录 |
+| `retrieval_results.jsonl` | query 级检索结果 | 仅端到端模式生成，保存可复跑的 query+results |
+| `retrieval_request_log.jsonl` | query 级请求日志 | 仅端到端模式生成，记录状态码、耗时、结果数和错误，不含 token |
+| `bad/` | query 级分类 | 只包含三种 query 聚合指标低分记录，每行一个 query 及其完整 results |
 | `good/` | query 级分类 | 使用 `--save-good` 时保存通过的 query 记录 |
 
 `detailed_results.json` 默认不生成；需要完整嵌套诊断时加 `--save-detailed`。
@@ -74,14 +96,9 @@ outputs/search_result_eval_97q/20260710_162652_1ac3f3be/
 
 ```text
 QUALITY_BAD.SEARCH_RESULT_RELEVANCE_LOW
-QUALITY_BAD.SEARCH_RESULT_RELEVANCE_PARSE_ERROR
 QUALITY_BAD.SEARCH_RESULT_EFFECTIVENESS_LOW
 QUALITY_BAD.SEARCH_RESULT_AUTHORITY_LOW
-QUALITY_BAD.SEARCH_RESULT_OVERALL_LOW
-QUALITY_GOOD.SEARCH_RESULT_RELEVANCE_PASS
-QUALITY_GOOD.SEARCH_RESULT_EFFECTIVENESS_PASS
-QUALITY_GOOD.SEARCH_RESULT_AUTHORITY_PASS
-QUALITY_GOOD.SEARCH_RESULT_OVERALL_PASS
+QUALITY_GOOD.SEARCH_RESULT_METRICS_PASS
 ```
 
 单独运行 `sdk_eval_effectiveness.py` 时，`summary.json` 采用类似 `sdk_chunk_eval.py` 的 result 级结构：每个 query 的每条 top-k 检索文献都是一个测试对象，`total`、`num_good`、`num_bad` 和 `score` 都按 result 级计算。`type_ratio.search_result` 中会统计 `Effectiveness.Error_*` 和 `QUALITY_GOOD` 的比例，`metrics_score.search_result` 中会统计 `LLMSearchResultEffectiveness` 的 result 级分数分布。
@@ -106,25 +123,14 @@ QUALITY_GOOD.jsonl
 
 ## 4. Query 级汇总逻辑
 
-三个指标都先对 top-k 中每条 result 打分，然后用 rank-discounted mean 汇总到 query 级。
-
-第 `rank` 条结果的权重为：
+三个指标都先对 top-k 中每条 result 打分，然后使用排名折扣加权平均汇总到 query 级。第 `rank` 条结果的权重为：
 
 ```text
 weight(rank) = 1 / log2(rank + 1)
-```
-
-query 级分数为：
-
-```text
 query_score = sum(result_score_i * weight_i) / sum(weight_i)
 ```
 
-业务含义：
-
-- rank1 的影响最大。
-- rank 越靠后，对 query 总分影响越小。
-- 适合评估搜索排序质量，因为用户更关注前几条结果。
+rank1 权重最高，越靠后的结果权重越低。综合脚本的 bad/good 判定只比较这三个 query 级加权平均分和统一阈值；result 级分数仍保留在 `result_scores.csv` 与 `all_results.jsonl` 中用于定位问题，但不生成 result 级 bad/good 分类文件。空结果 query 的三个聚合分均为 `0`。
 
 ## 5. 相关性 Relevance
 
@@ -162,23 +168,25 @@ query_score = sum(result_score_i * weight_i) / sum(weight_i)
 
 DOI query 不调用 LLM。Result 级完全匹配为 `1.0`，否则为 `0.0`；reason 中记录 expected DOI 和 result DOI。
 
-DOI 的 query 级得分按精确命中的排名折扣：
+DOI query 的 result 级相关性仍按精确匹配得到 `1.0` 或 `0.0`，query 级相关性按精确命中的排名折扣：
 
 ```text
-doi_relevance = max(exact_match / log2(rank + 1))
+doi_relevance = max(exact_match_i / log2(rank_i + 1))
 ```
 
-因此 rank1 命中为 `1.0`，rank2 命中为 `0.63093`，没有精确命中为 `0.0`。普通 query 继续使用 top-k rank-discount mean。
+因此 rank1 精确命中为 `1.0`，rank2 命中为 `0.63093`，没有精确命中为 `0.0`。
 
-### 5.4 Query 级异常
+### 5.4 LLM 解析异常
 
-如果某个 query 的任意 rank 出现 LLM JSON 解析失败，会增加：
+单独运行相关性脚本时，如果某个 query 的任意 rank 出现 LLM JSON 解析失败，会增加诊断 label：
 
 ```text
 QUALITY_BAD.SEARCH_RESULT_RELEVANCE_PARSE_ERROR
 ```
 
-这类 label 表示运行/解析质量告警，不一定代表业务相关性低。分析低相关时建议区分：
+这类 label 表示运行/解析质量告警，不一定代表业务相关性低。综合端到端脚本仍会记录 `relevance_error_count` 和错误文本，但 bad 目录只使用三个指标低分 label；解析失败导致相关性分数低于阈值时，统一归入 `SEARCH_RESULT_RELEVANCE_LOW`。
+
+使用单项评测结果分析低相关时建议区分：
 
 - `SEARCH_RESULT_RELEVANCE_LOW`：业务低相关。
 - `SEARCH_RESULT_RELEVANCE_PARSE_ERROR`：LLM 输出格式或解析异常。
@@ -193,7 +201,7 @@ QUALITY_BAD.SEARCH_RESULT_RELEVANCE_PARSE_ERROR
 | `--llm-workers` | 4 | 并发 LLM 调用数 |
 | `--llm-timeout` | 60 | 单次 LLM 请求超时秒数 |
 | `--prompt-mode` | `detailed` | prompt 模式 |
-| `OPENAI_MODEL` | `gpt-4o` | LLM 模型名，可通过环境变量覆盖 |
+| `OPENAI_MODEL` | `gpt-5.4-mini` | LLM 模型名，可通过环境变量覆盖 |
 | `OPENAI_BASE_URL` | 空 | OpenAI compatible endpoint |
 | `OPENAI_TEMPERATURE` | 0.0 | LLM temperature |
 
@@ -202,7 +210,7 @@ QUALITY_BAD.SEARCH_RESULT_RELEVANCE_PARSE_ERROR
 全量检索评测需要逐条判断 query-result 对，LLM 调用量通常接近 `query 数 × top-k`。建议优先使用低延迟的 Flash 类模型，例如：
 
 ```text
-OPENAI_MODEL=deepseek-v4-flash
+OPENAI_MODEL=gpt-5.4-mini
 ```
 
 - **全量评测和日常回归**：推荐 Flash 类模型，可显著缩短相关性判断时间，并降低长时间批处理中的超时风险。
@@ -210,7 +218,7 @@ OPENAI_MODEL=deepseek-v4-flash
 - **新旧版本对比**：两次评测必须固定相同模型、prompt、`max_tokens` 和 temperature；建议设置 `OPENAI_TEMPERATURE=0`，减少 LLM 随机波动。
 - **并发设置**：建议从 `--llm-workers 2` 至 `4` 开始，根据模型服务的限流和稳定性逐步调整。并发过高可能增加 5xx、超时或空响应。
 
-模型名称由实际 OpenAI-compatible 服务决定，`deepseek-v4-flash` 仅作为当前环境的推荐示例，不是 Dingo 的强制依赖。
+模型名称由实际 OpenAI-compatible 服务决定，当前推荐使用 `gpt-5.4-mini` 兼顾判断质量与运行速度，但它不是 Dingo 的强制依赖。
 
 ## 6. 内容有效性 Effectiveness
 
@@ -323,7 +331,7 @@ source
 - 期刊/会议/来源类型。
 - DOI。
 
-该指标不判断 query 相关性，也不判断内容字段是否完整。它适合作为 overall 的辅助指标，不建议单独用于硬判“结果错误”。
+该指标不判断 query 相关性，也不判断内容字段是否完整。它是独立的学术权威信号，不建议单独用于硬判“结果错误”。
 
 ### 7.2 字段权重
 
@@ -423,42 +431,23 @@ doi_score = 0.0
 
 因此，权威性低不一定表示检索结果不相关，只表示该结果缺少学术权威信号。
 
-## 8. 综合评分 Overall
+## 8. 统一阈值与分类
 
-综合脚本将三个 query 级指标加权：
+综合脚本不计算 overall，也不为三个指标设置权重。默认统一阈值为 `0.15`：
 
 ```text
-overall =
-  0.7 * relevance
-+ 0.2 * effectiveness
-+ 0.1 * authority
+relevance < 0.15      → SEARCH_RESULT_RELEVANCE_LOW
+effectiveness < 0.15  → SEARCH_RESULT_EFFECTIVENESS_LOW
+authority < 0.15      → SEARCH_RESULT_AUTHORITY_LOW
 ```
 
-默认权重：
-
-| 指标 | 权重 |
-|---|---:|
-| `relevance` | 0.7 |
-| `effectiveness` | 0.2 |
-| `authority` | 0.1 |
-
-业务含义：
-
-- 相关性是核心，因此权重最高。
-- 内容有效性次之，保证结果有足够元数据可读。
-- 权威性作为辅助，不让 citation/DOI 过度主导搜索体验。
-
-综合评估会同时检查：
-
-- `overall` 是否低于 overall 阈值。
-- `relevance` 是否低于相关性阈值。
-- 是否存在 LLM 解析错误。
-- `effectiveness` 是否低于有效性阈值。
-- `authority` 是否低于权威性阈值。
+三个 query 级聚合指标均不低于阈值时才判为 good。同一 query 可以同时命中多个低分标签。空结果的三个指标均记为 `0`，因此会同时进入三类低分文件，不再产生额外的 `EMPTY` bad 类型。LLM 解析错误保留在诊断字段中，但不会形成第四种 bad 分类。
 
 ## 9. 使用命令
 
 以下命令均在项目根目录执行。
+
+综合脚本启动时会自动读取项目根目录 `.env`，且不会覆盖已经存在的系统环境变量。可复制 `.env.example` 的字段结构创建本地 `.env`；`.env` 已被 `.gitignore` 忽略，禁止提交真实 token 或 key。
 
 ### 内置测试数据
 
@@ -479,50 +468,37 @@ python examples/retrieval/sdk_eval_search_result.py `
   --top-k 3 `
   --llm-max-tokens 1024 `
   --effectiveness-llm-max-tokens 1024 `
-  --relevance-threshold 0.15 `
-  --effectiveness-threshold 0.15 `
-  --authority-threshold 0.15 `
-  --overall-threshold 0.15 `
+  --threshold 0.15 `
   --save-good
 ```
 
 相关性、有效性和综合 smoke test 需要预先设置 OpenAI-compatible 环境变量；权威性是纯规则评测，不需要 LLM API。
 
-综合脚本按评测对象拆分分类目录：
+综合脚本只生成 query 级分类目录：
 
 ```text
 <run_dir>/
 ├── bad/
-│   ├── query_level/
-│   │   └── QUALITY_BAD/
-│   │       ├── SEARCH_RESULT_RELEVANCE_LOW.jsonl
-│   │       ├── SEARCH_RESULT_EFFECTIVENESS_LOW.jsonl
-│   │       └── SEARCH_RESULT_AUTHORITY_LOW.jsonl
-│   └── result_level/
-│       ├── Relevance/
-│       │   └── Error_Relevance_Low.jsonl
-│       ├── Effectiveness/
-│       │   ├── Error_Effectiveness_Low.jsonl
-│       │   └── Error_HTML_Tag.jsonl
-│       └── Authority/
-│           ├── Error_Authority_Low.jsonl
-│           ├── Error_Citation_Miss.jsonl
-│           └── Error_DOI_Miss.jsonl
+│   └── QUALITY_BAD/
+│       ├── SEARCH_RESULT_RELEVANCE_LOW.jsonl
+│       ├── SEARCH_RESULT_EFFECTIVENESS_LOW.jsonl
+│       └── SEARCH_RESULT_AUTHORITY_LOW.jsonl
 └── good/                         # 仅使用 --save-good 时生成
-    ├── query_level/
-    └── result_level/
+    └── QUALITY_GOOD/
+        └── SEARCH_RESULT_METRICS_PASS.jsonl
 ```
 
-- `query_level`：一个 query 的 top-k 聚合得分及其全部结果。
-- `result_level`：每一篇检索文献的原始数据和三个指标明细。
-- 同一 result 可以写入多个原因 label 文件；例如 Authority Low 可能同时进入 Citation Miss 和 DOI Miss。
+- 每行是一个唯一 query，包含三个排名加权平均分、分类 label 和完整 `results`。
+- 每个 result 的 `_evaluation` 字段记录 rank 和三个单条分数。
+- 同一 query 的多个聚合指标低于阈值时，会分别写入对应的低分文件。
+- result 级细分问题仍保留在 `all_results.jsonl` 的 `eval_details` 中。
 
 ### 9.1 单独跑相关性
 
 ```bash
 export OPENAI_API_KEY="<your_api_key>"
 export OPENAI_BASE_URL="<your_openai_compatible_base_url>"
-export OPENAI_MODEL="deepseek-v4-flash"
+export OPENAI_MODEL="gpt-5.4-mini"
 export OPENAI_TEMPERATURE="0"
 
 python examples/retrieval/sdk_eval_relevancy.py \
@@ -541,7 +517,7 @@ Windows PowerShell 示例：
 ```powershell
 $env:OPENAI_API_KEY="<your_api_key>"
 $env:OPENAI_BASE_URL="<your_openai_compatible_base_url>"
-$env:OPENAI_MODEL="deepseek-v4-flash"
+$env:OPENAI_MODEL="gpt-5.4-mini"
 $env:OPENAI_TEMPERATURE="0"
 
 python examples/retrieval/sdk_eval_relevancy.py `
@@ -560,7 +536,7 @@ python examples/retrieval/sdk_eval_relevancy.py `
 ```bash
 export OPENAI_API_KEY="<your_api_key>"
 export OPENAI_BASE_URL="<your_openai_compatible_base_url>"
-export OPENAI_MODEL="deepseek-v4-flash"
+export OPENAI_MODEL="gpt-5.4-mini"
 export OPENAI_TEMPERATURE="0"
 
 python examples/retrieval/sdk_eval_effectiveness.py \
@@ -585,26 +561,63 @@ python examples/retrieval/sdk_eval_authority.py \
   --save-good
 ```
 
-### 9.4 跑综合评分
+### 9.4 评测预计算结果
 
 ```bash
 export OPENAI_API_KEY="<your_api_key>"
 export OPENAI_BASE_URL="<your_openai_compatible_base_url>"
-export OPENAI_MODEL="deepseek-v4-flash"
+export OPENAI_MODEL="gpt-5.4-mini"
 export OPENAI_TEMPERATURE="0"
 
 python examples/retrieval/sdk_eval_search_result.py \
   --input-jsonl outputs/meta_search_97_query_results.jsonl \
   --output-dir outputs/search_result_quality_97q \
   --top-k 10 \
-  --relevance-threshold 0.15 \
-  --effectiveness-threshold 0.15 \
-  --authority-threshold 0.15 \
-  --overall-threshold 0.15 \
+  --threshold 0.15 \
   --llm-max-tokens 1024 \
   --effectiveness-llm-max-tokens 512 \
   --llm-timeout 60 \
   --save-good
+```
+
+### 9.5 端到端评测 SciVerse Meta Search
+
+```powershell
+$env:SCIVERSE_API_TOKEN="<your_sciverse_token>"
+$env:SEARCH_API_URL="https://api.sciverse.space/meta-search"
+$env:OPENAI_API_KEY="<your_llm_key>"
+$env:OPENAI_BASE_URL="<your_openai_compatible_base_url>"
+$env:OPENAI_MODEL="gpt-5.4-mini"
+$env:OPENAI_TEMPERATURE="0"
+
+python examples/retrieval/sdk_eval_search_result.py `
+  --input-queries outputs/query.txt `
+  --retrieval-backend meta_search `
+  --output-dir outputs/meta_search_end_to_end_97q `
+  --top-k 10 `
+  --threshold 0.15 `
+  --search-workers 4 `
+  --llm-workers 4 `
+  --batch-size 10
+```
+
+### 9.6 端到端评测 OpenAlex
+
+OpenAlex 默认使用普通 `search`，不需要 API key；如有 key，可设置 `OPENALEX_API_KEY`。
+
+```powershell
+$env:OPENALEX_API_KEY="<optional_openalex_key>"
+$env:SEARCH_API_URL="https://api.openalex.org/works"
+
+python examples/retrieval/sdk_eval_search_result.py `
+  --input-queries outputs/query.txt `
+  --retrieval-backend openalex `
+  --output-dir outputs/openalex_end_to_end_97q `
+  --top-k 10 `
+  --threshold 0.15 `
+  --search-workers 4 `
+  --llm-workers 4 `
+  --batch-size 10
 ```
 
 ## 10. 阈值解释
@@ -695,7 +708,7 @@ Import-Csv outputs/search_result_relevancy_97q/query_scores.csv |
 ## 13. 已知注意事项
 
 1. 相关性使用 LLM，temperature 大于 0 时，同一批数据重跑可能有轻微分数波动。
-2. LLM 相关性结果可能出现 JSON 解析失败，脚本会记录 `SEARCH_RESULT_RELEVANCE_PARSE_ERROR`。
+2. LLM 相关性结果可能出现 JSON 解析失败，脚本会保留解析错误诊断；该条分数为低分时统一归入 `SEARCH_RESULT_RELEVANCE_LOW`。
 3. 内容有效性当前不按 `metadata_type` 放宽 title、abstract、keywords、author 的字段要求；venue 缺失不再降低有效性分数，由权威性指标统一判断。
 4. 内容有效性使用 `RuleSpecialCharacter` / `RuleInvisibleChar` / `RuleMojibake` 做快速初筛，再用 LLM 二次确认 HTML 泄漏、乱码、不可见字符和严重特殊字符噪声；正常公式、LaTeX、单位符号不应被扣分。
 5. 权威性低不一定表示结果不相关，可能只是 citation、DOI、venue 元数据不足。
