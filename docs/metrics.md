@@ -30,6 +30,15 @@ This document provides comprehensive information about all quality metrics used 
 | `LLMTextQualityV5` | LLMTextQualityV5 | Impact-driven text quality evaluation for LLM pretraining, focusing on structural completeness, readability, diversit... | [WanJuanSiLu: A High-Quality Open-Source Webtext Dataset for Low-Resource Languages](https://arxiv.org/abs/2501.14506) (Yu et al., 2025) | [📊 See Results](eval/prompt/redpajama_data_evaluated_by_prompt.md) | [📝 View Example](../examples/llm_and_rule/llm_local.py) |
 | `LLMTextTable` | LLMTextTable | Impact-driven text quality evaluation for LLM pretraining, focusing on structural completeness, readability, diversit... | [WanJuanSiLu: A High-Quality Open-Source Webtext Dataset for Low-Resource Languages](https://arxiv.org/abs/2501.14506) (Yu et al., 2025) | [📊 See Results](eval/prompt/redpajama_data_evaluated_by_prompt.md) | [📝 View Example](../examples/llm_and_rule/llm_local.py) |
 
+### National Standard LLM Assessment Metrics
+
+| Type | Metric | Description | Source | Evaluation Results | Examples |
+|------|--------|-------------|--------|-------------------|----------|
+| `LLM_TC609_0101_DocBasicInfoCompleteness` | LLM_TC609_0101_DocBasicInfoCompleteness | Uses an LLM to assess dataset scale, format, file structure, access channel, and technical support in dataset documentation. | TC609 | N/A | [📝 View Example](../examples/guobiao/example_doc3.py) |
+| `LLM_TC609_0102_DocContentFeatureCompleteness` | LLM_TC609_0102_DocContentFeatureCompleteness | Uses an LLM to assess modality, distribution, label statistics, sample examples, and limitations. | TC609 | N/A | [📝 View Example](../examples/guobiao/example_doc3.py) |
+| `LLM_TC609_0103_DocConstructionProcessCompleteness` | LLM_TC609_0103_DocConstructionProcessCompleteness | Uses an LLM to assess source, collection, processing, annotation, and version control. | TC609 | N/A | [📝 View Example](../examples/guobiao/example_doc3.py) |
+| `LLM_TC609_0104_DocApplicationCompleteness` | LLM_TC609_0104_DocApplicationCompleteness | Uses an LLM to assess license, target scenarios, evaluation method, benchmark results, and typical cases. | TC609 | N/A | [📝 View Example](../examples/guobiao/example_doc3.py) |
+
 ### SFT Data Assessment Metrics
 
 | Type | Metric | Description | Paper Source | Evaluation Results | Examples |
@@ -107,18 +116,6 @@ This document provides comprehensive information about all quality metrics used 
 | `LLMMetaRaterReadability` | LLMMetaRaterReadability | Evaluates the clarity and coherence of text using appropriate vocabulary and sentence structures on a 5-point scale | [Meta-rater: A Multi-dimensional Data Selection Method for Pre-training Language Models](https://arxiv.org/pdf/2504.14194) (Zhuang et al., 2025) | N/A | N/A |
 | `LLMMetaRaterReasoning` | LLMMetaRaterReasoning | Evaluates the reasoning complexity and logical depth of text content, from simple logical judgments to complex multid... | [Meta-rater: A Multi-dimensional Data Selection Method for Pre-training Language Models](https://arxiv.org/pdf/2504.14194) (Zhuang et al., 2025) | N/A | N/A |
 
-### National Standard Data Quality Metrics
-
-| Type | Metric | Description | Paper Source | Evaluation Results | Examples |
-|------|--------|-------------|--------------|-------------------|----------|
-| `QUALITY_BAD_TC609_0101` | Rule_TC609_0101_DocBasicInfoCompleteness | Checks whether dataset documentation covers basic information aspects such as scale, format, structure, access, and s... | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0102` | Rule_TC609_0102_DocContentFeatureCompleteness | Checks whether dataset documentation covers content-feature aspects such as modality, distribution, labels, examples,... | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0103` | Rule_TC609_0103_DocConstructionProcessCompleteness | Checks whether dataset documentation covers construction-process aspects such as data source, collection, processing,... | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0104` | Rule_TC609_0104_DocApplicationCompleteness | Checks whether dataset documentation covers application aspects such as license, scenarios, evaluation method, benchm... | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0207` | Rule_TC609_0207_DataTypeConsistency | Uses a local zero-shot classifier to check whether content belongs to the type declared in the record | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080101` | Rule_TC609_02080101_TextPerplexity | Calculates text perplexity with a causal language model and flags text whose PPL exceeds the configured threshold | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0303` | Rule_TC609_0303_DataTimeRange | Checks whether created and updated timestamps are within configured time ranges | Internal Implementation | N/A | N/A |
-
 ### OCR Eval Metric
 
 | Type | Metric | Description | Paper Source | Evaluation Results | Examples |
@@ -160,41 +157,18 @@ This document provides comprehensive information about all quality metrics used 
 
 ### SAC/TC609 High-quality Dataset Metrics
 
+Only the following eight TC609 rule metrics are currently registered. Other rule implementations remain in the source code with their registration decorators commented out.
+
 | Type | Metric | Description | Paper Source | Evaluation Results | Examples |
 |------|--------|-------------|--------------|-------------------|----------|
-| `QUALITY_BAD_TC609_0201` | Rule_TC609_0201_FormatCompliance | Checks required fields and their types against a user-provided schema. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0202` | Rule_TC609_0202_SafetyCompliance | Combines unsafe-word, PII, and identity-card detection. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0203` | Rule_TC609_0203_AnnotationCompliance | Checks whether content belongs to a user-provided annotation value list. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0204` | Rule_TC609_0204_StructuralCompleteness | Checks configured fields for missing, None, and empty values. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0205` | Rule_TC609_0205_ContentAuthenticity | Checks whether source is an HTTP or HTTPS URL that returns status 200. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0206` | Rule_TC609_0206_ContentConsistency | Uses a local model to check semantic consistency among configured string fields. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080102` | Rule_TC609_02080102_KnowledgeInformationDensity | Combines alphabetic-word, stop-word, and unique-word ratio checks. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080103` | Rule_TC609_02080103_RepeatedContent | Combines document-text and formula repetition checks. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080104` | Rule_TC609_02080104_TextCompleteness | Combines null, short, ellipsis-ending, and terminal-ending checks. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080105` | Rule_TC609_02080105_InformationMissing | Uses content length and sentence/word counts as partial missing-information checks. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080106` | Rule_TC609_02080106_TextPurity | Combines abnormal HTML, character, invisible-content, and watermark checks. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080107` | Rule_TC609_02080107_TextCoherence | Combines punctuation, word-boundary, and line-break fluency checks. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080201` | Rule_TC609_02080201_ImageResolution | Uses image aspect-ratio validation as partial resolution coverage. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080202` | Rule_TC609_02080202_ImageDuplication | Uses PHash and CNN duplicate-image detection. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080203` | Rule_TC609_02080203_ImageSignalNoiseRatio | Uses NIMA image quality as partial evidence; it is not a true SNR metric. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080204` | Rule_TC609_02080204_ImageClarity | Combines image validity and NIMA quality as partial clarity coverage. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080301` | Rule_TC609_02080301_VideoResolution | Placeholder: video resolution is not implemented. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080302` | Rule_TC609_02080302_VideoDuplication | Placeholder: duplicate-video detection is not implemented. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080303` | Rule_TC609_02080303_VideoFrameRate | Placeholder: video FPS validation is not implemented. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080304` | Rule_TC609_02080304_VideoDuration | Placeholder: video duration validation is not implemented. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080305` | Rule_TC609_02080305_VideoClarity | Placeholder: video clarity evaluation is not implemented. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080306` | Rule_TC609_02080306_VideoDynamicRange | Placeholder: video dynamic-range evaluation is not implemented. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080401` | Rule_TC609_02080401_AudioSignalNoiseRatio | Uses the existing Welch power-spectrum SNR implementation. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080402` | Rule_TC609_02080402_SignalDistortionRatio | Placeholder: signal distortion ratio is not implemented. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080403` | Rule_TC609_02080403_AudioSampleRate | Placeholder: sample-rate quality validation is not implemented. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080404` | Rule_TC609_02080404_AudioBitDepth | Placeholder: audio bit-depth validation is not implemented. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080405` | Rule_TC609_02080405_AudioBitRate | Placeholder: audio bit-rate validation is not implemented. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_02080406` | Rule_TC609_02080406_AudioDuration | Uses the existing WAV duration implementation. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0201` | Rule_TC609_0201_FormatCompliance | Checks required fields and types against `field_schema`. Extra fields are allowed by default and can be rejected with `allow_extra=false`. Supports `str`, `int`, `float`, `bool`, `list`, `dict`, and nullable `Optional[...]` variants. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0202` | Rule_TC609_0202_SafetyCompliance | Combines unsafe-word, PII, and identity-card detection for text items in `data_content`. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0203` | Rule_TC609_0203_AnnotationCompliance | Checks TC609 annotation metadata fields, types, and enumerated values. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0204` | Rule_TC609_0204_StructuralCompleteness | Checks fields configured in `key_list` for missing values. `allow_none` and `allow_empty` control whether `None` and empty strings/lists/dicts are accepted. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0205` | Rule_TC609_0205_ContentAuthenticity | Requires `source` and `source_details`; validates non-empty traceability information and HTTP/HTTPS URL syntax when applicable. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0206` | Rule_TC609_0206_ContentConsistency | Uses multilingual text embeddings to check consistency among text items in `data_content`; multiple texts use robust-center aggregation instead of all-pairs comparison. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0207` | Rule_TC609_0207_DataTypeConsistency | Checks whether text items in `data_content` match the configured dataset type | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0208` | Rule_TC609_0208_ContentCleanliness | Combines available text cleanliness checks; modality coverage is partial. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0301` | Rule_TC609_0301_ContentDiversity | Placeholder: target-scenario distribution coverage is not implemented. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0302` | Rule_TC609_0302_ScaleCompleteness | Placeholder: dataset scale versus model requirements is not implemented. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0304` | Rule_TC609_0304_AnnotationAccuracy | Uses image annotation checks as partial evidence of annotation accuracy. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0305` | Rule_TC609_0305_ModelAdaptability | Placeholder: before/after model performance comparison is not implemented. | Internal Implementation | N/A | N/A |
 
 ### SFT Data Assessment Metrics - Agent-Enhanced
 

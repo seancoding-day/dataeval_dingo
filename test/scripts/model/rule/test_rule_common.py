@@ -148,7 +148,6 @@ class TestRule_TC609_02080101_TextPerplexity:
         )
 
         assert res.status is True
-        assert res.label == ["QUALITY_BAD_TC609_02080101.Rule_TC609_02080101_TextPerplexity"]
         assert "125.5000" in res.reason[0]
         assert "test-model" in res.reason[0]
 
@@ -191,7 +190,6 @@ class TestRule_TC609_02080101_TextPerplexity:
         res = Rule_TC609_02080101_TextPerplexity.eval(Data(data_id="ppl-empty", content="  "))
 
         assert res.status is True
-        assert res.label == ["QUALITY_BAD_TC609_02080101.Rule_TC609_02080101_TextPerplexity"]
         assert "empty content" in res.reason[0]
 
     def test_missing_dependencies_raise_clear_error(self, monkeypatch):
@@ -213,32 +211,54 @@ class TestRule_TC609_02080101_TextPerplexity:
 
 class TestRule_TC609_0207_DataTypeConsistency:
     @staticmethod
-    def _mock_match_score(monkeypatch, score):
+    def _mock_classification(monkeypatch, predicted_type, scores):
         monkeypatch.setattr(
             Rule_TC609_0207_DataTypeConsistency,
-            "_calculate_match_score",
-            classmethod(lambda cls, *args: score),
+            "_classify_dataset_type",
+            classmethod(lambda cls, *args: (predicted_type, scores)),
         )
         monkeypatch.setattr(
             Rule_TC609_0207_DataTypeConsistency,
             "dynamic_config",
-            EvaluatorRuleArgs(threshold=0.6, model="test-model", device=-1),
+            EvaluatorRuleArgs(
+                dataset_type="通识数据集",
+                threshold=0.6,
+                model="test-model",
+                device=-1,
+            ),
         )
 
-    def test_content_matching_declared_type_is_good(self, monkeypatch):
-        self._mock_match_score(monkeypatch, 0.85)
+    def test_text_matching_dataset_type_is_good(self, monkeypatch):
+        self._mock_classification(
+            monkeypatch,
+            "通识数据集",
+            {"通识数据集": 0.85, "行业通识数据集": 0.1, "行业专识数据集": 0.05},
+        )
         result = Rule_TC609_0207_DataTypeConsistency.eval(
-            Data(data_id="type-match", type="medical", content="Clinical treatment")
+            Data(
+                data_id="type-match",
+                data_content=[
+                    {"media_type": "text", "content": "普通生活常识"},
+                    {"media_type": "image", "content": "image.png"},
+                ],
+            )
         )
 
         assert result.status is False
         assert result.score == 0.85
         assert result.label == [QualityLabel.QUALITY_GOOD]
 
-    def test_content_not_matching_declared_type_is_bad(self, monkeypatch):
-        self._mock_match_score(monkeypatch, 0.25)
+    def test_text_not_matching_dataset_type_is_bad(self, monkeypatch):
+        self._mock_classification(
+            monkeypatch,
+            "行业专识数据集",
+            {"通识数据集": 0.25, "行业通识数据集": 0.2, "行业专识数据集": 0.55},
+        )
         result = Rule_TC609_0207_DataTypeConsistency.eval(
-            Data(data_id="type-mismatch", type="medical", content="Stock prices")
+            Data(
+                data_id="type-mismatch",
+                data_content=[{"media_type": "text", "content": "专业行业知识"}],
+            )
         )
 
         assert result.status is True
@@ -247,13 +267,37 @@ class TestRule_TC609_0207_DataTypeConsistency:
             "QUALITY_BAD_TC609_0207.Rule_TC609_0207_DataTypeConsistency"
         ]
 
-    def test_missing_type_is_bad(self):
+    def test_no_text_content_is_bad(self):
         result = Rule_TC609_0207_DataTypeConsistency.eval(
-            Data(data_id="type-missing", content="Ordinary text")
+            Data(
+                data_id="no-text",
+                data_content=[{"media_type": "image", "content": "image.png"}],
+            )
         )
 
         assert result.status is True
-        assert "missing or empty" in result.reason[0]
+        assert "at least one text item" in result.reason[0]
+
+    def test_invalid_dataset_type_raises_value_error(self, monkeypatch):
+        monkeypatch.setattr(
+            Rule_TC609_0207_DataTypeConsistency,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                dataset_type="医疗数据集",
+                threshold=0.6,
+                model="test-model",
+                device=-1,
+            ),
+        )
+        with pytest.raises(ValueError, match="dataset_type must be one of"):
+            Rule_TC609_0207_DataTypeConsistency.eval(
+                Data(
+                    data_id="invalid-type",
+                    data_content=[
+                        {"media_type": "text", "content": "医疗知识"}
+                    ],
+                )
+            )
 
 
 class TestRule_TC609_0303_DataTimeRange:
@@ -293,7 +337,6 @@ class TestRule_TC609_0303_DataTimeRange:
             )
         )
         assert result.status is True
-        assert result.label == ["QUALITY_BAD_TC609_0303.Rule_TC609_0303_DataTimeRange"]
         assert "earlier than allowed start" in result.reason[0]
 
     def test_dt_invalid_format_is_bad(self, monkeypatch):
@@ -313,7 +356,6 @@ class TestRule_TC609_0303_DataTimeRange:
             )
         )
         assert result.status is True
-        assert result.label == ["QUALITY_BAD_TC609_0303.Rule_TC609_0303_DataTimeRange"]
         assert "unsupported datetime format" in result.reason[0]
 
     def test_missing_time_field_is_bad(self, monkeypatch):
@@ -328,7 +370,6 @@ class TestRule_TC609_0303_DataTimeRange:
 
         result = Rule_TC609_0303_DataTimeRange.eval(Data(data_id="time-missing"))
         assert result.status is True
-        assert result.label == ["QUALITY_BAD_TC609_0303.Rule_TC609_0303_DataTimeRange"]
         assert "dt is missing" in result.reason[0]
 
 
@@ -568,9 +609,6 @@ class TestRuleDatasetDocCompleteness:
             Data(data_id="doc-basic-bad", content=content)
         )
         assert res.status is True
-        assert res.label == [
-            "QUALITY_BAD_TC609_0101.Rule_TC609_0101_DocBasicInfoCompleteness"
-        ]
         assert res.score < 0.8
 
     def test_content_feature_completeness_good(self, monkeypatch):
@@ -614,7 +652,4 @@ class TestRuleDatasetDocCompleteness:
             Data(data_id="doc-empty", content="   ")
         )
         assert res.status is True
-        assert res.label == [
-            "QUALITY_BAD_TC609_0104.Rule_TC609_0104_DocApplicationCompleteness"
-        ]
         assert "missing or empty" in res.reason[0]

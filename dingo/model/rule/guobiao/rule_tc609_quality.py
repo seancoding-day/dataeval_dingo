@@ -7,10 +7,11 @@ from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model.model import Model
 from dingo.model.rule.base import BaseRule
-from dingo.model.rule.guobiao.rule_tc609_quality_base import Rule_TC609_01_DocCompleteness, Rule_TC609_Composite, _tc609_metric_info, _TC609PlaceholderBase
+from dingo.model.rule.guobiao.rule_tc609_quality_base import (TC609_DATASET_TYPE_DESCRIPTIONS, Rule_TC609_01_DocCompleteness, Rule_TC609_Composite, _tc609_metric_info, _TC609PlaceholderBase,
+                                                              calculate_text_consistency)
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0101", ["guobiao_doc"])
+# @Model.rule_register("QUALITY_BAD_TC609_0101", ["guobiao_doc"])
 class Rule_TC609_0101_DocBasicInfoCompleteness(Rule_TC609_01_DocCompleteness):
     """0101: Basic information completeness in dataset documentation."""
 
@@ -44,7 +45,7 @@ class Rule_TC609_0101_DocBasicInfoCompleteness(Rule_TC609_01_DocCompleteness):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0102", ["guobiao_doc"])
+# @Model.rule_register("QUALITY_BAD_TC609_0102", ["guobiao_doc"])
 class Rule_TC609_0102_DocContentFeatureCompleteness(Rule_TC609_01_DocCompleteness):
     """0102: Content feature completeness in dataset documentation."""
 
@@ -78,7 +79,7 @@ class Rule_TC609_0102_DocContentFeatureCompleteness(Rule_TC609_01_DocCompletenes
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0103", ["guobiao_doc"])
+# @Model.rule_register("QUALITY_BAD_TC609_0103", ["guobiao_doc"])
 class Rule_TC609_0103_DocConstructionProcessCompleteness(
     Rule_TC609_01_DocCompleteness
 ):
@@ -115,7 +116,7 @@ class Rule_TC609_0103_DocConstructionProcessCompleteness(
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0104", ["guobiao_doc"])
+# @Model.rule_register("QUALITY_BAD_TC609_0104", ["guobiao_doc"])
 class Rule_TC609_0104_DocApplicationCompleteness(Rule_TC609_01_DocCompleteness):
     """0104: Application-description completeness in dataset documentation."""
 
@@ -168,7 +169,19 @@ class Rule_TC609_0201_FormatCompliance(BaseRule):
         "Optional[dict]": {"expected_type": dict, "allow_none": True},
     }
     dynamic_config = EvaluatorRuleArgs(
-        field_schema=None,
+        field_schema={
+            "id": "str",
+            "rid": "Optional[list]",
+            "data_content": "list",
+            "annotation": "Optional[dict]",
+            "original_time": "str",
+            "last_modified_time": "str",
+            "version": "str",
+            "license": "str",
+            "source": "str",
+            "source_details": "str",
+            "generated_data_indicator": "int",
+        },
         allow_extra=True,
     )
     _metric_info = _tc609_metric_info(
@@ -247,7 +260,18 @@ class Rule_TC609_0202_SafetyCompliance(Rule_TC609_Composite):
     """0202: Safety compliance, composed from safety and PII rules."""
 
     dynamic_config = EvaluatorRuleArgs(
-        key_list=[],
+        key_list=[
+            "制作炸弹",
+            "购买毒品",
+            "贩卖毒品",
+            "实施诈骗",
+            "洗钱教程",
+            "自杀方法",
+            "色情交易",
+            "儿童色情",
+            "恐怖袭击",
+            "非法枪支",
+        ],
         refer_path=[],
     )
     component_rules = (
@@ -255,7 +279,7 @@ class Rule_TC609_0202_SafetyCompliance(Rule_TC609_Composite):
         "dingo.model.rule.rule_common.RulePIIDetection",
         "dingo.model.rule.rule_common.RuleIDCard",
     )
-    _required_fields = [RequiredField.CONTENT]
+    _required_fields = [RequiredField.DATA_CONTENT]
     _metric_info = _tc609_metric_info(
         "0202",
         "Rule_TC609_0202_SafetyCompliance",
@@ -265,44 +289,157 @@ class Rule_TC609_0202_SafetyCompliance(Rule_TC609_Composite):
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
+        res = EvalDetail(metric=cls.__name__)
+        reasons = []
+        if not isinstance(input_data.data_content, list):
+            res.status = True
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = [
+                "data_content: expected list, "
+                f"got {type(input_data.data_content).__name__}"
+            ]
+            return res
+
+        texts = []
+        for index, item in enumerate(input_data.data_content):
+            if not isinstance(item, dict):
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}]: expected dict, "
+                    f"got {type(item).__name__}"
+                )
+                continue
+            media_type = item.get("media_type")
+            if not isinstance(media_type, str) or not media_type.strip():
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}].media_type: expected non-empty str"
+                )
+                continue
+            if media_type.strip().lower() != "text":
+                continue
+            content = item.get("content")
+            if not isinstance(content, str) or not content.strip():
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}].content: expected non-empty str"
+                )
+                continue
+            texts.append(content.strip())
+
+        if not texts:
+            res.status = True
+            reasons.append(
+                "data_content: at least one text item is required"
+            )
+        if res.status:
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = reasons
+            return res
+
         rule_unsafe_words = cls._resolve_rule(cls.component_rules[0])
-        rule_unsafe_words.dynamic_config = EvaluatorRuleArgs(
+        unsafe_words_config = EvaluatorRuleArgs(
             key_list=cls.dynamic_config.key_list or [],
             refer_path=cls.dynamic_config.refer_path or [],
         )
-        return super().eval(input_data)
+        if (
+            getattr(rule_unsafe_words, "dynamic_config", None)
+            != unsafe_words_config
+        ):
+            rule_unsafe_words._unsafe_words_list = None
+            rule_unsafe_words._unsafe_words_automaton = None
+        rule_unsafe_words.dynamic_config = unsafe_words_config
+        text_input = input_data.model_copy(
+            update={"content": "\n".join(texts)}
+        )
+        return super().eval(text_input)
 
 
 @Model.rule_register("QUALITY_BAD_TC609_0203", ["guobiao_data"])
 class Rule_TC609_0203_AnnotationCompliance(BaseRule):
-    """Check whether content is one of the configured annotation values."""
+    """Check annotation metadata against TC609 format requirements."""
 
-    dynamic_config = EvaluatorRuleArgs(key_list=[])
-    _required_fields = [RequiredField.CONTENT]
+    _annotation_methods = {
+        "人工标注",
+        "自动标注",
+        "半自动标注",
+        "其他",
+    }
+    _annotator_types = {
+        "普通标注员",
+        "专业标注员",
+        "行业领域专家",
+        "其他",
+    }
+    _required_fields = [RequiredField.ANNOTATION]
     _metric_info = _tc609_metric_info(
         "0203",
         "Rule_TC609_0203_AnnotationCompliance",
-        "Checks whether content belongs to a user-provided annotation value list.",
+        "Checks annotation metadata fields, types, and enumerated values.",
         "covered",
     )
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
-        allowed_values = cls.dynamic_config.key_list or []
-        if not allowed_values:
-            raise ValueError(
-                "Rule_TC609_0203_AnnotationCompliance requires a non-empty "
-                "dynamic_config.key_list"
-            )
-
         res = EvalDetail(metric=cls.__name__)
-        content = getattr(input_data, "content", None)
-        if content not in allowed_values:
+        reasons = []
+        annotation = input_data.annotation
+
+        if annotation is None:
+            res.label = [QualityLabel.QUALITY_GOOD]
+            return res
+
+        if not isinstance(annotation, dict):
             res.status = True
             res.label = [f"{cls.metric_type}.{cls.__name__}"]
             res.reason = [
-                f"content: value {content!r} is not in dynamic_config.key_list"
+                "annotation: expected dict or None, "
+                f"got {type(annotation).__name__}"
             ]
+            return res
+
+        if "label" not in annotation:
+            res.status = True
+            reasons.append("annotation.label: required field is missing")
+        elif not isinstance(annotation["label"], list):
+            res.status = True
+            reasons.append(
+                "annotation.label: expected list, "
+                f"got {type(annotation['label']).__name__}"
+            )
+        elif not annotation["label"]:
+            res.status = True
+            reasons.append("annotation.label: empty value is not allowed")
+
+        for field_name, allowed_values in (
+            ("annotation_method", cls._annotation_methods),
+            ("annotator", cls._annotator_types),
+        ):
+            qualified_name = f"annotation.{field_name}"
+            if field_name not in annotation:
+                res.status = True
+                reasons.append(f"{qualified_name}: required field is missing")
+                continue
+
+            value = annotation[field_name]
+            if value is None:
+                continue
+            if not isinstance(value, str):
+                res.status = True
+                reasons.append(
+                    f"{qualified_name}: expected str or None, "
+                    f"got {type(value).__name__}"
+                )
+            elif value not in allowed_values:
+                res.status = True
+                reasons.append(
+                    f"{qualified_name}: unsupported value {value!r}; "
+                    f"allowed values: {', '.join(sorted(allowed_values))}"
+                )
+
+        if res.status:
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = reasons
         else:
             res.label = [QualityLabel.QUALITY_GOOD]
         return res
@@ -313,7 +450,17 @@ class Rule_TC609_0204_StructuralCompleteness(BaseRule):
     """Check required fields for missing, None, and empty values."""
 
     dynamic_config = EvaluatorRuleArgs(
-        key_list=[],
+        key_list=[
+            "id",
+            "data_content",
+            "original_time",
+            "last_modified_time",
+            "version",
+            "license",
+            "source",
+            "source_details",
+            "generated_data_indicator",
+        ],
         allow_none=False,
         allow_empty=False,
     )
@@ -369,258 +516,193 @@ class Rule_TC609_0204_StructuralCompleteness(BaseRule):
 
 @Model.rule_register("QUALITY_BAD_TC609_0205", ["guobiao_data"])
 class Rule_TC609_0205_ContentAuthenticity(BaseRule):
-    """Check whether a record's HTTP or HTTPS source returns status 200."""
+    """Check whether source metadata provides valid traceability information."""
 
-    _required_fields = [RequiredField.CONTENT, RequiredField.SOURCE]
-    dynamic_config = EvaluatorRuleArgs(timeout=10)
+    _required_fields = [
+        RequiredField.SOURCE,
+        RequiredField.SOURCE_DETAILS,
+    ]
     _metric_info = _tc609_metric_info(
         "0205",
         "Rule_TC609_0205_ContentAuthenticity",
-        "Checks whether source is an HTTP or HTTPS URL that returns status 200.",
+        "Checks source and source_details, including URL format when applicable.",
         "covered",
     )
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
-        source = getattr(input_data, "source", None)
         res = EvalDetail(metric=cls.__name__)
-        if not (
-            isinstance(source, str)
-            and source
-            and source.lower().startswith(("http://", "https://"))
-        ):
+        source = input_data.source
+        source_details = input_data.source_details
+
+        if not isinstance(source, str) or not source.strip():
             res.status = True
             res.label = [f"{cls.metric_type}.{cls.__name__}"]
-            res.reason = ["source: expected a valid HTTP or HTTPS URL"]
+            res.reason = ["source: expected a non-empty string"]
             return res
 
-        import requests
+        if not isinstance(source_details, str) or not source_details.strip():
+            res.status = True
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = ["source_details: expected a non-empty string"]
+            return res
 
-        timeout = getattr(cls.dynamic_config, "timeout")
-        if (
-            isinstance(timeout, bool)
-            or not isinstance(timeout, int)
-            or timeout <= 0
-        ):
-            raise ValueError(
-                "Rule_TC609_0205_ContentAuthenticity requires "
-                "dynamic_config.timeout to be a positive integer"
-            )
-        response = None
-        try:
-            response = requests.get(
-                source,
-                timeout=timeout,
-                allow_redirects=True,
-                stream=True,
-            )
-            if response.status_code != 200:
+        if source.strip() == "互联网":
+            if not cls._is_valid_http_url(source_details):
                 res.status = True
                 res.label = [f"{cls.metric_type}.{cls.__name__}"]
                 res.reason = [
-                    f"source: URL returned HTTP status {response.status_code}, "
-                    "expected 200"
+                    "source_details: expected a valid HTTP or HTTPS URL"
                 ]
                 return res
-        except requests.RequestException as exc:
-            res.status = True
-            res.label = [f"{cls.metric_type}.{cls.__name__}"]
-            res.reason = [
-                f"source: URL request failed: {type(exc).__name__}: {exc}"
-            ]
-            return res
-        finally:
-            if response is not None:
-                response.close()
 
         res.label = [QualityLabel.QUALITY_GOOD]
         return res
 
+    @staticmethod
+    def _is_valid_http_url(value):
+        from urllib.parse import urlparse
+
+        if any(character.isspace() for character in value):
+            return False
+        try:
+            parsed = urlparse(value)
+            if (
+                parsed.scheme.lower() not in {"http", "https"}
+                or not parsed.netloc
+                or not parsed.hostname
+            ):
+                return False
+            parsed.port
+        except ValueError:
+            return False
+        return True
+
 
 @Model.rule_register("QUALITY_BAD_TC609_0206", ["guobiao_data"])
 class Rule_TC609_0206_ContentConsistency(BaseRule):
-    """Check semantic consistency among string fields configured in key_list."""
+    """Check semantic consistency among text items in data_content."""
 
     dynamic_config = EvaluatorRuleArgs(
-        key_list=[],
         threshold=0.5,
-        model="MoritzLaurer/mDeBERTa-v3-base-mnli-xnli",
+        model="sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
         device=-1,
+        batch_size=16,
+        max_length=512,
+        consensus_keep_ratio=0.8,
     )
     _metric_info = _tc609_metric_info(
         "0206",
         "Rule_TC609_0206_ContentConsistency",
-        "Uses a local model to check semantic consistency among configured string fields.",
-        "covered",
+        "Checks semantic consistency among text items in data_content.",
+        "partial",
     )
-
-    _model_name = None
-    _model_device = None
-    _classifier = None
-
-    @classmethod
-    def _get_classifier(cls, model_name, device):
-        if (
-            cls._model_name == model_name
-            and cls._model_device == device
-            and cls._classifier is not None
-        ):
-            return cls._classifier
-
-        required_packages = ("torch", "transformers")
-        missing_packages = [
-            package
-            for package in required_packages
-            if importlib.util.find_spec(package) is None
-        ]
-        if missing_packages:
-            raise ImportError(
-                "Rule_TC609_0206_ContentConsistency requires optional packages: "
-                f"{', '.join(missing_packages)}. "
-                'Install them with: pip install "dingo-python[hhem]"'
-            )
-
-        from transformers import pipeline
-
-        cls._classifier = pipeline(
-            "zero-shot-classification",
-            model=model_name,
-            device=device,
-        )
-        cls._model_name = model_name
-        cls._model_device = device
-        return cls._classifier
-
-    @classmethod
-    def _calculate_consistency_score(
-        cls, reference, candidate, model_name, device
-    ):
-        classifier = cls._get_classifier(model_name, device)
-        result = classifier(
-            reference,
-            candidate_labels=[candidate],
-            hypothesis_template="这段文本与以下内容语义一致：{}",
-            multi_label=True,
-            truncation=True,
-        )
-        labels = result.get("labels", [])
-        scores = result.get("scores", [])
-        if not labels or not scores or labels[0] != candidate:
-            raise RuntimeError("Zero-shot classifier returned an invalid result")
-
-        score = float(scores[0])
-        if not math.isfinite(score) or not 0.0 <= score <= 1.0:
-            raise RuntimeError(
-                f"Zero-shot classifier returned an invalid score: {score}"
-            )
-        return score
+    _required_fields = [RequiredField.DATA_CONTENT]
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
-        key_list = cls.dynamic_config.key_list
-        if not isinstance(key_list, list) or len(key_list) < 2:
-            raise ValueError(
-                "Rule_TC609_0206_ContentConsistency requires "
-                "dynamic_config.key_list to contain at least two fields"
-            )
-        if (
-            any(not isinstance(key, str) or not key for key in key_list)
-            or len(set(key_list)) != len(key_list)
-        ):
-            raise ValueError(
-                "Rule_TC609_0206_ContentConsistency requires "
-                "dynamic_config.key_list to contain unique non-empty strings"
-            )
-
-        threshold = cls.dynamic_config.threshold
-        if (
-            isinstance(threshold, bool)
-            or not isinstance(threshold, (int, float))
-            or not 0 < threshold <= 1
-        ):
-            raise ValueError(
-                "Rule_TC609_0206_ContentConsistency requires "
-                "dynamic_config.threshold to be in (0, 1]"
-            )
-
-        record = input_data.model_dump()
-        invalid_fields = [
-            field
-            for field in key_list
-            if field not in record or not isinstance(record[field], str)
-        ]
         res = EvalDetail(metric=cls.__name__)
-        if invalid_fields:
+        data_content = input_data.data_content
+        if not isinstance(data_content, list) or not data_content:
             res.status = True
             res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = ["data_content: expected a non-empty list"]
+            return res
+
+        texts = []
+        text_indexes = []
+        reasons = []
+        for index, item in enumerate(data_content):
+            if not isinstance(item, dict):
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}]: expected dict, "
+                    f"got {type(item).__name__}"
+                )
+                continue
+
+            media_type = item.get("media_type")
+            if not isinstance(media_type, str) or not media_type.strip():
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}].media_type: "
+                    "expected a non-empty string"
+                )
+                continue
+            if media_type.strip().lower() != "text":
+                continue
+
+            content = item.get("content")
+            if not isinstance(content, str) or not content.strip():
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}].content: "
+                    "expected a non-empty string for text media"
+                )
+                continue
+            texts.append(content)
+            text_indexes.append(index)
+
+        if res.status:
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = reasons
+            return res
+
+        if len(texts) < 2:
+            res.label = [QualityLabel.QUALITY_GOOD]
             res.reason = [
-                f"{field}: field must exist and its value must be str"
-                for field in invalid_fields
+                "Fewer than two text items; consistency comparison is not needed"
             ]
             return res
 
-        reference_field = key_list[0]
-        pair_scores = []
-        for candidate_field in key_list[1:]:
-            score = cls._calculate_consistency_score(
-                record[reference_field],
-                record[candidate_field],
-                cls.dynamic_config.model,
-                cls.dynamic_config.device,
-            )
-            pair_scores.append((candidate_field, score))
-
-        minimum_score = min(score for _, score in pair_scores)
-        res.score = minimum_score
-        inconsistent_pairs = [
-            (candidate_field, score)
-            for candidate_field, score in pair_scores
-            if score < threshold
-        ]
-        if inconsistent_pairs:
+        result = calculate_text_consistency(
+            texts=texts,
+            model_name=cls.dynamic_config.model,
+            device=cls.dynamic_config.device,
+            threshold=cls.dynamic_config.threshold,
+            batch_size=getattr(cls.dynamic_config, "batch_size", 16),
+            max_length=getattr(cls.dynamic_config, "max_length", 512),
+            consensus_keep_ratio=getattr(
+                cls.dynamic_config,
+                "consensus_keep_ratio",
+                0.8,
+            ),
+        )
+        res.score = result["score"]
+        if not result["is_consistent"]:
             res.status = True
             res.label = [f"{cls.metric_type}.{cls.__name__}"]
             res.reason = [
-                f"{reference_field} and {candidate_field} are inconsistent "
-                f"(score: {score:.4f}, threshold: {threshold:.4f})"
-                for candidate_field, score in inconsistent_pairs
+                "Text items in data_content are inconsistent "
+                f"(score: {res.score:.4f}, "
+                f"threshold: {cls.dynamic_config.threshold:.4f}, "
+                "outlier indexes: "
+                f"{[text_indexes[index] for index in result['outlier_indexes']]})"
             ]
         else:
             res.label = [QualityLabel.QUALITY_GOOD]
             res.reason = [
-                f"Configured fields are consistent "
-                f"(minimum score: {minimum_score:.4f}, "
-                f"threshold: {threshold:.4f})"
+                "Text items in data_content are consistent "
+                f"(score: {res.score:.4f}, "
+                f"threshold: {cls.dynamic_config.threshold:.4f})"
             ]
         return res
 
 
 @Model.rule_register("QUALITY_BAD_TC609_0207", ["guobiao_data"])
 class Rule_TC609_0207_DataTypeConsistency(BaseRule):
-    """Check whether content belongs to the type declared in ``input_data.type``.
+    """Check whether text content matches the configured dataset type."""
 
-    A local zero-shot classifier evaluates the hypothesis ``这段文本属于{type}类型``.
-    The declared type may be any non-empty string, such as ``医疗`` or ``金融``.
-    """
+    _metric_info = _tc609_metric_info(
+        "0207",
+        "Rule_TC609_0207_DataTypeConsistency",
+        "Checks whether text content matches the configured dataset type.",
+        "partial",
+    )
 
-    _metric_info = {
-        "category": "National Standard Data Quality Metrics",
-        "quality_dimension": "TYPE_CONSISTENCY",
-        "metric_name": "Rule_TC609_0207_DataTypeConsistency",
-        "description": (
-            "Uses a local zero-shot classifier to check whether content belongs "
-            "to the type declared in the record"
-        ),
-        "paper_title": "High-quality dataset quality evaluation specification",
-        "paper_url": "",
-        "paper_authors": "SAC/TC609",
-        "evaluation_results": "",
-        "standard_code": "0207",
-        "coverage": "partial",
-    }
-
-    _required_fields = [RequiredField.CONTENT, RequiredField.TYPE]
+    _required_fields = [RequiredField.DATA_CONTENT]
     dynamic_config = EvaluatorRuleArgs(
+        dataset_type="通识数据集",
         threshold=0.5,
         model="MoritzLaurer/mDeBERTa-v3-base-mnli-xnli",
         device=-1,
@@ -664,45 +746,53 @@ class Rule_TC609_0207_DataTypeConsistency(BaseRule):
         return cls._classifier
 
     @classmethod
-    def _calculate_match_score(
-        cls, content, declared_type, model_name, device
-    ):
+    def _classify_dataset_type(cls, content, model_name, device):
         classifier = cls._get_classifier(model_name, device)
+        dataset_types = list(TC609_DATASET_TYPE_DESCRIPTIONS)
+        descriptions = [
+            TC609_DATASET_TYPE_DESCRIPTIONS[dataset_type]
+            for dataset_type in dataset_types
+        ]
         result = classifier(
             content,
-            candidate_labels=[declared_type],
-            hypothesis_template="这段文本属于{}类型。",
-            multi_label=True,
+            candidate_labels=descriptions,
+            hypothesis_template="这段文本符合以下数据集类型要求：{}",
+            multi_label=False,
             truncation=True,
         )
         labels = result.get("labels", [])
         scores = result.get("scores", [])
-        if not labels or not scores or labels[0] != declared_type:
+        if len(labels) != len(descriptions) or len(scores) != len(descriptions):
             raise RuntimeError("Zero-shot classifier returned an invalid result")
-        score = float(scores[0])
-        if not math.isfinite(score) or not 0.0 <= score <= 1.0:
-            raise RuntimeError(
-                f"Zero-shot classifier returned an invalid score: {score}"
-            )
-        return score
+
+        scores_by_type = {}
+        for label, score in zip(labels, scores):
+            score = float(score)
+            if (
+                label not in descriptions
+                or not math.isfinite(score)
+                or not 0.0 <= score <= 1.0
+            ):
+                raise RuntimeError(
+                    "Zero-shot classifier returned an invalid result"
+                )
+            dataset_type = dataset_types[descriptions.index(label)]
+            scores_by_type[dataset_type] = score
+        if len(scores_by_type) != len(dataset_types):
+            raise RuntimeError("Zero-shot classifier returned an invalid result")
+        predicted_type = dataset_types[descriptions.index(labels[0])]
+        return predicted_type, scores_by_type
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         res = EvalDetail(metric=cls.__name__)
-        declared_type = getattr(input_data, "type", None)
-        content = getattr(input_data, "content", None)
-
-        if not isinstance(declared_type, str) or not declared_type.strip():
-            res.status = True
-            res.label = [f"{cls.metric_type}.{cls.__name__}"]
-            res.reason = ["Data type is missing or empty"]
-            return res
-
-        if not isinstance(content, str) or not content.strip():
-            res.status = True
-            res.label = [f"{cls.metric_type}.{cls.__name__}"]
-            res.reason = ["Content is missing or empty"]
-            return res
+        dataset_type = cls.dynamic_config.dataset_type
+        if dataset_type not in TC609_DATASET_TYPE_DESCRIPTIONS:
+            raise ValueError(
+                "Rule_TC609_0207_DataTypeConsistency "
+                "dynamic_config.dataset_type must be one of: "
+                f"{', '.join(TC609_DATASET_TYPE_DESCRIPTIONS)}"
+            )
 
         threshold = cls.dynamic_config.threshold
         if threshold is None or not 0 < threshold <= 1:
@@ -710,25 +800,71 @@ class Rule_TC609_0207_DataTypeConsistency(BaseRule):
                 "Rule_TC609_0207_DataTypeConsistency dynamic_config.threshold must be in (0, 1]"
             )
 
-        model_name = cls.dynamic_config.model
-        device = cls.dynamic_config.device
-        score = cls._calculate_match_score(
-            content, declared_type, model_name, device
-        )
-        res.score = score
+        texts = []
+        reasons = []
+        if not isinstance(input_data.data_content, list):
+            res.status = True
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = [
+                "data_content: expected list, "
+                f"got {type(input_data.data_content).__name__}"
+            ]
+            return res
+        for index, item in enumerate(input_data.data_content):
+            if not isinstance(item, dict):
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}]: expected dict, "
+                    f"got {type(item).__name__}"
+                )
+                continue
+            media_type = item.get("media_type")
+            if not isinstance(media_type, str) or not media_type.strip():
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}].media_type: "
+                    "expected non-empty str"
+                )
+                continue
+            if media_type.strip().lower() != "text":
+                continue
+            content = item.get("content")
+            if not isinstance(content, str) or not content.strip():
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}].content: expected non-empty str"
+                )
+                continue
+            texts.append(content.strip())
 
-        if score >= threshold:
+        if not texts:
+            res.status = True
+            reasons.append("data_content: at least one text item is required")
+        if res.status:
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = reasons
+            return res
+
+        predicted_type, scores_by_type = cls._classify_dataset_type(
+            "\n".join(texts),
+            cls.dynamic_config.model,
+            cls.dynamic_config.device,
+        )
+        res.score = scores_by_type[dataset_type]
+
+        if predicted_type == dataset_type and res.score >= threshold:
             res.label = [QualityLabel.QUALITY_GOOD]
             res.reason = [
-                f"Content matches declared type {declared_type} "
-                f"(score: {score:.4f}, threshold: {threshold:.4f})"
+                f"Text content matches dataset type {dataset_type} "
+                f"(score: {res.score:.4f}, threshold: {threshold:.4f})"
             ]
         else:
             res.status = True
             res.label = [f"{cls.metric_type}.{cls.__name__}"]
             res.reason = [
-                f"Content does not match declared type {declared_type} "
-                f"(score: {score:.4f}, threshold: {threshold:.4f})"
+                f"Text content does not match dataset type {dataset_type}; "
+                f"predicted type: {predicted_type} "
+                f"(score: {res.score:.4f}, threshold: {threshold:.4f})"
             ]
         return res
 
@@ -737,7 +873,15 @@ class Rule_TC609_0207_DataTypeConsistency(BaseRule):
 class Rule_TC609_0208_ContentCleanliness(Rule_TC609_Composite):
     """0208: Content cleanliness, composed from available cleaning rules."""
 
-    dynamic_config = EvaluatorRuleArgs(key_list=[])
+    dynamic_config = EvaluatorRuleArgs(
+        key_list=[
+            "版权所有",
+            "Copyright",
+            "未经授权不得转载",
+            "禁止转载",
+            "仅供学习交流",
+        ]
+    )
     component_rules = (
         "dingo.model.rule.rule_common.RuleAbnormalChar",
         "dingo.model.rule.rule_common.RuleAbnormalHtml",
@@ -745,7 +889,7 @@ class Rule_TC609_0208_ContentCleanliness(Rule_TC609_Composite):
         "dingo.model.rule.rule_common.RuleContentNull",
         "dingo.model.rule.rule_common.RuleWatermark",
     )
-    _required_fields = [RequiredField.CONTENT]
+    _required_fields = [RequiredField.DATA_CONTENT]
     _metric_info = _tc609_metric_info(
         "0208",
         "Rule_TC609_0208_ContentCleanliness",
@@ -755,14 +899,65 @@ class Rule_TC609_0208_ContentCleanliness(Rule_TC609_Composite):
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
+        res = EvalDetail(metric=cls.__name__)
+        reasons = []
+        if not isinstance(input_data.data_content, list):
+            res.status = True
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = [
+                "data_content: expected list, "
+                f"got {type(input_data.data_content).__name__}"
+            ]
+            return res
+
+        texts = []
+        for index, item in enumerate(input_data.data_content):
+            if not isinstance(item, dict):
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}]: expected dict, "
+                    f"got {type(item).__name__}"
+                )
+                continue
+            media_type = item.get("media_type")
+            if not isinstance(media_type, str) or not media_type.strip():
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}].media_type: expected non-empty str"
+                )
+                continue
+            if media_type.strip().lower() != "text":
+                continue
+            content = item.get("content")
+            if not isinstance(content, str) or not content.strip():
+                res.status = True
+                reasons.append(
+                    f"data_content[{index}].content: expected non-empty str"
+                )
+                continue
+            texts.append(content.strip())
+
+        if not texts:
+            res.status = True
+            reasons.append(
+                "data_content: at least one text item is required"
+            )
+        if res.status:
+            res.label = [f"{cls.metric_type}.{cls.__name__}"]
+            res.reason = reasons
+            return res
+
         rule_watermark = cls._resolve_rule(cls.component_rules[-1])
         rule_watermark.dynamic_config = EvaluatorRuleArgs(
             key_list=cls.dynamic_config.key_list or [],
         )
-        return super().eval(input_data)
+        text_input = input_data.model_copy(
+            update={"content": "\n".join(texts)}
+        )
+        return super().eval(text_input)
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080101", ["pretrain", "guobiao_text"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080101", ["pretrain", "guobiao_text"])
 class Rule_TC609_02080101_TextPerplexity(BaseRule):
     """Check whether text perplexity exceeds the configured threshold."""
 
@@ -943,7 +1138,7 @@ class Rule_TC609_02080101_TextPerplexity(BaseRule):
         return res
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080102", ["guobiao_text"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080102", ["guobiao_text"])
 class Rule_TC609_02080102_KnowledgeInformationDensity(Rule_TC609_Composite):
     component_rules = (
         "dingo.model.rule.rule_common.RuleAlphaWords",
@@ -959,7 +1154,7 @@ class Rule_TC609_02080102_KnowledgeInformationDensity(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080103", ["guobiao_text"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080103", ["guobiao_text"])
 class Rule_TC609_02080103_RepeatedContent(Rule_TC609_Composite):
     component_rules = (
         "dingo.model.rule.rule_common.RuleDocRepeat",
@@ -974,7 +1169,7 @@ class Rule_TC609_02080103_RepeatedContent(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080104", ["guobiao_text"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080104", ["guobiao_text"])
 class Rule_TC609_02080104_TextCompleteness(Rule_TC609_Composite):
     component_rules = (
         "dingo.model.rule.rule_common.RuleContentNull",
@@ -991,7 +1186,7 @@ class Rule_TC609_02080104_TextCompleteness(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080105", ["guobiao_text"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080105", ["guobiao_text"])
 class Rule_TC609_02080105_InformationMissing(Rule_TC609_Composite):
     component_rules = (
         "dingo.model.rule.rule_common.RuleContentNull",
@@ -1008,7 +1203,7 @@ class Rule_TC609_02080105_InformationMissing(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080106", ["guobiao_text"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080106", ["guobiao_text"])
 class Rule_TC609_02080106_TextPurity(Rule_TC609_Composite):
     component_rules = (
         "dingo.model.rule.rule_common.RuleAbnormalChar",
@@ -1026,7 +1221,7 @@ class Rule_TC609_02080106_TextPurity(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080107", ["guobiao_text"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080107", ["guobiao_text"])
 class Rule_TC609_02080107_TextCoherence(Rule_TC609_Composite):
     component_rules = (
         "dingo.model.rule.rule_common.RuleNoPunc",
@@ -1044,7 +1239,7 @@ class Rule_TC609_02080107_TextCoherence(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080201", ["guobiao_image"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080201", ["guobiao_image"])
 class Rule_TC609_02080201_ImageResolution(Rule_TC609_Composite):
     component_rules = ("dingo.model.rule.rule_image.RuleImageSizeValid",)
     _required_fields = [RequiredField.IMAGE]
@@ -1056,7 +1251,7 @@ class Rule_TC609_02080201_ImageResolution(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080202", ["guobiao_image"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080202", ["guobiao_image"])
 class Rule_TC609_02080202_ImageDuplication(Rule_TC609_Composite):
     component_rules = ("dingo.model.rule.rule_image.RuleImageRepeat",)
     _required_fields = [RequiredField.CONTENT]
@@ -1068,7 +1263,7 @@ class Rule_TC609_02080202_ImageDuplication(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080203", ["guobiao_image"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080203", ["guobiao_image"])
 class Rule_TC609_02080203_ImageSignalNoiseRatio(Rule_TC609_Composite):
     component_rules = ("dingo.model.rule.rule_image.RuleImageQuality",)
     _required_fields = [RequiredField.IMAGE]
@@ -1080,7 +1275,7 @@ class Rule_TC609_02080203_ImageSignalNoiseRatio(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080204", ["guobiao_image"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080204", ["guobiao_image"])
 class Rule_TC609_02080204_ImageClarity(Rule_TC609_Composite):
     component_rules = (
         "dingo.model.rule.rule_image.RuleImageValid",
@@ -1095,7 +1290,7 @@ class Rule_TC609_02080204_ImageClarity(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080301", ["guobiao_video"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080301", ["guobiao_video"])
 class Rule_TC609_02080301_VideoResolution(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080301", "Rule_TC609_02080301_VideoResolution",
@@ -1103,7 +1298,7 @@ class Rule_TC609_02080301_VideoResolution(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080302", ["guobiao_video"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080302", ["guobiao_video"])
 class Rule_TC609_02080302_VideoDuplication(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080302", "Rule_TC609_02080302_VideoDuplication",
@@ -1111,7 +1306,7 @@ class Rule_TC609_02080302_VideoDuplication(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080303", ["guobiao_video"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080303", ["guobiao_video"])
 class Rule_TC609_02080303_VideoFrameRate(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080303", "Rule_TC609_02080303_VideoFrameRate",
@@ -1119,7 +1314,7 @@ class Rule_TC609_02080303_VideoFrameRate(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080304", ["guobiao_video"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080304", ["guobiao_video"])
 class Rule_TC609_02080304_VideoDuration(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080304", "Rule_TC609_02080304_VideoDuration",
@@ -1127,7 +1322,7 @@ class Rule_TC609_02080304_VideoDuration(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080305", ["guobiao_video"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080305", ["guobiao_video"])
 class Rule_TC609_02080305_VideoClarity(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080305", "Rule_TC609_02080305_VideoClarity",
@@ -1135,7 +1330,7 @@ class Rule_TC609_02080305_VideoClarity(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080306", ["guobiao_video"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080306", ["guobiao_video"])
 class Rule_TC609_02080306_VideoDynamicRange(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080306", "Rule_TC609_02080306_VideoDynamicRange",
@@ -1143,7 +1338,7 @@ class Rule_TC609_02080306_VideoDynamicRange(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080401", ["guobiao_audio"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080401", ["guobiao_audio"])
 class Rule_TC609_02080401_AudioSignalNoiseRatio(Rule_TC609_Composite):
     # Existing RuleAudioDuration currently contains the SNR implementation.
     component_rules = ("dingo.model.rule.rule_audio.RuleAudioDuration",)
@@ -1156,7 +1351,7 @@ class Rule_TC609_02080401_AudioSignalNoiseRatio(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080402", ["guobiao_audio"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080402", ["guobiao_audio"])
 class Rule_TC609_02080402_SignalDistortionRatio(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080402", "Rule_TC609_02080402_SignalDistortionRatio",
@@ -1164,7 +1359,7 @@ class Rule_TC609_02080402_SignalDistortionRatio(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080403", ["guobiao_audio"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080403", ["guobiao_audio"])
 class Rule_TC609_02080403_AudioSampleRate(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080403", "Rule_TC609_02080403_AudioSampleRate",
@@ -1172,7 +1367,7 @@ class Rule_TC609_02080403_AudioSampleRate(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080404", ["guobiao_audio"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080404", ["guobiao_audio"])
 class Rule_TC609_02080404_AudioBitDepth(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080404", "Rule_TC609_02080404_AudioBitDepth",
@@ -1180,7 +1375,7 @@ class Rule_TC609_02080404_AudioBitDepth(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080405", ["guobiao_audio"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080405", ["guobiao_audio"])
 class Rule_TC609_02080405_AudioBitRate(_TC609PlaceholderBase):
     _metric_info = _tc609_metric_info(
         "02080405", "Rule_TC609_02080405_AudioBitRate",
@@ -1188,7 +1383,7 @@ class Rule_TC609_02080405_AudioBitRate(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_02080406", ["guobiao_audio"])
+# @Model.rule_register("QUALITY_BAD_TC609_02080406", ["guobiao_audio"])
 class Rule_TC609_02080406_AudioDuration(Rule_TC609_Composite):
     # Existing RuleAudioSnrQuality currently contains the duration implementation.
     component_rules = ("dingo.model.rule.rule_audio.RuleAudioSnrQuality",)
@@ -1201,7 +1396,7 @@ class Rule_TC609_02080406_AudioDuration(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0301", ["guobiao_model"])
+# @Model.rule_register("QUALITY_BAD_TC609_0301", ["guobiao_model"])
 class Rule_TC609_0301_ContentDiversity(_TC609PlaceholderBase):
     """0301: Placeholder for content diversity."""
 
@@ -1213,7 +1408,7 @@ class Rule_TC609_0301_ContentDiversity(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0302", ["guobiao_model"])
+# @Model.rule_register("QUALITY_BAD_TC609_0302", ["guobiao_model"])
 class Rule_TC609_0302_ScaleCompleteness(_TC609PlaceholderBase):
     """0302: Placeholder for scale completeness."""
 
@@ -1225,7 +1420,7 @@ class Rule_TC609_0302_ScaleCompleteness(_TC609PlaceholderBase):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0303", ["guobiao_model"])
+# @Model.rule_register("QUALITY_BAD_TC609_0303", ["guobiao_model"])
 class Rule_TC609_0303_DataTimeRange(BaseRule):
     """Check whether creation/update time fields are within configured ranges."""
 
@@ -1360,7 +1555,7 @@ class Rule_TC609_0303_DataTimeRange(BaseRule):
         return res
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0304", ["guobiao_model"])
+# @Model.rule_register("QUALITY_BAD_TC609_0304", ["guobiao_model"])
 class Rule_TC609_0304_AnnotationAccuracy(Rule_TC609_Composite):
     """0304: Annotation accuracy, partially covered by label checks."""
 
@@ -1377,7 +1572,7 @@ class Rule_TC609_0304_AnnotationAccuracy(Rule_TC609_Composite):
     )
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0305", ["guobiao_model"])
+# @Model.rule_register("QUALITY_BAD_TC609_0305", ["guobiao_model"])
 class Rule_TC609_0305_ModelAdaptability(_TC609PlaceholderBase):
     """0305: Placeholder for model adaptability."""
 

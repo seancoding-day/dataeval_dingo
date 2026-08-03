@@ -7,14 +7,14 @@ from dingo.io import Data
 from dingo.io.input import RequiredField
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model.model import Model
-from dingo.model.rule.guobiao import rule_tc609_quality
+from dingo.model.rule.guobiao import rule_tc609_quality, rule_tc609_quality_base
 from dingo.model.rule.guobiao.rule_tc609_quality import (Rule_TC609_0201_FormatCompliance, Rule_TC609_0202_SafetyCompliance, Rule_TC609_0203_AnnotationCompliance,
                                                          Rule_TC609_0204_StructuralCompleteness, Rule_TC609_0205_ContentAuthenticity, Rule_TC609_0206_ContentConsistency,
                                                          Rule_TC609_0208_ContentCleanliness, Rule_TC609_0301_ContentDiversity)
 from dingo.model.rule.rule_common import RuleWatermark
 
 
-def test_tc609_quality_defines_all_standard_metrics():
+def test_only_supported_tc609_quality_metrics_are_registered():
     rule_classes = {
         name: cls
         for name, cls in inspect.getmembers(
@@ -26,7 +26,24 @@ def test_tc609_quality_defines_all_standard_metrics():
     }
 
     assert len(rule_classes) == 40
-    assert all(name in Model.rule_name_map for name in rule_classes)
+    expected_registered = {
+        f"Rule_TC609_020{index}_{suffix}"
+        for index, suffix in enumerate(
+            (
+                "FormatCompliance",
+                "SafetyCompliance",
+                "AnnotationCompliance",
+                "StructuralCompleteness",
+                "ContentAuthenticity",
+                "ContentConsistency",
+                "DataTypeConsistency",
+                "ContentCleanliness",
+            ),
+            start=1,
+        )
+    }
+    actual_registered = set(rule_classes) & set(Model.rule_name_map)
+    assert actual_registered == expected_registered
 
     expected_primary_codes = {
         "0101", "0102", "0103", "0104",
@@ -41,29 +58,38 @@ def test_tc609_quality_defines_all_standard_metrics():
     assert actual_codes == expected_primary_codes
 
 
-def test_tc609_rules_are_grouped_by_evaluation_object():
-    expected_group_sizes = {
-        "guobiao_doc": 4,
-        "guobiao_data": 8,
-        "guobiao_text": 7,
-        "guobiao_image": 4,
-        "guobiao_video": 6,
-        "guobiao_audio": 6,
-        "guobiao_model": 5,
-    }
-
-    for group_name, expected_size in expected_group_sizes.items():
-        tc609_rules = [
-            rule
-            for rule in Model.rule_groups[group_name]
+def test_only_supported_tc609_rules_are_grouped_as_data_rules():
+    actual_groups = {
+        group_name: {
+            rule.__name__
+            for rule in rules
             if rule.__name__.startswith("Rule_TC609_")
-        ]
-        assert len(tc609_rules) == expected_size
-
-    assert not any(
-        rule.__name__.startswith("Rule_TC609_")
-        for rule in Model.rule_groups.get("guobiao", [])
-    )
+        }
+        for group_name, rules in Model.rule_groups.items()
+    }
+    actual_groups = {
+        group_name: rules
+        for group_name, rules in actual_groups.items()
+        if rules
+    }
+    assert actual_groups == {
+        "guobiao_data": {
+            f"Rule_TC609_020{index}_{suffix}"
+            for index, suffix in enumerate(
+                (
+                    "FormatCompliance",
+                    "SafetyCompliance",
+                    "AnnotationCompliance",
+                    "StructuralCompleteness",
+                    "ContentAuthenticity",
+                    "ContentConsistency",
+                    "DataTypeConsistency",
+                    "ContentCleanliness",
+                ),
+                start=1,
+            )
+        }
+    }
 
 
 def test_format_compliance_accepts_matching_record(monkeypatch):
@@ -91,6 +117,61 @@ def test_format_compliance_accepts_matching_record(monkeypatch):
 
     assert result.status is False
     assert result.label == [QualityLabel.QUALITY_GOOD]
+
+
+def test_format_compliance_default_schema_matches_tc609_metadata():
+    assert Rule_TC609_0201_FormatCompliance.dynamic_config.field_schema == {
+        "id": "str",
+        "rid": "Optional[list]",
+        "data_content": "list",
+        "annotation": "Optional[dict]",
+        "original_time": "str",
+        "last_modified_time": "str",
+        "version": "str",
+        "license": "str",
+        "source": "str",
+        "source_details": "str",
+        "generated_data_indicator": "int",
+    }
+
+    result = Rule_TC609_0201_FormatCompliance.eval(
+        Data(
+            id="d6c9a4d5e57597df8fe30f09ae44c985",
+            rid=None,
+            data_content=[
+                {
+                    "media_type": "image",
+                    "content": "../data/images/streetscape.jpg",
+                }
+            ],
+            annotation=None,
+            original_time="2025-1-1",
+            last_modified_time="2025-1-1",
+            version="1.0.0-alpha",
+            license="其他",
+            source="互联网",
+            source_details="https://example.com/image.jpg",
+            generated_data_indicator=0,
+        )
+    )
+
+    assert result.status is False
+    assert result.label == [QualityLabel.QUALITY_GOOD]
+
+
+def test_format_compliance_default_schema_requires_mandatory_fields():
+    result = Rule_TC609_0201_FormatCompliance.eval(
+        Data(
+            id="dataset-id",
+            data_content={},
+        )
+    )
+
+    assert result.status is True
+    assert "data_content: expected list, got dict" in result.reason
+    assert "rid: required field is missing" in result.reason
+    assert "annotation: required field is missing" in result.reason
+    assert "original_time: required field is missing" in result.reason
 
 
 def test_format_compliance_reports_missing_and_wrong_type(monkeypatch):
@@ -254,7 +335,10 @@ def test_composite_rule_maps_component_failure_to_tc609_label(monkeypatch):
     )
 
     result = Rule_TC609_0202_SafetyCompliance.eval(
-        Data(data_id="safety", content="test")
+        Data(
+            data_id="safety",
+            data_content=[{"media_type": "text", "content": "test"}],
+        )
     )
 
     assert result.status is True
@@ -309,7 +393,13 @@ def test_safety_compliance_passes_words_config_to_unsafe_rule(monkeypatch):
     )
 
     result = Rule_TC609_0202_SafetyCompliance.eval(
-        Data(content="unsafe")
+        Data(
+            data_content=[
+                {"media_type": "text", "content": "safe"},
+                {"media_type": "image", "content": "unsafe"},
+                {"media_type": "text", "content": "unsafe"},
+            ]
+        )
     )
 
     assert UnsafeWordsRule.dynamic_config.key_list == ["unsafe"]
@@ -317,50 +407,118 @@ def test_safety_compliance_passes_words_config_to_unsafe_rule(monkeypatch):
     assert result.reason == ["UnsafeWordsRule: unsafe"]
 
 
-def test_annotation_compliance_accepts_allowed_content(monkeypatch):
-    monkeypatch.setattr(
-        Rule_TC609_0203_AnnotationCompliance,
-        "dynamic_config",
-        EvaluatorRuleArgs(key_list=["positive", "negative"]),
+def test_safety_compliance_has_usable_default_words(monkeypatch):
+    from dingo.model.rule.rule_common import RuleUnsafeWords
+
+    assert Rule_TC609_0202_SafetyCompliance.dynamic_config.key_list
+    monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_list", None)
+    monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_automaton", None)
+
+    result = Rule_TC609_0202_SafetyCompliance.eval(
+        Data(
+            data_content=[
+                {
+                    "media_type": "text",
+                    "content": "该内容提供制作炸弹的具体步骤",
+                }
+            ]
+        )
     )
 
+    assert result.status is True
+    assert "RuleUnsafeWords: 制作炸弹" in result.reason
+
+
+def test_safety_compliance_requires_text_content():
+    result = Rule_TC609_0202_SafetyCompliance.eval(
+        Data(
+            data_content=[
+                {"media_type": "image", "content": "制作炸弹"}
+            ]
+        )
+    )
+
+    assert result.status is True
+    assert result.reason == [
+        "data_content: at least one text item is required"
+    ]
+
+
+def test_safety_compliance_declares_data_content():
+    assert Rule_TC609_0202_SafetyCompliance._required_fields == [
+        RequiredField.DATA_CONTENT
+    ]
+
+
+def test_annotation_compliance_accepts_valid_metadata():
     result = Rule_TC609_0203_AnnotationCompliance.eval(
-        Data(content="positive")
+        Data(
+            annotation={
+                "label": [
+                    {
+                        "iscrowd": 0,
+                        "bbox": [20, 20, 20, 20],
+                        "category": "human",
+                    }
+                ],
+                "annotation_method": "人工标注",
+                "annotator": "普通标注员",
+            }
+        )
     )
 
     assert result.status is False
     assert result.label == [QualityLabel.QUALITY_GOOD]
 
 
-def test_annotation_compliance_rejects_unknown_content(monkeypatch):
-    monkeypatch.setattr(
-        Rule_TC609_0203_AnnotationCompliance,
-        "dynamic_config",
-        EvaluatorRuleArgs(key_list=["positive", "negative"]),
+def test_annotation_compliance_accepts_none_for_unannotated_data():
+    result = Rule_TC609_0203_AnnotationCompliance.eval(
+        Data(annotation=None)
     )
 
+    assert result.status is False
+    assert result.label == [QualityLabel.QUALITY_GOOD]
+
+
+def test_annotation_compliance_declares_required_field():
+    assert Rule_TC609_0203_AnnotationCompliance._required_fields == [
+        RequiredField.ANNOTATION
+    ]
+
+
+def test_annotation_compliance_reports_invalid_nested_metadata():
     result = Rule_TC609_0203_AnnotationCompliance.eval(
-        Data(content="neutral")
+        Data(
+            annotation={
+                "label": [],
+                "annotation_method": "众包标注",
+                "annotator": 1,
+            }
+        )
     )
 
     assert result.status is True
-    assert result.label == [
-        "QUALITY_BAD_TC609_0203.Rule_TC609_0203_AnnotationCompliance"
-    ]
     assert result.reason == [
-        "content: value 'neutral' is not in dynamic_config.key_list"
+        "annotation.label: empty value is not allowed",
+        (
+            "annotation.annotation_method: unsupported value '众包标注'; "
+            "allowed values: 人工标注, 其他, 半自动标注, 自动标注"
+        ),
+        "annotation.annotator: expected str or None, got int",
     ]
 
 
-def test_annotation_compliance_requires_allowed_values(monkeypatch):
-    monkeypatch.setattr(
-        Rule_TC609_0203_AnnotationCompliance,
-        "dynamic_config",
-        EvaluatorRuleArgs(key_list=[]),
+def test_annotation_compliance_requires_all_nested_fields():
+    result = Rule_TC609_0203_AnnotationCompliance.eval(
+        Data(annotation={})
     )
 
-    with pytest.raises(ValueError, match="non-empty dynamic_config.key_list"):
-        Rule_TC609_0203_AnnotationCompliance.eval(Data(content="positive"))
+    assert result.status is True
+    assert result.reason == [
+        "annotation.label: required field is missing",
+        "annotation.annotation_method: required field is missing",
+        "annotation.annotator: required field is missing",
+    ]
 
 
 def test_content_cleanliness_propagates_empty_watermark_config(monkeypatch):
@@ -374,7 +532,13 @@ def test_content_cleanliness_propagates_empty_watermark_config(monkeypatch):
         ValueError,
         match="RuleWatermark requires non-empty dynamic_config.key_list",
     ):
-        Rule_TC609_0208_ContentCleanliness.eval(Data(content="safe text"))
+        Rule_TC609_0208_ContentCleanliness.eval(
+            Data(
+                data_content=[
+                    {"media_type": "text", "content": "safe text"}
+                ]
+            )
+        )
 
 
 def test_content_cleanliness_passes_key_list_to_watermark(monkeypatch):
@@ -390,7 +554,13 @@ def test_content_cleanliness_passes_key_list_to_watermark(monkeypatch):
     )
 
     result = Rule_TC609_0208_ContentCleanliness.eval(
-        Data(content="text with DINGO-WATERMARK")
+        Data(
+            data_content=[
+                {"media_type": "text", "content": "text with"},
+                {"media_type": "image", "content": "DINGO-WATERMARK"},
+                {"media_type": "text", "content": "DINGO-WATERMARK"},
+            ]
+        )
     )
 
     assert RuleWatermark.dynamic_config.key_list == ["DINGO-WATERMARK"]
@@ -406,11 +576,50 @@ def test_content_cleanliness_returns_good_without_watermark(monkeypatch):
     )
 
     result = Rule_TC609_0208_ContentCleanliness.eval(
-        Data(content="ordinary clean text")
+        Data(
+            data_content=[
+                {"media_type": "text", "content": "ordinary"},
+                {"media_type": "text", "content": "clean text"},
+                {"media_type": "image", "content": "DINGO-WATERMARK"},
+            ]
+        )
     )
 
     assert result.status is False
     assert result.label == [QualityLabel.QUALITY_GOOD]
+
+
+def test_content_cleanliness_has_usable_default_watermarks(monkeypatch):
+    assert Rule_TC609_0208_ContentCleanliness.dynamic_config.key_list
+
+    result = Rule_TC609_0208_ContentCleanliness.eval(
+        Data(
+            data_content=[
+                {
+                    "media_type": "text",
+                    "content": "本文版权所有，未经授权不得转载。",
+                }
+            ]
+        )
+    )
+
+    assert result.status is True
+    assert "RuleWatermark: 版权所有" in result.reason
+
+
+def test_content_cleanliness_requires_text_content():
+    result = Rule_TC609_0208_ContentCleanliness.eval(
+        Data(
+            data_content=[
+                {"media_type": "image", "content": "image.png"}
+            ]
+        )
+    )
+
+    assert result.status is True
+    assert result.reason == [
+        "data_content: at least one text item is required"
+    ]
 
 
 def test_structural_completeness_accepts_present_values(monkeypatch):
@@ -426,6 +635,37 @@ def test_structural_completeness_accepts_present_values(monkeypatch):
 
     result = Rule_TC609_0204_StructuralCompleteness.eval(
         Data(content="example", labels=["valid"], metadata={"source": "demo"})
+    )
+
+    assert result.status is False
+    assert result.label == [QualityLabel.QUALITY_GOOD]
+
+
+def test_structural_completeness_has_tc609_required_fields_by_default():
+    assert Rule_TC609_0204_StructuralCompleteness.dynamic_config.key_list == [
+        "id",
+        "data_content",
+        "original_time",
+        "last_modified_time",
+        "version",
+        "license",
+        "source",
+        "source_details",
+        "generated_data_indicator",
+    ]
+
+    result = Rule_TC609_0204_StructuralCompleteness.eval(
+        Data(
+            id="dataset-id",
+            data_content=[{"media_type": "text", "content": "example"}],
+            original_time="2025-01-01",
+            last_modified_time="2025-01-01",
+            version="1.0.0",
+            license="其他",
+            source="互联网",
+            source_details="https://example.com/data",
+            generated_data_indicator=0,
+        )
     )
 
     assert result.status is False
@@ -492,242 +732,264 @@ def test_structural_completeness_requires_key_list(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "source",
+    "source_details",
     [
         "https://example.com/data/1",
         "http://localhost:8080/record?id=1",
     ],
 )
-def test_content_authenticity_accepts_source_returning_200(source, monkeypatch):
-    class Response:
-        status_code = 200
-
-        def close(self):
-            pass
-
-    monkeypatch.setattr("requests.get", lambda *args, **kwargs: Response())
+def test_content_authenticity_accepts_valid_internet_url(source_details):
     result = Rule_TC609_0205_ContentAuthenticity.eval(
-        Data(content="example", source=source)
+        Data(source="互联网", source_details=source_details)
     )
 
     assert result.status is False
     assert result.label == [QualityLabel.QUALITY_GOOD]
 
 
-def test_content_authenticity_rejects_source_not_returning_200(monkeypatch):
-    class Response:
-        status_code = 404
-
-        def close(self):
-            pass
-
-    monkeypatch.setattr("requests.get", lambda *args, **kwargs: Response())
+def test_content_authenticity_accepts_non_url_source_details():
     result = Rule_TC609_0205_ContentAuthenticity.eval(
-        Data(content="example", source="https://example.com/missing")
-    )
-
-    assert result.status is True
-    assert result.reason == [
-        "source: URL returned HTTP status 404, expected 200"
-    ]
-
-
-def test_content_authenticity_rejects_request_failure(monkeypatch):
-    import requests
-
-    def raise_timeout(*args, **kwargs):
-        raise requests.Timeout("timed out")
-
-    monkeypatch.setattr("requests.get", raise_timeout)
-    result = Rule_TC609_0205_ContentAuthenticity.eval(
-        Data(content="example", source="https://example.com/slow")
-    )
-
-    assert result.status is True
-    assert result.reason == [
-        "source: URL request failed: Timeout: timed out"
-    ]
-
-
-@pytest.mark.parametrize("timeout", [10.0, "10", 0, -1, True, None])
-def test_content_authenticity_requires_positive_integer_timeout(
-    timeout, monkeypatch
-):
-    monkeypatch.setattr(
-        Rule_TC609_0205_ContentAuthenticity,
-        "dynamic_config",
-        EvaluatorRuleArgs(timeout=timeout),
-    )
-
-    with pytest.raises(ValueError, match="positive integer"):
-        Rule_TC609_0205_ContentAuthenticity.eval(
-            Data(content="example", source="https://example.com/data")
+        Data(
+            source="图书",
+            source_details="ISBN 978-7-121-15535-2，第 10 页",
         )
-
-
-@pytest.mark.parametrize(
-    "source",
-    [
-        None,
-        "",
-        "example.com/data/1",
-        "ftp://example.com/data/1",
-    ],
-)
-def test_content_authenticity_rejects_source_without_http_prefix(source):
-    result = Rule_TC609_0205_ContentAuthenticity.eval(
-        Data(content="example", source=source)
     )
 
-    assert result.status is True
-    assert result.label == [
-        "QUALITY_BAD_TC609_0205.Rule_TC609_0205_ContentAuthenticity"
-    ]
-    assert result.reason == [
-        "source: expected a valid HTTP or HTTPS URL"
-    ]
+    assert result.status is False
+    assert result.label == [QualityLabel.QUALITY_GOOD]
 
 
 @pytest.mark.parametrize(
-    "source",
+    "source, source_details, reason",
     [
-        "https://",
-        "https://exa mple.com/data/1",
-        "https://example.com:invalid/data/1",
+        (None, "detail", "source: expected a non-empty string"),
+        ("", "detail", "source: expected a non-empty string"),
+        ("图书", None, "source_details: expected a non-empty string"),
+        ("图书", "", "source_details: expected a non-empty string"),
     ],
 )
-def test_content_authenticity_handles_prefixed_url_request_failure(
-    source, monkeypatch
+def test_content_authenticity_rejects_empty_source_metadata(
+    source, source_details, reason
 ):
-    import requests
-
-    def raise_invalid_url(*args, **kwargs):
-        raise requests.exceptions.InvalidURL("failed to parse URL")
-
-    monkeypatch.setattr("requests.get", raise_invalid_url)
     result = Rule_TC609_0205_ContentAuthenticity.eval(
-        Data(content="example", source=source)
+        Data(source=source, source_details=source_details)
     )
 
     assert result.status is True
-    assert result.label == [
-        "QUALITY_BAD_TC609_0205.Rule_TC609_0205_ContentAuthenticity"
-    ]
+    assert result.reason == [reason]
+
+
+@pytest.mark.parametrize(
+    "source, source_details",
+    [
+        ("互联网", "example.com/data/1"),
+        ("互联网", "ftp://example.com/data/1"),
+        ("互联网", "https://"),
+        ("互联网", "https://exa mple.com/data/1"),
+        ("互联网", "https://example.com:invalid/data/1"),
+    ],
+)
+def test_content_authenticity_rejects_invalid_url(source, source_details):
+    result = Rule_TC609_0205_ContentAuthenticity.eval(
+        Data(source=source, source_details=source_details)
+    )
+
+    assert result.status is True
     assert result.reason == [
-        "source: URL request failed: InvalidURL: failed to parse URL"
+        "source_details: expected a valid HTTP or HTTPS URL"
     ]
 
 
 def test_content_authenticity_declares_required_fields():
     assert Rule_TC609_0205_ContentAuthenticity._required_fields == [
-        RequiredField.CONTENT,
         RequiredField.SOURCE,
+        RequiredField.SOURCE_DETAILS,
     ]
 
 
-def test_content_consistency_accepts_consistent_string_fields(monkeypatch):
+def test_content_consistency_accepts_consistent_text_items(monkeypatch):
     monkeypatch.setattr(
         Rule_TC609_0206_ContentConsistency,
         "dynamic_config",
         EvaluatorRuleArgs(
-            key_list=["title", "content", "summary"],
             threshold=0.5,
             model="test-model",
             device=-1,
         ),
     )
-    scores = iter([0.9, 0.8])
     monkeypatch.setattr(
-        Rule_TC609_0206_ContentConsistency,
-        "_calculate_consistency_score",
-        classmethod(lambda cls, *args: next(scores)),
+        rule_tc609_quality,
+        "calculate_text_consistency",
+        lambda **kwargs: {
+            "score": 0.85,
+            "is_consistent": True,
+            "item_scores": [0.9, 0.85, 0.8],
+            "outlier_indexes": [],
+        },
     )
 
     result = Rule_TC609_0206_ContentConsistency.eval(
-        Data(title="健康", content="健康知识", summary="健康摘要")
+        Data(
+            data_content=[
+                {"media_type": "text", "content": "海底管道砂袋防护"},
+                {"media_type": "image", "content": "pipeline.jpg"},
+                {"media_type": "text", "content": "砂袋用于保护海底管道"},
+                {"media_type": "text", "content": "模拟砂袋周围流场"},
+            ]
+        )
     )
 
     assert result.status is False
-    assert result.score == 0.8
+    assert result.score == 0.85
     assert result.label == [QualityLabel.QUALITY_GOOD]
 
 
-def test_content_consistency_rejects_inconsistent_string_fields(monkeypatch):
+def test_content_consistency_rejects_inconsistent_text_items(monkeypatch):
     monkeypatch.setattr(
         Rule_TC609_0206_ContentConsistency,
         "dynamic_config",
         EvaluatorRuleArgs(
-            key_list=["title", "content"],
             threshold=0.5,
             model="test-model",
             device=-1,
         ),
     )
     monkeypatch.setattr(
-        Rule_TC609_0206_ContentConsistency,
-        "_calculate_consistency_score",
-        classmethod(lambda cls, *args: 0.2),
+        rule_tc609_quality,
+        "calculate_text_consistency",
+        lambda **kwargs: {
+            "score": 0.2,
+            "is_consistent": False,
+            "item_scores": [0.9, 0.2],
+            "outlier_indexes": [1],
+        },
     )
 
     result = Rule_TC609_0206_ContentConsistency.eval(
-        Data(title="健康", content="金融市场")
+        Data(
+            data_content=[
+                {"media_type": "text", "content": "健康知识"},
+                {"media_type": "image", "content": "health.jpg"},
+                {"media_type": "text", "content": "金融市场"},
+            ]
+        )
     )
 
     assert result.status is True
     assert result.score == 0.2
     assert result.reason == [
-        "title and content are inconsistent "
-        "(score: 0.2000, threshold: 0.5000)"
+        "Text items in data_content are inconsistent "
+        "(score: 0.2000, threshold: 0.5000, outlier indexes: [2])"
     ]
+
+
+def test_content_consistency_skips_comparison_for_one_text_item():
+    result = Rule_TC609_0206_ContentConsistency.eval(
+        Data(
+            data_content=[
+                {"media_type": "text", "content": "文本内容"},
+                {"media_type": "image", "content": "image.jpg"},
+            ]
+        )
+    )
+
+    assert result.status is False
+    assert result.score is None
+    assert result.label == [QualityLabel.QUALITY_GOOD]
 
 
 @pytest.mark.parametrize(
-    "data",
+    "data, reason",
     [
-        Data(title="健康"),
-        Data(title="健康", content=["健康知识"]),
-        Data(title="健康", content=None),
+        (
+            Data(data_content=[]),
+            "data_content: expected a non-empty list",
+        ),
+        (
+            Data(data_content=["text"]),
+            "data_content[0]: expected dict, got str",
+        ),
+        (
+            Data(data_content=[{"media_type": ["text"], "content": "文本"}]),
+            "data_content[0].media_type: expected a non-empty string",
+        ),
+        (
+            Data(data_content=[{"media_type": "text", "content": ""}]),
+            (
+                "data_content[0].content: "
+                "expected a non-empty string for text media"
+            ),
+        ),
     ],
 )
-def test_content_consistency_requires_existing_string_fields(data, monkeypatch):
-    monkeypatch.setattr(
-        Rule_TC609_0206_ContentConsistency,
-        "dynamic_config",
-        EvaluatorRuleArgs(
-            key_list=["title", "content"],
-            threshold=0.5,
-            model="test-model",
-            device=-1,
-        ),
-    )
-
+def test_content_consistency_rejects_invalid_data_content(data, reason):
     result = Rule_TC609_0206_ContentConsistency.eval(data)
 
     assert result.status is True
-    assert result.reason == [
-        "content: field must exist and its value must be str"
-    ]
+    assert result.reason == [reason]
 
 
-@pytest.mark.parametrize("key_list", [[], ["content"], ["content", "content"]])
-def test_content_consistency_rejects_invalid_key_list(key_list, monkeypatch):
+def test_calculate_text_consistency_compares_two_texts_directly(monkeypatch):
+    torch = pytest.importorskip("torch")
+
     monkeypatch.setattr(
-        Rule_TC609_0206_ContentConsistency,
-        "dynamic_config",
-        EvaluatorRuleArgs(
-            key_list=key_list,
-            threshold=0.5,
-            model="test-model",
-            device=-1,
+        rule_tc609_quality_base,
+        "_encode_texts",
+        lambda *args, **kwargs: torch.tensor(
+            [[1.0, 0.0], [0.8, 0.6]]
         ),
     )
 
-    with pytest.raises(ValueError, match="key_list"):
-        Rule_TC609_0206_ContentConsistency.eval(Data(content="example"))
+    result = rule_tc609_quality_base.calculate_text_consistency(
+        ["标题", "摘要"],
+        model_name="test-model",
+        threshold=0.75,
+    )
+
+    assert result["score"] == pytest.approx(0.8)
+    assert result["is_consistent"] is True
+    assert result["outlier_indexes"] == []
+
+
+def test_calculate_text_consistency_uses_robust_center(monkeypatch):
+    torch = pytest.importorskip("torch")
+
+    encoded = torch.tensor(
+        [
+            [1.0, 0.0],
+            [0.99, 0.1],
+            [0.98, -0.1],
+            [0.97, 0.05],
+            [0.0, 1.0],
+        ]
+    )
+    encoded = torch.nn.functional.normalize(encoded, p=2, dim=1)
+    monkeypatch.setattr(
+        rule_tc609_quality_base,
+        "_encode_texts",
+        lambda *args, **kwargs: encoded,
+    )
+
+    result = rule_tc609_quality_base.calculate_text_consistency(
+        ["文本1", "文本2", "文本3", "文本4", "离群文本"],
+        model_name="test-model",
+        threshold=0.5,
+        consensus_keep_ratio=0.8,
+    )
+
+    assert result["score"] < 0.5
+    assert result["is_consistent"] is False
+    assert result["outlier_indexes"] == [4]
+
+
+def test_content_consistency_declares_data_content_required():
+    assert Rule_TC609_0206_ContentConsistency._required_fields == [
+        RequiredField.DATA_CONTENT
+    ]
 
 
 def test_uncovered_rule_is_explicit_placeholder():
-    assert Rule_TC609_0301_ContentDiversity.group == ["guobiao_model"]
+    assert Rule_TC609_0301_ContentDiversity.group == []
     with pytest.raises(NotImplementedError, match="placeholder"):
         Rule_TC609_0301_ContentDiversity.eval(
             Data(data_id="diversity", content="test")
