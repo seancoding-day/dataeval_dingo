@@ -14,7 +14,7 @@ from dingo.model.rule.guobiao.rule_tc609_quality import (Rule_TC609_0201_FormatC
 from dingo.model.rule.rule_common import RuleWatermark
 
 
-def test_unsupported_tc609_quality_metrics_are_not_registered():
+def test_only_supported_tc609_quality_metrics_are_registered():
     rule_classes = {
         name: cls
         for name, cls in inspect.getmembers(
@@ -26,7 +26,24 @@ def test_unsupported_tc609_quality_metrics_are_not_registered():
     }
 
     assert len(rule_classes) == 40
-    assert all(name not in Model.rule_name_map for name in rule_classes)
+    expected_registered = {
+        f"Rule_TC609_020{index}_{suffix}"
+        for index, suffix in enumerate(
+            (
+                "FormatCompliance",
+                "SafetyCompliance",
+                "AnnotationCompliance",
+                "StructuralCompleteness",
+                "ContentAuthenticity",
+                "ContentConsistency",
+                "DataTypeConsistency",
+                "ContentCleanliness",
+            ),
+            start=1,
+        )
+    }
+    actual_registered = set(rule_classes) & set(Model.rule_name_map)
+    assert actual_registered == expected_registered
 
     expected_primary_codes = {
         "0101", "0102", "0103", "0104",
@@ -41,12 +58,38 @@ def test_unsupported_tc609_quality_metrics_are_not_registered():
     assert actual_codes == expected_primary_codes
 
 
-def test_unsupported_tc609_rules_are_not_grouped():
-    assert not any(
-        rule.__name__.startswith("Rule_TC609_")
-        for rules in Model.rule_groups.values()
-        for rule in rules
-    )
+def test_only_supported_tc609_rules_are_grouped_as_data_rules():
+    actual_groups = {
+        group_name: {
+            rule.__name__
+            for rule in rules
+            if rule.__name__.startswith("Rule_TC609_")
+        }
+        for group_name, rules in Model.rule_groups.items()
+    }
+    actual_groups = {
+        group_name: rules
+        for group_name, rules in actual_groups.items()
+        if rules
+    }
+    assert actual_groups == {
+        "guobiao_data": {
+            f"Rule_TC609_020{index}_{suffix}"
+            for index, suffix in enumerate(
+                (
+                    "FormatCompliance",
+                    "SafetyCompliance",
+                    "AnnotationCompliance",
+                    "StructuralCompleteness",
+                    "ContentAuthenticity",
+                    "ContentConsistency",
+                    "DataTypeConsistency",
+                    "ContentCleanliness",
+                ),
+                start=1,
+            )
+        }
+    }
 
 
 def test_format_compliance_accepts_matching_record(monkeypatch):
