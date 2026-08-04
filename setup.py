@@ -36,7 +36,7 @@ extras_require = {
 
 setup(
     name="dingo-python",
-    version="2.4.0",
+    version="2.5.0",
     author="Dingo",
     description="A Comprehensive AI Data Quality Evaluation Tool for Large Models",
     long_description=long_description,
