@@ -1,6 +1,8 @@
 # Dingo Hallucination Detection - Complete Guide
 
-This guide introduces how to use integrated hallucination detection features in Dingo, supporting two detection methods: **HHEM-2.1-Open local model** (recommended) and **GPT-based cloud detection**.
+This guide introduces how to use integrated hallucination detection features in Dingo, supporting two detection methods: **MiniCheck local model** (recommended) and **GPT-based cloud detection**.
+
+> Note: the local rule is still named `RuleHallucinationHHEM` for backward compatibility, but its underlying model was upgraded from Vectara HHEM-2.1-Open to `lytang/MiniCheck-Flan-T5-Large` (a standard T5 grounding checker, arXiv:2404.10774).
 
 ## 🎯 Feature Overview
 
@@ -57,7 +59,7 @@ context = {"passages": ["Context 1", "Context 2"]}
 
 ## 🚀 Quick Start
 
-### Method 1: HHEM-2.1-Open Local Model (Recommended ⭐)
+### Method 1: MiniCheck Local Model (Recommended ⭐)
 
 **Advantages**:
 - ✅ Fast speed
@@ -72,7 +74,7 @@ context = {"passages": ["Context 1", "Context 2"]}
 pip install dingo-python[hhem]
 
 # Or install dependencies manually
-pip install sentence-transformers torch
+pip install transformers torch sentencepiece
 ```
 
 **Usage**:
@@ -82,7 +84,7 @@ from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io.input import Data
 from dingo.model.rule.rule_hallucination_hhem import RuleHallucinationHHEM
 
-# Configure (first run will auto-download model ~400MB)
+# Configure (first run will auto-download model ~3GB, flan-t5-large)
 RuleHallucinationHHEM.dynamic_config = EvaluatorRuleArgs(
     threshold=0.5  # Hallucination threshold, higher = stricter
 )
@@ -208,7 +210,7 @@ print(f"Pass rate: {summary.score}%")
 ### Threshold Adjustment
 
 ```python
-# Method 1: Rule-based (HHEM)
+# Method 1: Rule-based (MiniCheck)
 RuleHallucinationHHEM.dynamic_config = EvaluatorRuleArgs(
     threshold=0.5  # Range: 0.0-1.0
 )
@@ -227,38 +229,33 @@ LLMHallucination.dynamic_config = EvaluatorLLMArgs(
 - **General scenarios** (Q&A systems): 0.5-0.6
 - **Loose scenarios** (creative content): 0.7-0.8
 
-### Device Selection (HHEM Only)
+### Device (MiniCheck)
+
+By default the MiniCheck model is loaded and runs on **CPU**, which is
+sufficient for the 0.8B flan-t5-large checkpoint. If you want to run inference
+on GPU, move the loaded model to your device after the first load:
 
 ```python
-# Auto-select (default: uses GPU if available)
-RuleHallucinationHHEM.dynamic_config = EvaluatorRuleArgs()
-
-# Force CPU
-import torch
-RuleHallucinationHHEM.device = "cpu"
-
-# Force GPU
-RuleHallucinationHHEM.device = "cuda"
-
-# Specific GPU
-RuleHallucinationHHEM.device = "cuda:0"
+# Trigger a load, then move to GPU
+RuleHallucinationHHEM.load_model()
+RuleHallucinationHHEM.model = RuleHallucinationHHEM.model.to("cuda")
 ```
 
 ## 📈 Performance Comparison
 
-| Feature | HHEM-2.1-Open | GPT-based |
+| Feature | MiniCheck (local) | GPT-based |
 |---------|---------------|-----------|
-| **Speed** | Fast (~50ms/sample) | Slower (~1-2s/sample) |
+| **Speed** | Fast (~200-500ms/sample on CPU) | Slower (~1-2s/sample) |
 | **Cost** | Free | API costs |
-| **Accuracy** | High (F1: 0.84) | Very High |
+| **Accuracy** | High (75.0 balanced acc. on LLM-AggreFact) | Very High |
 | **Privacy** | Local, secure | Data sent to API |
-| **Deployment** | Needs model download (~400MB) | Needs API key |
+| **Deployment** | Needs model download (~3GB) | Needs API key |
 | **Offline** | ✅ Supported | ❌ Requires network |
 
 **Recommendations**:
-- **Production environment**: HHEM-2.1-Open (fast, free, private)
+- **Production environment**: MiniCheck (fast, free, private)
 - **High-precision scenarios**: GPT-based (highest accuracy)
-- **Offline scenarios**: HHEM-2.1-Open (can run completely offline)
+- **Offline scenarios**: MiniCheck (can run completely offline)
 
 ## 🌟 Best Practices
 
@@ -321,21 +318,23 @@ data = Data(
 
 ## ❓ FAQ
 
-### Q1: HHEM vs GPT-based, which to choose?
+### Q1: MiniCheck vs GPT-based, which to choose?
 
-- **Production/large-scale**: HHEM (fast, free, private)
+- **Production/large-scale**: MiniCheck (fast, free, private)
 - **High-precision evaluation**: GPT-based (highest accuracy, but has costs)
-- **Offline scenarios**: HHEM (can run completely offline)
+- **Offline scenarios**: MiniCheck (can run completely offline)
 
-### Q2: Why does HHEM download model on first run?
+### Q2: Why does the local rule download a model on first run?
 
-HHEM uses Sentence-Transformers model (~400MB), auto-downloads and caches on first run. Subsequent runs load directly from cache, no re-download needed.
+The local rule uses the `lytang/MiniCheck-Flan-T5-Large` model (~3GB),
+auto-downloads and caches on first run. Subsequent runs load directly from
+cache, no re-download needed.
 
 ### Q3: What if model download fails?
 
 ```bash
 # Manually download
-huggingface-cli download vectara/hallucination_evaluation_model --local-dir ~/.cache/huggingface/hub/models--vectara--hallucination_evaluation_model
+hf download lytang/MiniCheck-Flan-T5-Large
 
 # Or use mirror
 export HF_ENDPOINT=https://hf-mirror.com
@@ -352,7 +351,7 @@ export HF_ENDPOINT=https://hf-mirror.com
 
 - [RAG Evaluation Metrics Guide](rag_evaluation_metrics.md)
 - [Factuality Assessment Guide](factuality_assessment_guide.md)
-- [HHEM Paper](https://arxiv.org/abs/2406.09053)
+- [MiniCheck Paper](https://arxiv.org/abs/2404.10774)
 
 ## 📝 Example Scenarios
 

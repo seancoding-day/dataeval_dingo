@@ -41,7 +41,7 @@ This document provides comprehensive information about all quality metrics used 
 | `LLMText3HHarmless` | LLMText3HHarmless | Checks if responses avoid harmful content, discriminatory language, and dangerous assistance | [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/pdf/2204.05862) (Bai et al., 2022) | [📊 See Results](eval/prompt/qa_data_evaluated_by_3h.md) | N/A |
 | `LLMText3HHelpful` | LLMText3HHelpful | Assesses if responses address questions directly and follow instructions appropriately | [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/pdf/2204.05862) (Bai et al., 2022) | [📊 See Results](eval/prompt/qa_data_evaluated_by_3h.md) | N/A |
 | `LLMText3HHonest` | LLMText3HHonest | Evaluates if responses provide accurate information without fabrication or deception | [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/pdf/2204.05862) (Bai et al., 2022) | [📊 See Results](eval/prompt/qa_data_evaluated_by_3h.md) | N/A |
-| `QUALITY_BAD_HALLUCINATION` | RuleHallucinationHHEM | Uses Vectara's HHEM-2.1-Open model for local hallucination detection by evaluating consistency between response and c... | [HHEM-2.1-Open](https://huggingface.co/vectara/hallucination_evaluation_model) (Forrest Bao, Miaoran Li, Rogger Luo, Ofer Mendelevitch) | N/A | N/A |
+| `QUALITY_BAD_HALLUCINATION` | RuleHallucinationHHEM | Uses the MiniCheck-Flan-T5-Large model for local hallucination detection by checking whether the response is grounded... | [MiniCheck: Efficient Fact-Checking of LLMs on Grounding Documents](https://arxiv.org/abs/2404.10774) (Liyan Tang, Philippe Laban, Greg Durrett) | N/A | N/A |
 
 ### Classification Metrics
 
@@ -144,7 +144,7 @@ This document provides comprehensive information about all quality metrics used 
 
 | Type | Metric | Description | Paper Source | Evaluation Results | Examples |
 |------|--------|-------------|--------------|-------------------|----------|
-| `QUALITY_BAD_EFFECTIVENESS` | RuleMetadataSimilarity, RuleAuthorFieldValidation, RuleQuanliangFieldValidation, RuleSourceFieldValidation | 检查元数据字段与基准数据的相似度匹配，阈值默认为0.6; Validate OpenAlex author fields and report invalid fields; Validate Quanliang metadata f... | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_EFFECTIVENESS` | RuleMetadataSimilarity, RuleSourceFieldValidation, RuleQuanliangFieldValidation, RuleAuthorFieldValidation | 检查元数据字段与基准数据的相似度匹配，阈值默认为0.6; Validate OpenAlex source fields and report invalid fields; Validate Quanliang metadata f... | Internal Implementation | N/A | N/A |
 
 ### Rule-Based RESUME Quality Metrics
 
