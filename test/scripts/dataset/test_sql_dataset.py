@@ -7,6 +7,9 @@ SQL Dataset 测试文件
 import os
 import sqlite3
 import tempfile
+import uuid
+
+import pytest
 
 from dingo.config import DatasetArgs, DatasetSqlArgs, InputArgs
 from dingo.data.dataset.sql import SqlDataset
@@ -16,7 +19,7 @@ from dingo.data.datasource.sql import SqlDataSource
 def create_test_database():
     """创建一个测试 SQLite 数据库"""
     # 创建临时数据库文件
-    db_path = os.path.join(tempfile.gettempdir(), "test_dingo_sql.db")
+    db_path = os.path.join(tempfile.gettempdir(), f"test_dingo_sql_{uuid.uuid4().hex}.db")
 
     # 连接数据库并创建测试表
     conn = sqlite3.connect(db_path)
@@ -63,6 +66,7 @@ def test_sql_dataset():
     db_path = create_test_database()
     print(f"✓ 创建测试数据库: {db_path}")
 
+    datasource = None
     try:
         # 配置 SQL 连接参数（SQLite）
         sql_config = DatasetSqlArgs(
@@ -132,10 +136,15 @@ def test_sql_dataset():
         print("=" * 60)
 
     finally:
+        if datasource is not None:
+            datasource.engine.dispose()
         # 清理测试数据库
         if os.path.exists(db_path):
-            os.remove(db_path)
-            print(f"\n✓ 清理测试数据库: {db_path}")
+            try:
+                os.remove(db_path)
+                print(f"\n✓ 清理测试数据库: {db_path}")
+            except PermissionError:
+                print(f"\n! 跳过清理（文件占用）: {db_path}")
 
 
 def test_stream_results():
@@ -145,7 +154,10 @@ def test_stream_results():
     print("=" * 60)
 
     # 创建一个包含更多数据的测试数据库
-    db_path = os.path.join(tempfile.gettempdir(), "test_dingo_sql_stream.db")
+    db_path = os.path.join(
+        tempfile.gettempdir(),
+        f"test_dingo_sql_stream_{uuid.uuid4().hex}.db"
+    )
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 
@@ -164,6 +176,7 @@ def test_stream_results():
 
     print(f"✓ 创建包含 1000 条数据的测试数据库")
 
+    datasource = None
     try:
         sql_config = DatasetSqlArgs(
             dialect="sqlite",
@@ -195,19 +208,135 @@ def test_stream_results():
         # 只读取前 10 条，验证流式读取（不会加载全部 1000 条到内存）
         print("开始流式读取（只读取前 10 条）:")
         count = 0
-        for idx, data in enumerate(dataset.get_data()):
-            if idx < 10:
-                print(f"  [{idx + 1}] {data}")
-            count += 1
-            if idx >= 9:  # 只读取前 10 条就停止
-                break
+        data_iterator = iter(dataset.get_data())
+        try:
+            for idx, data in enumerate(data_iterator):
+                if idx < 10:
+                    print(f"  [{idx + 1}] {data}")
+                count += 1
+                if idx >= 9:  # 只读取前 10 条就停止
+                    break
+        finally:
+            close_method = getattr(data_iterator, "close", None)
+            if callable(close_method):
+                close_method()
 
         print(f"\n✓ 流式读取验证通过（处理了 {count} 条数据后停止）")
 
     finally:
+        if datasource is not None:
+            datasource.engine.dispose()
         if os.path.exists(db_path):
-            os.remove(db_path)
-            print(f"✓ 清理测试数据库: {db_path}")
+            try:
+                os.remove(db_path)
+                print(f"✓ 清理测试数据库: {db_path}")
+            except PermissionError:
+                print(f"! 跳过清理（文件占用）: {db_path}")
+
+
+def test_parse_connect_args_supports_prefix_and_multiple_pairs():
+    query_args = SqlDataSource._parse_connect_args(
+        "?charset=utf8mb4&read_timeout=120&write_timeout=120"
+    )
+    assert query_args["charset"] == "utf8mb4"
+    assert query_args["read_timeout"] == "120"
+    assert query_args["write_timeout"] == "120"
+
+
+def test_mysql_engine_has_stability_pool_settings():
+    sql_config = DatasetSqlArgs(
+        dialect="mysql",
+        driver="pymysql",
+        username="user",
+        password="pass",
+        host="localhost",
+        port="3306",
+        database="db",
+        connect_args="charset=utf8mb4"
+    )
+    engine = SqlDataSource._get_engine(sql_config)
+    try:
+        assert engine.pool._pre_ping is True
+        assert engine.pool._recycle == 1800
+    finally:
+        engine.dispose()
+
+
+def test_mysql_does_not_inject_default_timeout_query_args():
+    sql_config = DatasetSqlArgs(
+        dialect="mysql",
+        driver="pymysql",
+        username="user",
+        password="pass",
+        host="localhost",
+        port="3306",
+        database="db",
+        connect_args="charset=utf8mb4"
+    )
+    query_args = SqlDataSource._parse_connect_args(sql_config.connect_args)
+    url = SqlDataSource._build_connection_url(sql_config, query_args)
+    assert url.query == {"charset": "utf8mb4"}
+
+
+def test_parse_engine_args_with_supported_types():
+    engine_args = SqlDataSource._parse_engine_args(
+        "pool_recycle=3600&pool_pre_ping=true&pool_size=8&max_overflow=16&pool_timeout=30"
+    )
+    assert engine_args == {
+        "pool_recycle": 3600,
+        "pool_pre_ping": True,
+        "pool_size": 8,
+        "max_overflow": 16,
+        "pool_timeout": 30,
+    }
+
+
+def test_engine_args_override_default_pool_recycle():
+    sql_config = DatasetSqlArgs(
+        dialect="mysql",
+        driver="pymysql",
+        username="user",
+        password="pass",
+        host="localhost",
+        port="3306",
+        database="db",
+        engine_args="pool_recycle=7200&pool_pre_ping=false"
+    )
+    engine = SqlDataSource._get_engine(sql_config)
+    try:
+        assert engine.pool._recycle == 7200
+        assert engine.pool._pre_ping is False
+    finally:
+        engine.dispose()
+
+
+def test_engine_args_rejects_unsupported_key():
+    with pytest.raises(RuntimeError, match="Unsupported SQL engine arg"):
+        SqlDataSource._parse_engine_args("unsupported_key=1")
+
+
+def test_engine_args_rejects_invalid_bool_value():
+    with pytest.raises(RuntimeError, match="true' or 'false"):
+        SqlDataSource._parse_engine_args("pool_pre_ping=not_bool")
+
+
+def test_engine_args_rejects_numeric_bool_value():
+    with pytest.raises(RuntimeError, match="true' or 'false"):
+        SqlDataSource._parse_engine_args("pool_pre_ping=1")
+
+
+def test_invalid_port_raises_runtime_error():
+    sql_config = DatasetSqlArgs(
+        dialect="mysql",
+        driver="pymysql",
+        username="user",
+        password="pass",
+        host="localhost",
+        port="not_a_number",
+        database="db"
+    )
+    with pytest.raises(RuntimeError, match="port"):
+        SqlDataSource._build_connection_url(sql_config, {})
 
 
 if __name__ == "__main__":

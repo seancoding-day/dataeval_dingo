@@ -2,7 +2,14 @@
 
 import pytest
 
-from dingo.retrieval.search_client import PaperResult, SearchClient, SearchResponse, create_client, list_backends, register_backend
+from dingo.retrieval.search_client import (  # isort: skip
+    PaperResult,
+    SearchClient,
+    SearchResponse,
+    create_client,
+    list_backends,
+    register_backend,
+)
 
 
 class TestPaperResult:
@@ -92,6 +99,23 @@ class TestBackendRegistry:
                 "field": "publication_published_year",
                 "operator": "FILTER_OP_GTE",
                 "value": 2020,
+            }
+        ]
+
+    def test_meta_search_resource_type_becomes_metadata_filter(self):
+        client = create_client(
+            "meta_search",
+            api_url="https://api.sciverse.space",
+            search_type="ebook",
+        )
+
+        payload = client._build_public_payload("test query", 10)
+
+        assert payload["filters"] == [
+            {
+                "field": "metadata_type",
+                "operator": "FILTER_OP_EQ",
+                "value": "ebook",
             }
         ]
 
@@ -189,6 +213,22 @@ class TestGoogleScholarClient:
 
 
 class TestOpenAlexClient:
+    def test_accepts_full_works_endpoint(self):
+        from dingo.retrieval.backends.openalex import OpenAlexClient
+
+        client = OpenAlexClient(api_url="https://api.openalex.org/works")
+
+        assert client.base_url == "https://api.openalex.org"
+
+    def test_default_select_contains_quality_evaluation_fields(self):
+        from dingo.retrieval.backends.openalex import OpenAlexClient
+
+        select = OpenAlexClient()._build_params("test", 10)["select"]
+
+        assert "authorships" in select
+        assert "keywords" in select
+        assert "primary_location" in select
+
     def test_abstract_from_inverted_index(self):
         from dingo.retrieval.backends.openalex import OpenAlexClient
 

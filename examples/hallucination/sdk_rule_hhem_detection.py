@@ -1,15 +1,19 @@
 """
-Dingo Rule-based HHEM-2.1-Open Hallucination Detection Example
+Dingo Rule-based MiniCheck Hallucination Detection Example
 
-This example demonstrates how to use the HHEM-2.1-Open model as a rule-based
-hallucination detection tool for efficient local inference without API costs.
+This example demonstrates how to use the RuleHallucinationHHEM rule (backed by
+the MiniCheck-Flan-T5-Large model) as a local, API-free tool for detecting
+ungrounded claims — i.e. whether a response is supported by its context.
 
-Rule-based HHEM offers:
+Rule-based MiniCheck offers:
 - Better architecture fit (rules vs LLM for deterministic local models)
-- Superior performance than GPT-3.5 and GPT-4 on benchmarks
-- Local inference with <600MB RAM usage
-- Fast processing (~1.5s for 2k tokens on modern CPU)
-- No API costs or rate limits
+- Strong grounding accuracy (75.0 on LLM-AggreFact, > HHEM's 71.8)
+- Standard T5 model — no transformers version pin, no remote code
+- Local inference, no API costs or rate limits
+
+Note: the rule/class is still named RuleHallucinationHHEM for backward
+compatibility; the underlying model was upgraded from Vectara HHEM-2.1-Open
+to MiniCheck.
 """
 
 from dingo.io.input import Data
@@ -35,7 +39,7 @@ def example_1_basic_rule_hhem_detection():
 
     print(f"Error Status: {result.status}")  # True = hallucination detected, False = no hallucination
     print(f"Label: {result.label}")
-    print(f"HHEM Score: {getattr(result, 'score', 'N/A'):.3f}")
+    print(f"Hallucination Score: {f'{result.score:.3f}' if result.score is not None else 'N/A'}")
     print(f"Threshold: {RuleHallucinationHHEM.dynamic_config.threshold}")
     print("\nDetailed Analysis:")
     print(result.reason[0] if result.reason else "N/A")
@@ -61,7 +65,7 @@ def example_2_no_hallucination_rule():
 
     print(f"Error Status: {result.status}")  # True = hallucination detected, False = no hallucination
     print(f"Label: {result.label}")
-    print(f"HHEM Score: {getattr(result, 'score', 'N/A'):.3f}")
+    print(f"Hallucination Score: {f'{result.score:.3f}' if result.score is not None else 'N/A'}")
     print("\nDetailed Analysis:")
     print(result.reason[0] if result.reason else "N/A")
     print()
@@ -89,7 +93,7 @@ def example_3_complex_scenario_rule():
 
     print(f"Error Status: {result.status}")  # True = hallucination detected, False = no hallucination
     print(f"Label: {result.label}")
-    print(f"HHEM Score: {getattr(result, 'score', 'N/A'):.3f}")
+    print(f"Hallucination Score: {f'{result.score:.3f}' if result.score is not None else 'N/A'}")
     print("\nDetailed Analysis:")
     print(result.reason[0] if result.reason else "N/A")
     print()
@@ -150,7 +154,7 @@ def example_5_batch_evaluation_rule():
 
     print("Batch Rule-based Evaluation Results:")
     for i, result in enumerate(results):
-        print(f"  Item {i + 1}: Error={result.status}, Score={getattr(result, 'score', 'N/A'):.3f}")
+        print(f"  Item {i + 1}: Error={result.status}, Score={f'{result.score:.3f}' if result.score is not None else 'N/A'}")
     print()
 
 
@@ -176,7 +180,7 @@ def example_6_threshold_comparison_rule():
         RuleHallucinationHHEM.dynamic_config.threshold = threshold
         result = RuleHallucinationHHEM.eval(data)
 
-        print(f"Threshold {threshold}: Error={result.status}, Score={getattr(result, 'score', 'N/A'):.3f}")
+        print(f"Threshold {threshold}: Error={result.status}, Score={f'{result.score:.3f}' if result.score is not None else 'N/A'}")
 
     # Restore original threshold
     RuleHallucinationHHEM.dynamic_config.threshold = original_threshold
@@ -204,27 +208,26 @@ def example_7_performance_benchmark_rule():
     result = RuleHallucinationHHEM.eval(data)
     end_time = time.time()
 
-    print(f"Rule-based HHEM Inference Time: {end_time - start_time:.3f} seconds")
-    print(f"Result: Error={result.status}, Score={getattr(result, 'score', 'N/A'):.3f}")
-    print(f"Model Info: Local HHEM-2.1-Open (Rule-based)")
+    print(f"Rule-based MiniCheck Inference Time: {end_time - start_time:.3f} seconds")
+    print(f"Result: Error={result.status}, Score={f'{result.score:.3f}' if result.score is not None else 'N/A'}")
+    print(f"Model Info: Local MiniCheck-Flan-T5-Large (Rule-based)")
     print()
 
 
 if __name__ == "__main__":
-    print("🔍 Dingo Rule-based HHEM-2.1-Open Hallucination Detection Examples")
+    print("🔍 Dingo Rule-based MiniCheck Hallucination Detection Examples")
     print("=" * 70)
     print()
 
-    print("💡 Rule-based HHEM-2.1-Open Advantages:")
+    print("💡 Rule-based MiniCheck Advantages:")
     print("- Better architecture: Rules for deterministic local models")
     print("- Local inference (no API costs)")
-    print("- High performance (better than GPT-3.5/GPT-4 on benchmarks)")
-    print("- Low resource usage (<600MB RAM)")
-    print("- Fast inference (~1.5s for 2k tokens)")
+    print("- Strong grounding accuracy (75.0 on LLM-AggreFact, > HHEM's 71.8)")
+    print("- Standard T5 model (no transformers version pin, no remote code)")
     print()
 
-    print("⚠️  First run will download the model (~400MB)")
-    print("⚠️  Requires: pip install transformers")
+    print("⚠️  First run will download the model (~3GB, flan-t5-large)")
+    print("⚠️  Requires: pip install transformers torch sentencepiece")
     print()
 
     try:
@@ -236,11 +239,11 @@ if __name__ == "__main__":
         example_6_threshold_comparison_rule()
         example_7_performance_benchmark_rule()
 
-        print("🎉 All Rule-based HHEM examples completed successfully!")
+        print("🎉 All Rule-based MiniCheck examples completed successfully!")
 
     except ImportError as e:
         print(f"❌ Import Error: {e}")
-        print("Please install required dependencies: pip install transformers")
+        print("Please install required dependencies: pip install transformers torch sentencepiece")
     except Exception as e:
         print(f"❌ Error: {e}")
         print("Please check your setup and try again")
@@ -248,8 +251,7 @@ if __name__ == "__main__":
     print()
     print("📈 Rule-based vs LLM-based Comparison:")
     print("- Architecture: Rule-based (✓) vs LLM-based (for API models)")
-    print("- Performance: HHEM-2.1 > GPT-4 > GPT-3.5")
+    print("- Accuracy: MiniCheck competitive with much larger LLM fact-checkers")
     print("- Cost: Rule-based (Free) vs LLM-based (API costs)")
-    print("- Speed: Rule-based (~1.5s) vs LLM-based (3-10s)")
     print("- Privacy: Rule-based (Local) vs LLM-based (Cloud)")
-    print("- Resource: Rule-based (<600MB) vs LLM-based (API dependency)")
+    print("- Dependency: Rule-based (Local model) vs LLM-based (API dependency)")

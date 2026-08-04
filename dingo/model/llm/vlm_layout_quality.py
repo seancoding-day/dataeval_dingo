@@ -4,6 +4,7 @@ from typing import List
 from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail
 from dingo.model import Model
+from dingo.model.llm.base import LLMCallResult
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.utils import log
 from dingo.utils.image_loader import ImageLoader
@@ -159,7 +160,14 @@ class VLMLayoutQuality(BaseOpenAI):
             temperature=0.1
         )
 
-        return str(completions.choices[0].message.content)
+        return LLMCallResult(
+            content=str(completions.choices[0].message.content),
+            usage=cls._extract_token_usage(
+                completions,
+                model_name=model_name,
+                provider="openai",
+            ),
+        )
 
     @classmethod
     def process_response(cls, response: str) -> EvalDetail:

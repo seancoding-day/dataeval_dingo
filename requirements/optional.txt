@@ -4,7 +4,6 @@
 ftfy
 imagededup
 google-api-python-client
-lmdeploy
 opencv-python-headless
 pyiqa
 pyspark==3.4.1
@@ -14,5 +13,3 @@ tiktoken
 torch>=1.7.1
 torchvision
 tqdm
-
-git+https://github.com/openai/CLIP.git

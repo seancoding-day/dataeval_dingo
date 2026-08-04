@@ -16,6 +16,7 @@ from typing import Any, Dict, List
 from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model.llm.agent.tools import ToolRegistry
+from dingo.model.llm.base import llm_response_content
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.utils import log
 
@@ -251,7 +252,7 @@ class BaseAgent(BaseOpenAI):
                     prompt = step.get('prompt', '')
                     # Use parent's send_messages method
                     messages = [{"role": "user", "content": prompt}]
-                    response = cls.send_messages(messages)
+                    response = llm_response_content(cls.send_messages(messages))
                     results.append(response)
 
                 else:

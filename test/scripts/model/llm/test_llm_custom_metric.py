@@ -3,6 +3,8 @@ from unittest.mock import Mock
 
 from dingo.config.input_args import EvaluatorLLMArgs, InputArgs
 from dingo.io.input import Data
+from dingo.io.output.eval_detail import TokenUsage
+from dingo.model.llm.base import LLMCallResult
 from dingo.model.llm.llm_custom_metric import LLMCustomMetric
 from dingo.model.model import Model
 
@@ -195,6 +197,42 @@ def test_eval_detail_response_uses_llm_returned_fields():
     assert result.label == ["SOURCE.AI_GENERATED"]
     assert result.score == 0.82
     assert result.reason == ["The content contains AI-style phrasing."]
+
+
+def test_eval_detail_response_attaches_token_usage():
+    llm = LLMCustomMetric()
+    Model.set_config_llm(
+        llm, EvaluatorLLMArgs(custom_metric=_custom_metric(metric="SourceLabel"))
+    )
+    llm.create_client = Mock()
+    llm.send_messages = Mock(
+        return_value=LLMCallResult(
+            content=json.dumps(
+                {
+                    "status": False,
+                    "label": ["SOURCE.AI_GENERATED"],
+                    "score": 0.82,
+                    "reason": ["The content contains AI-style phrasing."],
+                }
+            ),
+            usage=TokenUsage(
+                prompt_tokens=12,
+                completion_tokens=5,
+                total_tokens=17,
+                model="gpt-test",
+                provider="openai",
+            ),
+        )
+    )
+
+    result = llm.eval(
+        Data(prompt="Classify source", content="As an AI language model...")
+    )
+
+    assert result.usage is not None
+    assert result.usage.prompt_tokens == 12
+    assert result.usage.completion_tokens == 5
+    assert result.usage.total_tokens == 17
 
 
 def test_eval_detail_response_rejects_missing_fields():

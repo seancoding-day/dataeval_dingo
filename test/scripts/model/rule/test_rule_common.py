@@ -1,6 +1,13 @@
+import pytest
+
+from dingo.config.input_args import EvaluatorRuleArgs
 from dingo.io import Data
 from dingo.io.output.eval_detail import QualityLabel
-from dingo.model.rule.rule_common import RuleDocFormulaRepeat, RulePIIDetection, RuleUnsafeWords
+from dingo.model.rule.guobiao.rule_tc609_quality import (Rule_TC609_0101_DocBasicInfoCompleteness, Rule_TC609_0102_DocContentFeatureCompleteness, Rule_TC609_0103_DocConstructionProcessCompleteness,
+                                                         Rule_TC609_0104_DocApplicationCompleteness, Rule_TC609_0207_DataTypeConsistency, Rule_TC609_0303_DataTimeRange,
+                                                         Rule_TC609_02080101_TextPerplexity)
+from dingo.model.rule.guobiao.rule_tc609_quality_base import Rule_TC609_01_DocCompleteness
+from dingo.model.rule.rule_common import RuleDocFormulaRepeat, RulePIIDetection, RuleUnsafeWords, RuleWatermark
 
 
 class TestRuleDocFormulaRepeat:
@@ -13,15 +20,357 @@ class TestRuleDocFormulaRepeat:
         assert res.metric == "RuleDocFormulaRepeat"
         assert res.reason == ["Formula has too many consecutive repeated characters, total repeat length: 130, found 1 repeat patterns"]
 
-    def test_rule_unsafe_words(self):
+    def test_requires_configured_watermarks(self, monkeypatch):
+        monkeypatch.setattr(
+            RuleWatermark,
+            "dynamic_config",
+            EvaluatorRuleArgs(key_list=[]),
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="RuleWatermark requires non-empty dynamic_config.key_list",
+        ):
+            RuleWatermark.eval(Data(content="safe text"))
+
+    def test_rule_unsafe_words(self, monkeypatch):
         data = Data(data_id="", prompt="", content="java is good\n \n \n \n hello \n \n but python is better")
-        r = RuleUnsafeWords
-        r.dynamic_config.key_list = ['av', 'b', 'java']
-        tmp = r.eval(data)
+        monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_list", None)
+        monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_automaton", None)
+        monkeypatch.setattr(
+            RuleUnsafeWords,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                key_list=["av", "b", "java"],
+                refer_path=[],
+            ),
+        )
+        tmp = RuleUnsafeWords.eval(data)
         assert tmp.status is True
         assert 'av' not in tmp.reason
         assert 'b' not in tmp.reason
         assert 'java' in tmp.reason
+
+    def test_rule_unsafe_words_requires_configured_words(self, monkeypatch):
+        monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_list", None)
+        monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_automaton", None)
+        monkeypatch.setattr(
+            RuleUnsafeWords,
+            "dynamic_config",
+            EvaluatorRuleArgs(key_list=[], refer_path=[]),
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="key_list.*refer_path",
+        ):
+            RuleUnsafeWords.eval(Data(content="safe text"))
+
+    def test_rule_unsafe_words_combines_key_list_and_refer_path(
+        self, monkeypatch, tmp_path
+    ):
+        monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_list", None)
+        monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_automaton", None)
+        unsafe_words_file = tmp_path / "unsafe_words.jsonl"
+        unsafe_words_file.write_text(
+            '{"word": "python"}\n',
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(
+            RuleUnsafeWords,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                key_list=["java"],
+                refer_path=[str(unsafe_words_file)],
+            ),
+        )
+
+        result = RuleUnsafeWords.eval(
+            Data(content="java and python are programming languages")
+        )
+
+        assert result.status is True
+        assert result.reason == ["java", "python"]
+
+    def test_rule_unsafe_words_reuses_cached_automaton(self, monkeypatch):
+        monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_list", None)
+        monkeypatch.setattr(RuleUnsafeWords, "_unsafe_words_automaton", None)
+        monkeypatch.setattr(
+            RuleUnsafeWords,
+            "dynamic_config",
+            EvaluatorRuleArgs(key_list=["java"], refer_path=[]),
+        )
+
+        RuleUnsafeWords.eval(Data(content="java"))
+        cached_words = RuleUnsafeWords._unsafe_words_list
+        cached_automaton = RuleUnsafeWords._unsafe_words_automaton
+        RuleUnsafeWords.eval(Data(content="java"))
+
+        assert RuleUnsafeWords._unsafe_words_list is cached_words
+        assert RuleUnsafeWords._unsafe_words_automaton is cached_automaton
+
+
+class TestRule_TC609_02080101_TextPerplexity:
+    @staticmethod
+    def _mock_model(monkeypatch, perplexity):
+        monkeypatch.setattr(
+            Rule_TC609_02080101_TextPerplexity,
+            "_check_dependencies",
+            classmethod(lambda cls: None),
+        )
+        monkeypatch.setattr(
+            Rule_TC609_02080101_TextPerplexity,
+            "_get_model_components",
+            classmethod(lambda cls, model_name: (object(), object())),
+        )
+        monkeypatch.setattr(
+            Rule_TC609_02080101_TextPerplexity,
+            "_calculate_perplexity",
+            classmethod(
+                lambda cls, content, tokenizer, model, stride: perplexity
+            ),
+        )
+
+    def test_high_perplexity_is_bad(self, monkeypatch):
+        self._mock_model(monkeypatch, 125.5)
+        monkeypatch.setattr(
+            Rule_TC609_02080101_TextPerplexity,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                threshold=100.0,
+                model="test-model",
+                stride=64,
+            ),
+        )
+
+        res = Rule_TC609_02080101_TextPerplexity.eval(
+            Data(data_id="ppl-high", content="A valid piece of text.")
+        )
+
+        assert res.status is True
+        assert "125.5000" in res.reason[0]
+        assert "test-model" in res.reason[0]
+
+    def test_low_perplexity_is_good(self, monkeypatch):
+        self._mock_model(monkeypatch, 42.25)
+        monkeypatch.setattr(
+            Rule_TC609_02080101_TextPerplexity,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                threshold=100.0,
+                model="test-model",
+                stride=64,
+            ),
+        )
+
+        res = Rule_TC609_02080101_TextPerplexity.eval(
+            Data(data_id="ppl-low", content="A fluent piece of text.")
+        )
+
+        assert res.status is False
+        assert res.label == [QualityLabel.QUALITY_GOOD]
+        assert "42.2500" in res.reason[0]
+
+    def test_empty_content_is_bad_without_loading_model(self, monkeypatch):
+        monkeypatch.setattr(
+            Rule_TC609_02080101_TextPerplexity,
+            "_check_dependencies",
+            classmethod(lambda cls: None),
+        )
+
+        def fail_if_called(cls, model_name):
+            raise AssertionError("model should not be loaded for empty content")
+
+        monkeypatch.setattr(
+            Rule_TC609_02080101_TextPerplexity,
+            "_get_model_components",
+            classmethod(fail_if_called),
+        )
+
+        res = Rule_TC609_02080101_TextPerplexity.eval(Data(data_id="ppl-empty", content="  "))
+
+        assert res.status is True
+        assert "empty content" in res.reason[0]
+
+    def test_missing_dependencies_raise_clear_error(self, monkeypatch):
+        monkeypatch.setattr(
+            "dingo.model.rule.guobiao.rule_tc609_quality.importlib.util.find_spec",
+            lambda package: None if package == "transformers" else object(),
+        )
+
+        try:
+            Rule_TC609_02080101_TextPerplexity.eval(
+                Data(data_id="ppl-dependency", content="A piece of text.")
+            )
+        except ImportError as exc:
+            assert "transformers" in str(exc)
+            assert "dingo-python[hhem]" in str(exc)
+        else:
+            raise AssertionError("expected ImportError for missing transformers")
+
+
+class TestRule_TC609_0207_DataTypeConsistency:
+    @staticmethod
+    def _mock_classification(monkeypatch, predicted_type, scores):
+        monkeypatch.setattr(
+            Rule_TC609_0207_DataTypeConsistency,
+            "_classify_dataset_type",
+            classmethod(lambda cls, *args: (predicted_type, scores)),
+        )
+        monkeypatch.setattr(
+            Rule_TC609_0207_DataTypeConsistency,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                dataset_type="通识数据集",
+                threshold=0.6,
+                model="test-model",
+                device=-1,
+            ),
+        )
+
+    def test_text_matching_dataset_type_is_good(self, monkeypatch):
+        self._mock_classification(
+            monkeypatch,
+            "通识数据集",
+            {"通识数据集": 0.85, "行业通识数据集": 0.1, "行业专识数据集": 0.05},
+        )
+        result = Rule_TC609_0207_DataTypeConsistency.eval(
+            Data(
+                data_id="type-match",
+                data_content=[
+                    {"media_type": "text", "content": "普通生活常识"},
+                    {"media_type": "image", "content": "image.png"},
+                ],
+            )
+        )
+
+        assert result.status is False
+        assert result.score == 0.85
+        assert result.label == [QualityLabel.QUALITY_GOOD]
+
+    def test_text_not_matching_dataset_type_is_bad(self, monkeypatch):
+        self._mock_classification(
+            monkeypatch,
+            "行业专识数据集",
+            {"通识数据集": 0.25, "行业通识数据集": 0.2, "行业专识数据集": 0.55},
+        )
+        result = Rule_TC609_0207_DataTypeConsistency.eval(
+            Data(
+                data_id="type-mismatch",
+                data_content=[{"media_type": "text", "content": "专业行业知识"}],
+            )
+        )
+
+        assert result.status is True
+        assert result.score == 0.25
+        assert result.label == [
+            "QUALITY_BAD_TC609_0207.Rule_TC609_0207_DataTypeConsistency"
+        ]
+
+    def test_no_text_content_is_bad(self):
+        result = Rule_TC609_0207_DataTypeConsistency.eval(
+            Data(
+                data_id="no-text",
+                data_content=[{"media_type": "image", "content": "image.png"}],
+            )
+        )
+
+        assert result.status is True
+        assert "at least one text item" in result.reason[0]
+
+    def test_invalid_dataset_type_raises_value_error(self, monkeypatch):
+        monkeypatch.setattr(
+            Rule_TC609_0207_DataTypeConsistency,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                dataset_type="医疗数据集",
+                threshold=0.6,
+                model="test-model",
+                device=-1,
+            ),
+        )
+        with pytest.raises(ValueError, match="dataset_type must be one of"):
+            Rule_TC609_0207_DataTypeConsistency.eval(
+                Data(
+                    data_id="invalid-type",
+                    data_content=[
+                        {"media_type": "text", "content": "医疗知识"}
+                    ],
+                )
+            )
+
+
+class TestRule_TC609_0303_DataTimeRange:
+    def test_dt_in_range_is_good(self, monkeypatch):
+        monkeypatch.setattr(
+            Rule_TC609_0303_DataTimeRange,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                dt_start="2025-01-01",
+                dt_end="2025-12-31 23:59:59",
+            ),
+        )
+
+        result = Rule_TC609_0303_DataTimeRange.eval(
+            Data(
+                data_id="time-good",
+                dt="2025-03-01 08:30:00",
+            )
+        )
+        assert result.status is False
+        assert result.label == [QualityLabel.QUALITY_GOOD]
+
+    def test_created_time_out_of_range_is_bad(self, monkeypatch):
+        monkeypatch.setattr(
+            Rule_TC609_0303_DataTimeRange,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                dt_start="2025-01-01",
+                dt_end="2025-12-31 23:59:59",
+            ),
+        )
+
+        result = Rule_TC609_0303_DataTimeRange.eval(
+            Data(
+                data_id="time-created-out",
+                dt="2024-12-31 23:59:59",
+            )
+        )
+        assert result.status is True
+        assert "earlier than allowed start" in result.reason[0]
+
+    def test_dt_invalid_format_is_bad(self, monkeypatch):
+        monkeypatch.setattr(
+            Rule_TC609_0303_DataTimeRange,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                dt_start="2025-01-01",
+                dt_end="2025-12-31 23:59:59",
+            ),
+        )
+
+        result = Rule_TC609_0303_DataTimeRange.eval(
+            Data(
+                data_id="time-dt-format",
+                dt="2025年03月01日",
+            )
+        )
+        assert result.status is True
+        assert "unsupported datetime format" in result.reason[0]
+
+    def test_missing_time_field_is_bad(self, monkeypatch):
+        monkeypatch.setattr(
+            Rule_TC609_0303_DataTimeRange,
+            "dynamic_config",
+            EvaluatorRuleArgs(
+                dt_start="2025-01-01",
+                dt_end="2025-12-31 23:59:59",
+            ),
+        )
+
+        result = Rule_TC609_0303_DataTimeRange.eval(Data(data_id="time-missing"))
+        assert result.status is True
+        assert "dt is missing" in result.reason[0]
 
 
 class TestRulePIIDetection:
@@ -199,3 +548,108 @@ class TestRulePIIDetection:
         data_low = Data(data_id="14", content="IP：192.168.1.1")
         res_low = RulePIIDetection.eval(data_low)
         assert "Low Risk" in str(res_low.reason)
+
+
+class TestRuleDatasetDocCompleteness:
+    @staticmethod
+    def _mock_aspect_matching(monkeypatch):
+        def mock_match(
+            cls,
+            content,
+            normalized_content,
+            aspect_keywords,
+            model_name,
+            device,
+            semantic_threshold,
+        ):
+            del cls, content, model_name, device, semantic_threshold
+            matched = {}
+            missing = []
+            for aspect_name, keywords in aspect_keywords.items():
+                evidence_keyword = next(
+                    (
+                        keyword
+                        for keyword in keywords
+                        if keyword.lower() in normalized_content
+                    ),
+                    None,
+                )
+                if evidence_keyword:
+                    matched[aspect_name] = {
+                        "score": 1.0,
+                        "keyword": evidence_keyword,
+                    }
+                else:
+                    missing.append(aspect_name)
+            return matched, missing
+
+        monkeypatch.setattr(
+            Rule_TC609_01_DocCompleteness,
+            "_match_aspects",
+            classmethod(mock_match),
+        )
+
+    def test_basic_info_completeness_good(self, monkeypatch):
+        self._mock_aspect_matching(monkeypatch)
+        content = (
+            "本数据集说明包含数据集规模与样本数量，给出格式规范和文件结构，"
+            "提供访问渠道，并说明技术支持联系方式。"
+        )
+        res = Rule_TC609_0101_DocBasicInfoCompleteness.eval(
+            Data(data_id="doc-basic-good", content=content)
+        )
+        assert res.status is False
+        assert res.label == [QualityLabel.QUALITY_GOOD]
+        assert res.score == 1.0
+
+    def test_basic_info_completeness_bad(self, monkeypatch):
+        self._mock_aspect_matching(monkeypatch)
+        content = "仅提到样本数量和文件结构，未说明访问渠道。"
+        res = Rule_TC609_0101_DocBasicInfoCompleteness.eval(
+            Data(data_id="doc-basic-bad", content=content)
+        )
+        assert res.status is True
+        assert res.score < 0.8
+
+    def test_content_feature_completeness_good(self, monkeypatch):
+        self._mock_aspect_matching(monkeypatch)
+        content = (
+            "文档包含模态类型、数据分布情况、标签类别统计、样本示例以及局限性说明。"
+        )
+        res = Rule_TC609_0102_DocContentFeatureCompleteness.eval(
+            Data(data_id="doc-content-good", content=content)
+        )
+        assert res.status is False
+        assert res.label == [QualityLabel.QUALITY_GOOD]
+        assert res.score == 1.0
+
+    def test_construction_process_completeness_good(self, monkeypatch):
+        self._mock_aspect_matching(monkeypatch)
+        content = (
+            "建设过程包括数据来源、采集方法、加工处理流程、标注规范和版本控制记录。"
+        )
+        res = Rule_TC609_0103_DocConstructionProcessCompleteness.eval(
+            Data(data_id="doc-process-good", content=content)
+        )
+        assert res.status is False
+        assert res.label == [QualityLabel.QUALITY_GOOD]
+        assert res.score == 1.0
+
+    def test_application_completeness_good(self, monkeypatch):
+        self._mock_aspect_matching(monkeypatch)
+        content = (
+            "应用说明提供使用许可、目标应用场景、评估方法、基准测试结果与典型应用案例。"
+        )
+        res = Rule_TC609_0104_DocApplicationCompleteness.eval(
+            Data(data_id="doc-application-good", content=content)
+        )
+        assert res.status is False
+        assert res.label == [QualityLabel.QUALITY_GOOD]
+        assert res.score == 1.0
+
+    def test_empty_content_is_bad(self):
+        res = Rule_TC609_0104_DocApplicationCompleteness.eval(
+            Data(data_id="doc-empty", content="   ")
+        )
+        assert res.status is True
+        assert "missing or empty" in res.reason[0]

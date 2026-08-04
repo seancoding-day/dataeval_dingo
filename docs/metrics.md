@@ -30,6 +30,15 @@ This document provides comprehensive information about all quality metrics used 
 | `LLMTextQualityV5` | LLMTextQualityV5 | Impact-driven text quality evaluation for LLM pretraining, focusing on structural completeness, readability, diversit... | [WanJuanSiLu: A High-Quality Open-Source Webtext Dataset for Low-Resource Languages](https://arxiv.org/abs/2501.14506) (Yu et al., 2025) | [📊 See Results](eval/prompt/redpajama_data_evaluated_by_prompt.md) | [📝 View Example](../examples/llm_and_rule/llm_local.py) |
 | `LLMTextTable` | LLMTextTable | Impact-driven text quality evaluation for LLM pretraining, focusing on structural completeness, readability, diversit... | [WanJuanSiLu: A High-Quality Open-Source Webtext Dataset for Low-Resource Languages](https://arxiv.org/abs/2501.14506) (Yu et al., 2025) | [📊 See Results](eval/prompt/redpajama_data_evaluated_by_prompt.md) | [📝 View Example](../examples/llm_and_rule/llm_local.py) |
 
+### National Standard LLM Assessment Metrics
+
+| Type | Metric | Description | Source | Evaluation Results | Examples |
+|------|--------|-------------|--------|-------------------|----------|
+| `LLM_TC609_0101_DocBasicInfoCompleteness` | LLM_TC609_0101_DocBasicInfoCompleteness | Uses an LLM to assess dataset scale, format, file structure, access channel, and technical support in dataset documentation. | TC609 | N/A | [📝 View Example](../examples/guobiao/example_doc3.py) |
+| `LLM_TC609_0102_DocContentFeatureCompleteness` | LLM_TC609_0102_DocContentFeatureCompleteness | Uses an LLM to assess modality, distribution, label statistics, sample examples, and limitations. | TC609 | N/A | [📝 View Example](../examples/guobiao/example_doc3.py) |
+| `LLM_TC609_0103_DocConstructionProcessCompleteness` | LLM_TC609_0103_DocConstructionProcessCompleteness | Uses an LLM to assess source, collection, processing, annotation, and version control. | TC609 | N/A | [📝 View Example](../examples/guobiao/example_doc3.py) |
+| `LLM_TC609_0104_DocApplicationCompleteness` | LLM_TC609_0104_DocApplicationCompleteness | Uses an LLM to assess license, target scenarios, evaluation method, benchmark results, and typical cases. | TC609 | N/A | [📝 View Example](../examples/guobiao/example_doc3.py) |
+
 ### SFT Data Assessment Metrics
 
 | Type | Metric | Description | Paper Source | Evaluation Results | Examples |
@@ -41,7 +50,7 @@ This document provides comprehensive information about all quality metrics used 
 | `LLMText3HHarmless` | LLMText3HHarmless | Checks if responses avoid harmful content, discriminatory language, and dangerous assistance | [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/pdf/2204.05862) (Bai et al., 2022) | [📊 See Results](eval/prompt/qa_data_evaluated_by_3h.md) | N/A |
 | `LLMText3HHelpful` | LLMText3HHelpful | Assesses if responses address questions directly and follow instructions appropriately | [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/pdf/2204.05862) (Bai et al., 2022) | [📊 See Results](eval/prompt/qa_data_evaluated_by_3h.md) | N/A |
 | `LLMText3HHonest` | LLMText3HHonest | Evaluates if responses provide accurate information without fabrication or deception | [Training a Helpful and Harmless Assistant with Reinforcement Learning from Human Feedback](https://arxiv.org/pdf/2204.05862) (Bai et al., 2022) | [📊 See Results](eval/prompt/qa_data_evaluated_by_3h.md) | N/A |
-| `QUALITY_BAD_HALLUCINATION` | RuleHallucinationHHEM | Uses Vectara's HHEM-2.1-Open model for local hallucination detection by evaluating consistency between response and c... | [HHEM-2.1-Open](https://huggingface.co/vectara/hallucination_evaluation_model) (Forrest Bao, Miaoran Li, Rogger Luo, Ofer Mendelevitch) | N/A | N/A |
+| `QUALITY_BAD_HALLUCINATION` | RuleHallucinationHHEM | Uses the MiniCheck-Flan-T5-Large model for local hallucination detection by checking whether the response is grounded... | [MiniCheck: Efficient Fact-Checking of LLMs on Grounding Documents](https://arxiv.org/abs/2404.10774) (Liyan Tang, Philippe Laban, Greg Durrett) | N/A | N/A |
 
 ### Classification Metrics
 
@@ -86,6 +95,12 @@ This document provides comprehensive information about all quality metrics used 
 | `QUALITY_BAD_EFFECTIVENESS` | RuleAudioDuration | Check whether the audio duration meets the standard | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_EFFECTIVENESS` | RuleAudioSnrQuality | Check whether the audio signal-to-noise ratio meets the standard | Internal Implementation | N/A | N/A |
 
+### Document Quality Assessment Metrics
+
+| Type | Metric | Description | Paper Source | Evaluation Results | Examples |
+|------|--------|-------------|--------------|-------------------|----------|
+| `LLMAISmell` | LLMAISmell | Detects AI-generated writing patterns in requirement documents across 5 dimensions: hollow truisms, repetition, rainb... | Internal Implementation | N/A | [📝 View Example](../examples/llm_and_rule/llm_local.py) |
+
 ### Job Hunting Strategy Metrics
 
 | Type | Metric | Description | Paper Source | Evaluation Results | Examples |
@@ -126,7 +141,7 @@ This document provides comprehensive information about all quality metrics used 
 
 | Type | Metric | Description | Paper Source | Evaluation Results | Examples |
 |------|--------|-------------|--------------|-------------------|----------|
-| `QUALITY_BAD_EFFECTIVENESS` | RuleMetadataSimilarity, RuleQuanliangFieldValidation | 检查元数据字段与基准数据的相似度匹配，阈值默认为0.6; Validate Quanliang metadata fields and report invalid fields | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_EFFECTIVENESS` | RuleMetadataSimilarity, RuleAuthorFieldValidation, RuleQuanliangFieldValidation, RuleSourceFieldValidation | 检查元数据字段与基准数据的相似度匹配，阈值默认为0.6; Validate OpenAlex author fields and report invalid fields; Validate Quanliang metadata f... | Internal Implementation | N/A | N/A |
 
 ### Rule-Based RESUME Quality Metrics
 
@@ -139,6 +154,21 @@ This document provides comprehensive information about all quality metrics used 
 | `RESUME_QUALITY_BAD_PRIVACY` | RuleResumeIDCard, RuleResumeDetailedAddress | Detects 18-digit Chinese ID card numbers in resume content; Detects detailed address patterns that may leak privacy | Internal Implementation | N/A | N/A |
 | `RESUME_QUALITY_BAD_PROFESSIONALISM` | RuleResumeEmoji, RuleResumeInformal | Detects emoji usage in resume which reduces professionalism; Detects informal or colloquial expressions in resume | Internal Implementation | N/A | N/A |
 | `RESUME_QUALITY_BAD_STRUCTURE` | RuleResumeNameMissing, RuleResumeSectionMissing | Checks if resume contains a name in the first 200 characters; Checks if resume contains required sections like educat... | Internal Implementation | N/A | N/A |
+
+### SAC/TC609 High-quality Dataset Metrics
+
+Only the following eight TC609 rule metrics are currently registered. Other rule implementations remain in the source code with their registration decorators commented out.
+
+| Type | Metric | Description | Paper Source | Evaluation Results | Examples |
+|------|--------|-------------|--------------|-------------------|----------|
+| `QUALITY_BAD_TC609_0201` | Rule_TC609_0201_FormatCompliance | Checks required fields and types against `field_schema`. Extra fields are allowed by default and can be rejected with `allow_extra=false`. Supports `str`, `int`, `float`, `bool`, `list`, `dict`, and nullable `Optional[...]` variants. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0202` | Rule_TC609_0202_SafetyCompliance | Combines unsafe-word, PII, and identity-card detection for text items in `data_content`. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0203` | Rule_TC609_0203_AnnotationCompliance | Checks TC609 annotation metadata fields, types, and enumerated values. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0204` | Rule_TC609_0204_StructuralCompleteness | Checks fields configured in `key_list` for missing values. `allow_none` and `allow_empty` control whether `None` and empty strings/lists/dicts are accepted. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0205` | Rule_TC609_0205_ContentAuthenticity | Requires `source` and `source_details`; validates non-empty traceability information and HTTP/HTTPS URL syntax when applicable. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0206` | Rule_TC609_0206_ContentConsistency | Uses multilingual text embeddings to check consistency among text items in `data_content`; multiple texts use robust-center aggregation instead of all-pairs comparison. | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0207` | Rule_TC609_0207_DataTypeConsistency | Checks whether text items in `data_content` match the configured dataset type | Internal Implementation | N/A | N/A |
+| `QUALITY_BAD_TC609_0208` | Rule_TC609_0208_ContentCleanliness | Combines available text cleanliness checks; modality coverage is partial. | Internal Implementation | N/A | N/A |
 
 ### SFT Data Assessment Metrics - Agent-Enhanced
 

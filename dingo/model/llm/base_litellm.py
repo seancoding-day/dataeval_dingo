@@ -1,6 +1,7 @@
 from typing import List
 
 from dingo.config.input_args import EvaluatorLLMArgs
+from dingo.model.llm.base import LLMCallResult
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.utils.exception import ExceedMaxTokens
 
@@ -106,4 +107,11 @@ class BaseLiteLLM(BaseOpenAI):
             )
 
         content = choice.message.content  # type: ignore[union-attr]
-        return str(content) if content is not None else ""
+        return LLMCallResult(
+            content=str(content) if content is not None else "",
+            usage=cls._extract_token_usage(
+                response,
+                model_name=model_name,
+                provider="litellm",
+            ),
+        )

@@ -238,6 +238,23 @@ class PlainConverter(BaseConverter):
         return _convert
 
 
+@BaseConverter.register("md")
+class MarkdownConverter(BaseConverter):
+    """Markdown file converter."""
+
+    def __init__(self):
+        super().__init__()
+
+    @classmethod
+    def convertor(cls, input_args: InputArgs) -> Callable:
+        def _convert(raw: Union[str, Dict]):
+            if isinstance(raw, Dict):
+                return Data(**raw)
+            return Data(**{"id": "", "content": str(raw)})
+
+        return _convert
+
+
 @BaseConverter.register("jsonl")
 class JsonLineConverter(BaseConverter):
     """Json line file converter."""

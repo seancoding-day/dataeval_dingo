@@ -20,6 +20,7 @@ from dingo.io.input import Data, RequiredField
 from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model import Model
 from dingo.model.llm.agent.base_agent import BaseAgent
+from dingo.model.llm.base import llm_response_content
 from dingo.utils import log
 
 
@@ -339,7 +340,7 @@ Return format:
 
             # Call LLM
             messages = [{"role": "user", "content": prompt}]
-            response = cls.send_messages(messages)
+            response = llm_response_content(cls.send_messages(messages))
 
             # Parse JSON response
             # Handle markdown code blocks

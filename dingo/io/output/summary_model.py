@@ -3,6 +3,8 @@ from typing import Any, Dict
 
 from pydantic import BaseModel, Field
 
+from dingo.io.output.eval_detail import TokenUsage
+
 
 class SummaryModel(BaseModel):
     task_id: str = ''
@@ -16,11 +18,13 @@ class SummaryModel(BaseModel):
     num_good: int = 0
     num_bad: int = 0
     total: int = 0
-    type_ratio: Dict[str, Dict[str, int]] = {}
+    type_count: Dict[str, Dict[str, int]] = Field(default_factory=dict)
+    type_ratio: Dict[str, Dict[str, float]] = Field(default_factory=dict)
 
     # 新增：指标分数统计（用于RAG等评估场景）
     # 结构：{field_key: {metric_name: {scores, score_average, ...}}}
     metrics_score_stats: Dict[str, Dict[str, Dict[str, Any]]] = Field(default_factory=dict)
+    token_usage_stats: Dict[str, Dict[str, Dict[str, Any]]] = Field(default_factory=dict)
 
     def add_metric_score(self, field_key: str, metric_name: str, score: float):
         """
@@ -44,6 +48,59 @@ class SummaryModel(BaseModel):
 
         metric_stats['scores'].append(score)
         metric_stats['score_count'] += 1
+
+    def add_token_usage(self, field_key: str, metric_name: str, usage: TokenUsage):
+        """
+        添加 LLM token 使用量到统计中
+
+        Args:
+            field_key: 字段名（如 'user_input,response'）
+            metric_name: 指标名称（如 LLMTextQualityV5）
+            usage: 单次 LLM 调用的 token 使用量
+        """
+        usage_stats = self.token_usage_stats.setdefault(field_key, {}).setdefault(
+            metric_name,
+            {
+                'prompt_tokens': 0,
+                'completion_tokens': 0,
+                'total_tokens': 0,
+                'reasoning_tokens': 0,
+                'cached_tokens': 0,
+                'calls': 0,
+                'records': 0,
+                'models': {},
+                'providers': {},
+                'sources': {},
+            },
+        )
+
+        for token_field in [
+            'prompt_tokens',
+            'completion_tokens',
+            'total_tokens',
+            'reasoning_tokens',
+            'cached_tokens',
+        ]:
+            value = getattr(usage, token_field, None)
+            if value is not None:
+                usage_stats[token_field] += int(value)
+
+        calls = int(usage.calls or 1)
+        usage_stats['calls'] += calls
+        usage_stats['records'] += 1
+
+        if usage.model:
+            usage_stats['models'][usage.model] = (
+                usage_stats['models'].get(usage.model, 0) + calls
+            )
+        if usage.provider:
+            usage_stats['providers'][usage.provider] = (
+                usage_stats['providers'].get(usage.provider, 0) + calls
+            )
+        if usage.source:
+            usage_stats['sources'][usage.source] = (
+                usage_stats['sources'].get(usage.source, 0) + calls
+            )
 
     def calculate_metrics_score_averages(self):
         """
@@ -117,6 +174,7 @@ class SummaryModel(BaseModel):
             'num_good': self.num_good,
             'num_bad': self.num_bad,
             'total': self.total,
+            'type_count': self.type_count,
             'type_ratio': self.type_ratio,
         }
 
@@ -130,5 +188,8 @@ class SummaryModel(BaseModel):
                 }
                 for field_key, metrics in self.metrics_score_stats.items()
             }
+
+        if self.token_usage_stats:
+            result['token_usage'] = self.token_usage_stats
 
         return result
