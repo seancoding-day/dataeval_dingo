@@ -1,16 +1,19 @@
-# HHEM-2.1-Open Integration Dependencies
-# Required for Vectara HHEM-2.1-Open hallucination detection model
+# Hallucination Detection Dependencies (MiniCheck-Flan-T5-Large)
+# Required for the RuleHallucinationHHEM rule, which detects ungrounded claims
+# by checking whether a response is supported by its context.
+#
+# Model: lytang/MiniCheck-Flan-T5-Large (arXiv:2404.10774).
+# It is a standard T5ForConditionalGeneration checkpoint (no custom remote
+# code), so it loads on any modern transformers version — the previous
+# <4.49 pin (needed by Vectara HHEM's remote code) is no longer required.
 
-# Core transformers library for HHEM model
-# 上限 <4.49：HHEM 官方 remote code (modeling_hhem_v2.py) 为旧版 transformers 编写，
-# transformers 4.49+ 的加载流程会访问 all_tied_weights_keys 属性，旧 remote code 未实现，
-# 导致 "'HHEMv2ForSequenceClassification' object has no attribute 'all_tied_weights_keys'"。
-transformers>=4.30.0,<4.49
+# Core transformers library
+transformers>=4.30.0
 
-# PyTorch (CPU version should be sufficient for HHEM)
+# PyTorch (CPU version is sufficient)
 torch>=1.12.0
 
-# Additional dependencies for model operations
+# Tokenizer dependencies for flan-t5 (SentencePiece)
 sentencepiece>=0.1.99
 tokenizers>=0.13.0
 

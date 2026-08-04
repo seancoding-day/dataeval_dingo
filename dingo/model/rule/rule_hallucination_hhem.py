@@ -1,14 +1,30 @@
 """
-HHEM-2.1-Open Hallucination Detection Rule
+MiniCheck Hallucination Detection Rule
 
-This module provides integration with Vectara's HHEM-2.1-Open model as a rule-based
-hallucination detection tool for efficient local inference without API costs.
+This module provides local, API-free hallucination (ungrounded-claim) detection
+for RAG-style data by checking whether a response is supported by its context.
 
-Key advantages of HHEM-2.1-Open:
-- Superior performance compared to GPT-3.5/GPT-4 on benchmarks
-- Local inference with <600MB RAM usage
-- Fast processing (~1.5s for 2k tokens on modern CPU)
-- No API costs or rate limits
+Model: `lytang/MiniCheck-Flan-T5-Large` (EMNLP 2024, arXiv:2404.10774).
+
+Why MiniCheck instead of Vectara HHEM-2.1-Open (the original backing model):
+- Stronger grounding accuracy: MiniCheck-Flan-T5-Large scores 75.0 vs HHEM's
+  71.8 on the LLM-AggreFact benchmark (llm-aggrefact.github.io).
+- Robust across transformers versions: MiniCheck is a *standard*
+  `T5ForConditionalGeneration` (config `model_type: t5`, no `auto_map` /
+  `trust_remote_code`). HHEM shipped custom remote code that breaks on
+  transformers >= 4.49 (AttributeError: `all_tied_weights_keys`), which forced
+  a `<4.49` pin. MiniCheck removes that constraint.
+- Still efficient and CPU-friendly (0.8B params), no API costs or rate limits.
+
+The class name is kept as `RuleHallucinationHHEM` for backward compatibility
+(the registered rule id `QUALITY_BAD_HALLUCINATION` and existing configs are
+unaffected).
+
+Inference is replicated faithfully from the official MiniCheck source
+(Liyan06/MiniCheck): input `"predict: " + doc + </s> + claim`, a single-step
+decoder forward, then a 2-way softmax over label token ids [3, 209] where
+index 1 is P(supported). Long documents are split into word chunks and the
+support probability is aggregated by max.
 """
 
 import json
@@ -26,13 +42,17 @@ from dingo.utils import log
 @Model.rule_register("QUALITY_BAD_HALLUCINATION", ["hallucination", "rag"])
 class RuleHallucinationHHEM(BaseRule):
     """
-    HHEM-2.1-Open hallucination detection rule.
+    MiniCheck-based hallucination detection rule.
 
-    Provides efficient local hallucination detection with:
-    - Superior performance than GPT models on benchmarks
-    - Low resource usage (<600MB RAM)
-    - Fast inference (~1.5s for 2k tokens on modern CPU)
-    - No API costs or rate limits
+    Detects ungrounded claims by checking whether the response (content) is
+    supported by the provided context, using `lytang/MiniCheck-Flan-T5-Large`:
+    - Strong grounding accuracy (75.0 on LLM-AggreFact, > HHEM's 71.8)
+    - Standard T5 model -> no transformers version pin, no remote code
+    - Local inference, CPU-friendly, no API costs or rate limits
+
+    Note: the class is still named `RuleHallucinationHHEM` for backward
+    compatibility; the underlying model was upgraded from Vectara HHEM-2.1-Open
+    to MiniCheck.
     """
 
     # Metadata for documentation generation
@@ -40,66 +60,131 @@ class RuleHallucinationHHEM(BaseRule):
         "category": "SFT Data Assessment Metrics",
         "quality_dimension": "HALLUCINATION",
         "metric_name": "RuleHallucinationHHEM",
-        "description": "Uses Vectara's HHEM-2.1-Open model for local hallucination detection by evaluating consistency between response and context",
-        "paper_title": "HHEM-2.1-Open",
-        "paper_url": "https://huggingface.co/vectara/hallucination_evaluation_model",
-        "paper_authors": "Forrest Bao, Miaoran Li, Rogger Luo, Ofer Mendelevitch"
+        "description": "Uses the MiniCheck-Flan-T5-Large model for local hallucination "
+                       "detection by checking whether the response is grounded in the context",
+        "paper_title": "MiniCheck: Efficient Fact-Checking of LLMs on Grounding Documents",
+        "paper_url": "https://arxiv.org/abs/2404.10774",
+        "paper_authors": "Liyan Tang, Philippe Laban, Greg Durrett"
     }
 
+    # CONTENT = the response/claim to verify; CONTEXT = the grounding document.
+    # These are exactly the two inputs MiniCheck needs (claim vs. document), so
+    # they remain the most fitting required fields.
     _required_fields = [RequiredField.CONTENT, RequiredField.CONTEXT]
     dynamic_config = EvaluatorRuleArgs(threshold=0.5)
     model = None
+    tokenizer = None
     _load_lock = Lock()
-    _model_repo_id = "vectara/hallucination_evaluation_model"
+    _model_repo_id = "lytang/MiniCheck-Flan-T5-Large"
+    # MiniCheck flan-t5 inference config (from Liyan06/MiniCheck)
+    _chunk_size = 500        # words per document chunk before max-aggregation
+    _max_input_length = 2048  # tokenizer truncation length
 
     @classmethod
     def load_model(cls):
-        """Load HHEM-2.1-Open model"""
+        """Load the MiniCheck-Flan-T5-Large model and tokenizer."""
         if cls.model is None:
             with cls._load_lock:
                 if cls.model is not None:
                     return
                 try:
-                    from huggingface_hub import snapshot_download
-                    from transformers import AutoModelForSequenceClassification
+                    from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
-                    log.info("Loading HHEM-2.1-Open model...")
+                    log.info("Loading MiniCheck-Flan-T5-Large model...")
+                    # MiniCheck is a standard T5 model: no trust_remote_code
+                    # needed, and it loads on any modern transformers version.
                     try:
-                        model_path = snapshot_download(
-                            repo_id=cls._model_repo_id,
-                            repo_type="model",
-                            local_files_only=True,
+                        # Prefer offline / cached load first
+                        cls.model = AutoModelForSeq2SeqLM.from_pretrained(
+                            cls._model_repo_id, local_files_only=True,
+                        )
+                        cls.tokenizer = AutoTokenizer.from_pretrained(
+                            cls._model_repo_id, local_files_only=True,
                         )
                     except Exception:
-                        model_path = snapshot_download(
-                            repo_id=cls._model_repo_id,
-                            repo_type="model",
+                        # Fall back to downloading from the Hub
+                        cls.model = AutoModelForSeq2SeqLM.from_pretrained(
+                            cls._model_repo_id,
                         )
-
-                    cls.model = AutoModelForSequenceClassification.from_pretrained(
-                        model_path,
-                        trust_remote_code=True,
-                        local_files_only=True,
-                    )
-                    log.info("✅ HHEM-2.1-Open model loaded successfully")
+                        cls.tokenizer = AutoTokenizer.from_pretrained(
+                            cls._model_repo_id,
+                        )
+                    cls.model.eval()
+                    log.info("✅ MiniCheck-Flan-T5-Large model loaded successfully")
 
                 except ImportError:
                     raise ImportError(
-                        "transformers and huggingface_hub are required for HHEM model. "
-                        "Install with: pip install transformers huggingface_hub"
+                        "transformers is required for the MiniCheck model. "
+                        "Install with: pip install transformers torch sentencepiece"
                     )
                 except Exception as e:
                     raise RuntimeError(
-                        "Failed to load HHEM model. "
+                        "Failed to load MiniCheck model. "
                         "The first run requires network access to download "
                         f"'{cls._model_repo_id}', or a populated Hugging Face cache. "
                         f"Original error: {e}"
                     ) from e
 
+    @staticmethod
+    def _chunk_document(document: str, chunk_size: int) -> List[str]:
+        """Split a document into consecutive chunks of ~chunk_size words.
+
+        Lightweight, dependency-free approximation of MiniCheck's sentence-based
+        chunking (the official code uses nltk sent_tokenize). RAG contexts
+        usually fit in a single chunk, so this rarely changes behavior; long
+        documents are still split so no content is silently truncated.
+        """
+        text = document.strip()
+        if not text:
+            return []
+        words = text.split()
+        if len(words) <= chunk_size:
+            return [text]
+        return [" ".join(words[i:i + chunk_size])
+                for i in range(0, len(words), chunk_size)]
+
+    @classmethod
+    def _support_prob(cls, document: str, claim: str) -> float:
+        """Probability that `claim` is supported by `document` (0=unsupported, 1=supported).
+
+        Faithful replication of the official MiniCheck flan-t5 inference:
+          input   = "predict: " + doc_chunk + tokenizer.eos_token + claim
+          forward = model(input_ids, attention_mask, decoder_input_ids=zeros(B,1))
+          logits  = outputs.logits.squeeze(1)
+          probs   = softmax(logits[:, [3, 209]])   # 3=no support, 209=support
+          support = probs[:, 1]
+        Aggregated by max over document chunks.
+        """
+        import torch
+
+        chunks = cls._chunk_document(document, cls._chunk_size) or [""]
+        texts = ["predict: " + cls.tokenizer.eos_token.join([chunk, claim])
+                 for chunk in chunks]
+        enc = cls.tokenizer(
+            texts,
+            max_length=cls._max_input_length,
+            truncation=True,
+            padding=True,
+            return_tensors="pt",
+        )
+        decoder_input_ids = torch.zeros(
+            (enc["input_ids"].size(0), 1), dtype=torch.long)
+        with torch.no_grad():
+            logits = cls.model(
+                input_ids=enc["input_ids"],
+                attention_mask=enc["attention_mask"],
+                decoder_input_ids=decoder_input_ids,
+            ).logits.squeeze(1)
+        # Label token ids from the official MiniCheck code: 3=no support, 209=support
+        label_probs = torch.nn.functional.softmax(
+            logits[:, torch.tensor([3, 209])], dim=-1)
+        support_probs = label_probs[:, 1]
+        return float(support_probs.max().item())
+
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         """
-        Evaluate hallucination using HHEM-2.1-Open model.
+        Evaluate hallucination using the MiniCheck-Flan-T5-Large model.
 
         Args:
             input_data: Data object containing content and context
@@ -118,9 +203,9 @@ class RuleHallucinationHHEM(BaseRule):
                 result.status = True
                 # result.type = cls.metric_type
                 # result.name = "MISSING_CONTEXT"
-                # result.reason = ["Context is required for HHEM hallucination detection but was not provided"]
+                # result.reason = ["Context is required for hallucination detection but was not provided"]
                 result.label = [f"{cls.metric_type}.MISSING_CONTEXT"]
-                result.reason = ["Context is required for HHEM hallucination detection but was not provided"]
+                result.reason = ["Context is required for hallucination detection but was not provided"]
                 return result
         else:
             contexts = input_data.context
@@ -142,20 +227,15 @@ class RuleHallucinationHHEM(BaseRule):
 
         response = input_data.content
 
-        # Create premise-hypothesis pairs for HHEM evaluation
-        # Format: (premise, hypothesis) where premise=context, hypothesis=response
-        pairs = [(context, response) for context in context_list]
-
         try:
-            # Use HHEM model's official predict() method
-            # This returns consistency scores (0=hallucinated, 1=consistent)
-            scores = cls.model.predict(pairs)
+            # Score each context with MiniCheck: P(response supported by context).
+            # support prob in [0,1], 1 = fully grounded / consistent.
+            consistency_scores = [
+                cls._support_prob(context, response) for context in context_list
+            ]
 
-            # Convert to list if tensor
-            consistency_scores = scores.tolist() if hasattr(scores, 'tolist') else list(scores)
-
-            # HHEM returns consistency scores (0=hallucinated, 1=consistent)
-            # We convert to hallucination scores (1=hallucinated, 0=consistent)
+            # Convert support probabilities to hallucination scores
+            # (1 = hallucinated / ungrounded, 0 = consistent)
             hallucination_scores = [1.0 - score for score in consistency_scores]
 
             # Average hallucination score across all contexts
@@ -174,7 +254,7 @@ class RuleHallucinationHHEM(BaseRule):
 
                 # Generate detailed analysis
                 analysis_parts = [
-                    f"🔍 HHEM-2.1-Open 幻觉检测分析",
+                    "🔍 MiniCheck 幻觉检测分析",
                     f"📊 平均幻觉分数: {avg_hallucination_score:.3f} (阈值: {cls.dynamic_config.threshold})",
                     f"📝 评估上下文数量: {len(context_list)}"
                 ]
@@ -209,7 +289,7 @@ class RuleHallucinationHHEM(BaseRule):
                     f"🚨 结论: 检测到幻觉 (分数 {avg_hallucination_score:.3f} > 阈值 {cls.dynamic_config.threshold})",
                     "   回答与提供的上下文存在显著矛盾",
                     "",
-                    "💡 模型信息: 使用 Vectara HHEM-2.1-Open (本地推理)"
+                    "💡 模型信息: 使用 MiniCheck-Flan-T5-Large (本地推理)"
                 ])
 
                 # result.reason = ["\n".join(analysis_parts)]
@@ -222,11 +302,11 @@ class RuleHallucinationHHEM(BaseRule):
 
                 # Generate analysis for non-hallucination case
                 analysis = (
-                    f"✅ HHEM-2.1-Open 幻觉检测分析\n"
+                    f"✅ MiniCheck 幻觉检测分析\n"
                     f"📊 平均幻觉分数: {avg_hallucination_score:.3f} (阈值: {cls.dynamic_config.threshold})\n"
                     f"📝 评估上下文数量: {len(context_list)}\n"
                     f"🎉 结论: 未检测到幻觉，回答与上下文基本一致\n"
-                    f"💡 模型信息: 使用 Vectara HHEM-2.1-Open (本地推理)"
+                    f"💡 模型信息: 使用 MiniCheck-Flan-T5-Large (本地推理)"
                 )
                 # result.reason = [analysis]
                 result.reason = [analysis]
@@ -238,10 +318,10 @@ class RuleHallucinationHHEM(BaseRule):
             result = EvalDetail(metric=cls.__name__)
             result.status = True
             # result.type = cls.metric_type
-            # result.name = "HHEM_ERROR"
-            # result.reason = [f"HHEM model inference failed: {str(e)}"]
-            result.label = [f"{cls.metric_type}.HHEM_ERROR"]
-            result.reason = [f"HHEM model inference failed: {str(e)}"]
+            # result.name = "MINICHECK_ERROR"
+            # result.reason = [f"MiniCheck model inference failed: {str(e)}"]
+            result.label = [f"{cls.metric_type}.MINICHECK_ERROR"]
+            result.reason = [f"MiniCheck model inference failed: {str(e)}"]
             return result
 
     @classmethod
@@ -261,7 +341,7 @@ class RuleHallucinationHHEM(BaseRule):
             # "assessment_type": result.type,
             # "assessment_name": result.name,
             "analysis": result.reason[0] if result.reason else "",
-            "model_info": "HHEM-2.1-Open (Vectara)"
+            "model_info": "MiniCheck-Flan-T5-Large"
         }
 
     @classmethod

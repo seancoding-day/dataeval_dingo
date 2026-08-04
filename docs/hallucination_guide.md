@@ -1,6 +1,8 @@
 # Dingo 幻觉检测功能完整指南
 
-本指南介绍如何在 Dingo 中使用集成的幻觉检测功能，支持两种检测方案：**HHEM-2.1-Open 本地模型**（推荐）和 **GPT-based 云端检测**。
+本指南介绍如何在 Dingo 中使用集成的幻觉检测功能，支持两种检测方案：**MiniCheck 本地模型**（推荐）和 **GPT-based 云端检测**。
+
+> 说明：本地规则仍沿用类名 `RuleHallucinationHHEM`（保持向后兼容），但底层模型已从 Vectara HHEM-2.1-Open 升级为 `lytang/MiniCheck-Flan-T5-Large`（标准 T5 事实核查模型，arXiv:2404.10774）。相比 HHEM，MiniCheck 在 LLM-AggreFact 基准上更强（75.0 vs 71.8），且为标准 T5，不再受 transformers 版本限制。
 
 ## 🎯 功能概述
 
@@ -58,18 +60,18 @@ context = "单个参考上下文"
 
 ## 🚀 快速开始
 
-### 方法一：HHEM-2.1-Open 本地模型（推荐）
+### 方法一：MiniCheck 本地模型（推荐）
 
 #### 安装依赖
 ```bash
-pip install transformers torch
+pip install transformers torch sentencepiece
 # 或使用专门的依赖文件
 pip install -r requirements/hhem_integration.txt
 ```
 
 #### 模型下载与镜像
 
-首次运行会自动从 Hugging Face 下载 HHEM-2.1-Open 模型（约 400MB），之后从本地缓存加载，无需重复下载。
+首次运行会自动从 Hugging Face 下载 `lytang/MiniCheck-Flan-T5-Large` 模型（约 3GB，flan-t5-large），之后从本地缓存加载，无需重复下载。
 
 如果无法访问 `huggingface.co`（如国内网络），可在运行前设置镜像环境变量，让下载走 [hf-mirror.com](https://hf-mirror.com)：
 
@@ -78,7 +80,7 @@ pip install -r requirements/hhem_integration.txt
 export HF_ENDPOINT=https://hf-mirror.com
 ```
 
-> 说明：Dingo 不会强制修改该变量，以免影响能直连官网的环境（如 CI）；是否使用镜像由你自行控制。也可用 `huggingface-cli download vectara/hallucination_evaluation_model` 提前手动下载。
+> 说明：Dingo 不会强制修改该变量，以免影响能直连官网的环境（如 CI）；是否使用镜像由你自行控制。也可用 `hf download lytang/MiniCheck-Flan-T5-Large` 提前手动下载。
 
 #### 基本使用
 
@@ -140,7 +142,7 @@ print(f"详细原因: {result.reason[0]}")  # 包含幻觉分数等详细信息
 
 ## 📊 批量数据集评估
 
-### 使用 HHEM-2.1-Open（本地，免费）
+### 使用 MiniCheck 本地模型（本地，免费）
 
 ```python
 from dingo.config import InputArgs
@@ -159,7 +161,7 @@ input_data = {
         }
     },
     "executor": {
-        "rule_list": ["RuleHallucinationHHEM"],  # Use HHEM rule instead of LLM
+        "rule_list": ["RuleHallucinationHHEM"],  # 使用本地 MiniCheck 规则替代 LLM
         "result_save": {
             "bad": True,
             "good": True  # Also save good examples for comparison
@@ -178,7 +180,7 @@ input_args = InputArgs(**input_data)
 executor = Executor.exec_map["local"](input_args)
 result = executor.execute()
 
-print(f"HHEM 幻觉检测完成: 发现 {result.bad_count}/{result.total_count} 个问题")
+print(f"MiniCheck 幻觉检测完成: 发现 {result.bad_count}/{result.total_count} 个问题")
 ```
 
 ### 使用 GPT（在线，需要 API）
@@ -231,7 +233,7 @@ print(f"GPT 幻觉检测完成: 发现 {result.bad_count}/{result.total_count} �
 
 ```python
 # 方式1: 直接设置类属性
-RuleHallucinationHHEM.dynamic_config.threshold = 0.3  # HHEM 更严格的检测
+RuleHallucinationHHEM.dynamic_config.threshold = 0.3  # MiniCheck 更严格的检测
 LLMHallucination.threshold = 0.3      # GPT 更严格的检测
 
 # 方式2: 通过配置文件
@@ -261,7 +263,7 @@ LLMHallucination.threshold = 0.3      # GPT 更严格的检测
 ### 性能优化配置
 
 ```python
-# HHEM 批量处理优化
+# MiniCheck 批量处理优化
 RuleHallucinationHHEM.load_model()  # 预加载模型
 results = RuleHallucinationHHEM.batch_evaluate(data_list)  # 批量更高效
 
@@ -319,16 +321,19 @@ result.reason           # List[str]: 详细分析原因（包含幻觉分数信�
 
 ### 典型输出示例
 
-#### HHEM 输出示例
+#### MiniCheck 输出示例
 ```
-HHEM 幻觉分数: 0.650 (阈值: 0.500)
-处理了 2 个上下文对：
+🔍 MiniCheck 幻觉检测分析
+📊 平均幻觉分数: 0.350 (阈值: 0.500)
+📝 评估上下文数量: 2
+❌ 发现 1 个潜在矛盾:
+  1. 上下文: "爱因斯坦在1921年获得诺贝尔奖。"
+     一致性分数: 0.350, 幻觉分数: 0.650
+✅ 1 个上下文与回答一致:
   1. 上下文: "爱因斯坦因发现光电效应获得诺贝尔奖。"
-     一致性: 0.95 → 幻觉分数: 0.05
-  2. 上下文: "爱因斯坦在1921年获得诺贝尔奖。"
-     一致性: 0.35 → 幻觉分数: 0.65
-平均幻觉分数: 0.350
-❌ 检测到幻觉: 超过阈值 0.500
+     一致性分数: 0.950, 幻觉分数: 0.050
+🚨 结论: 检测到幻觉 (分数 0.350 > 阈值 0.500)
+💡 模型信息: 使用 MiniCheck-Flan-T5-Large (本地推理)
 ```
 
 #### GPT 输出示例
@@ -366,7 +371,7 @@ HHEM 幻觉分数: 0.650 (阈值: 0.500)
 ### 1. RAG 系统质量监控
 
 ```python
-# 实时基于RAG监控回答质量（使用本地HHEM）
+# 实时基于RAG监控回答质量（使用本地 MiniCheck）
 def monitor_rag_response(question, generated_answer, retrieved_docs):
     data = Data(
         data_id=f"rag_{timestamp}",
@@ -376,7 +381,6 @@ def monitor_rag_response(question, generated_answer, retrieved_docs):
     )
 
     result = RuleHallucinationHHEM.eval(data)  # 本地、快速、免费
-
     if result.status:
         logger.warning(f"检测到幻觉: {result.reason[0]}")
         # 触发人工审核或回答重生成
@@ -385,7 +389,7 @@ def monitor_rag_response(question, generated_answer, retrieved_docs):
 ### 2. SFT 数据集预处理
 
 ```python
-# 训练前检查SFT数据质量（批量处理使用HHEM）
+# 训练前检查SFT数据质量（批量处理使用 MiniCheck）
 input_data = {
     "input_path": "sft_training_data.jsonl",
     "custom_config": {
@@ -404,7 +408,7 @@ def filter_hallucinated_responses(responses_with_context):
 
     for item in responses_with_context:
         data = Data(**item)
-        # 使用本地HHEM进行快速检测
+        # 使用本地 MiniCheck 进行快速检测
         result = RuleHallucinationHHEM.eval(data)
 
         if not result.status:  # 无幻觉
@@ -424,7 +428,7 @@ class RAGWithHallucinationDetection:
         self.retriever = retriever
         self.llm = llm
         self.detector = hallucination_detector
-        # 预加载HHEM模型以提高性能
+        # 预加载 MiniCheck 模型以提高性能
         self.detector.load_model()
 
     def generate_answer(self, question):
@@ -486,13 +490,13 @@ dingo/
 │   ├── llm/
 │   │   └── llm_hallucination.py            # GPT-based 检测（DeepEval风格）
 │   ├── rule/
-│   │   └── rule_hallucination_hhem.py      # HHEM-2.1-Open 集成
+│   │   └── rule_hallucination_hhem.py      # MiniCheck-Flan-T5-Large 集成
 │   ├── prompt/prompt_hallucination.py       # GPT 提示词模板
 │   └── response/response_hallucination.py   # 响应数据结构
 ├── io/input/Data.py                         # 扩展Data类支持context
 ├── examples/hallucination/                  # 使用示例
-│   ├── sdk_rule_hhem_detection.py          # Rule-based HHEM 使用示例
+│   ├── sdk_rule_hhem_detection.py          # Rule-based MiniCheck 使用示例
 │   ├── sdk_hallucination_detection.py      # GPT 使用示例
 │   └── dataset_hallucination_evaluation.py # 批量评估示例
-└── requirements/hhem_integration.txt        # HHEM 依赖
+└── requirements/hhem_integration.txt        # MiniCheck 依赖
 ```

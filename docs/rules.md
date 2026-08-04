@@ -28,7 +28,7 @@ The specific rules for each quality metric are as follows:
 | RuleEnterAndSpace | EFFECTIVENESS | Check abnormal combinations of line breaks and spaces. | |
 | RuleEnterMore | EFFECTIVENESS | Check whether content has excessive consecutive line breaks. | |
 | RuleEnterRatioMore | EFFECTIVENESS | Check whether the line-break ratio is excessive. | |
-| RuleHallucinationHHEM | HALLUCINATION | Detect hallucinations with HHEM-2.1-Open. | |
+| RuleHallucinationHHEM | HALLUCINATION | Detect ungrounded claims with MiniCheck-Flan-T5-Large (checks whether the response is supported by the context). | |
 | RuleHeadWordAr | RELEVANCE | Check Arabic content for irrelevant source information. | |
 | RuleHeadWordCs | RELEVANCE | Check Czech content for irrelevant source information. | |
 | RuleHeadWordHu | RELEVANCE | Check Hungarian content for irrelevant source information. | |
