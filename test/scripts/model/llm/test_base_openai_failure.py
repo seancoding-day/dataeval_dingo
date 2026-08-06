@@ -20,3 +20,6 @@ def test_retry_exhaustion_is_not_faked_as_issue(monkeypatch):
     assert res.label[0].startswith(QualityLabel.REVIEW_EXECUTION_ERROR_PREFIX)
     assert "boom" in res.reason[0]
     assert res.score is None
+    # 执行失败必须在判定层体现为 n/a，而不是伪装成真正的 pass（final-review #2）
+    assert res.applicable is False
+    assert res.effective_verdict == "n/a"

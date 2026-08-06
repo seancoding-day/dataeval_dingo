@@ -332,6 +332,7 @@ class BaseOpenAI(BaseLLM):
 
         res = EvalDetail(metric=cls.__name__)
         res.status = False  # 执行失败不是质量问题，绝不伪装成 issue（spec §9.3）
+        res.applicable = False  # 执行失败 → effective_verdict="n/a"，不是 pass（final-review #2）
         res.score = None
         res.label = [f"{QualityLabel.REVIEW_EXECUTION_ERROR_PREFIX}{except_name}"]
         res.reason = [except_msg]

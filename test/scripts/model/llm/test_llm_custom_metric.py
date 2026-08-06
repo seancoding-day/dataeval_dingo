@@ -317,3 +317,6 @@ def test_custom_metric_retry_exhaustion_is_not_faked_as_issue():
     assert result.label == ["REVIEW_EXECUTION_ERROR.ConnectionError"]
     assert "boom" in result.reason[0]
     assert result.score is None
+    # 执行失败必须在判定层体现为 n/a，而不是伪装成真正的 pass（final-review #2）
+    assert result.applicable is False
+    assert result.effective_verdict == "n/a"
