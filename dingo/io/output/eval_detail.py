@@ -7,6 +7,7 @@ class QualityLabel:
     """质量标签常量类"""
     QUALITY_GOOD = "QUALITY_GOOD"  # Indicates pass the quality check
     QUALITY_BAD_PREFIX = "QUALITY_BAD_"  # Indicates not pass the quality check
+    REVIEW_EXECUTION_ERROR_PREFIX = "REVIEW_EXECUTION_ERROR."  # 评审执行失败（基础设施错误），非质量问题
 
 
 class TokenUsage(BaseModel):

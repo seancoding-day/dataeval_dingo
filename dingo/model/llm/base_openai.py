@@ -85,9 +85,13 @@ class BaseOpenAI(BaseLLM):
         extra_params = cls.dynamic_config.model_extra
         cls.validate_config(extra_params)
 
+        request_timeout = (cls.dynamic_config.model_extra or {}).get(
+            "request_timeout", 90
+        )
         completions = cls.client.chat.completions.create(
             model=model_name,
             messages=messages,
+            timeout=request_timeout,
             **extra_params,
         )
 
@@ -327,14 +331,9 @@ class BaseOpenAI(BaseLLM):
                 except_name = e.__class__.__name__
 
         res = EvalDetail(metric=cls.__name__)
-        # res.eval_status = True
-        # res.eval_details = {
-        #     "label": [f"QUALITY_BAD.{except_name}"],
-        #     "metric": [cls.__name__],
-        #     "reason": [except_msg]
-        # }
-        res.status = True
-        res.label = [f"QUALITY_BAD.{except_name}"]
+        res.status = False  # 执行失败不是质量问题，绝不伪装成 issue（spec §9.3）
+        res.score = None
+        res.label = [f"{QualityLabel.REVIEW_EXECUTION_ERROR_PREFIX}{except_name}"]
         res.reason = [except_msg]
         res.usage = usage
         return res

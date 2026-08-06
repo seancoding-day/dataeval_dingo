@@ -104,8 +104,8 @@ def test_base_openai_error_result_keeps_token_usage():
 
     result = ParseErrorLLM.eval(Data(content="sample"))
 
-    assert result.status is True
-    assert result.label == ["QUALITY_BAD.ConvertJsonError"]
+    assert result.status is False
+    assert result.label == ["REVIEW_EXECUTION_ERROR.ConvertJsonError"]
     assert result.usage is not None
     assert result.usage.total_tokens == 4
 
