@@ -1,4 +1,5 @@
 from dingo.io.output.eval_detail import EvalDetail
+from dingo.model.llm.agent_eval.base_llm_agent_eval import BaseLLMAgentEval
 
 
 def test_new_fields_default_backward_compatible():
@@ -24,3 +25,13 @@ def test_effective_verdict_prefers_native_verdict():
 def test_effective_verdict_na_when_not_applicable():
     d = EvalDetail(metric="X", status=False, applicable=False)
     assert d.effective_verdict == "n/a"
+
+
+def test_process_response_sets_verdict(monkeypatch):
+    class _Dummy(BaseLLMAgentEval):
+        prompt = "x"
+    monkeypatch.setattr(_Dummy, "_get_threshold", classmethod(lambda cls: 0.6))
+    passed = _Dummy.process_response('{"score": 8, "reason": "ok"}')
+    failed = _Dummy.process_response('{"score": 2, "reason": "bad"}')
+    assert passed.verdict == "pass"
+    assert failed.verdict == "issue"
