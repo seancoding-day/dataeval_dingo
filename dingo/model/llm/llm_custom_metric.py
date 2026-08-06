@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 from dingo.config.input_args import EvaluatorLLMArgs
 from dingo.io.input import Data
-from dingo.io.output.eval_detail import EvalDetail
+from dingo.io.output.eval_detail import EvalDetail, QualityLabel
 from dingo.model.llm.base import LLMCallResult
 from dingo.model.llm.base_openai import BaseOpenAI
 from dingo.model.model import Model
@@ -219,8 +219,10 @@ class LLMCustomMetric(BaseOpenAI):
 
         result = EvalDetail(
             metric=self._get_custom_metric().metric,
-            status=True,
-            label=[f"QUALITY_BAD.{except_name}"],
+            status=False,  # 执行/解析失败不是质量问题，绝不伪装成 issue（spec §9.3）
+            applicable=False,  # 执行失败 → effective_verdict="n/a"，不是 pass（final-review #2）
+            score=None,
+            label=[f"{QualityLabel.REVIEW_EXECUTION_ERROR_PREFIX}{except_name}"],
             reason=[except_msg],
         )
         result.usage = usage

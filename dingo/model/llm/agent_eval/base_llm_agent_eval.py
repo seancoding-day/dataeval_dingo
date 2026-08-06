@@ -141,9 +141,11 @@ class BaseLLMAgentEval(BaseOpenAI):
         if normalized_score >= threshold:
             result.status = False
             result.label = [QualityLabel.QUALITY_GOOD]
+            result.verdict = "pass"
         else:
             result.status = True
             result.label = [f"AGENT_QUALITY.{cls.__name__}"]
+            result.verdict = "issue"
 
         reason_parts = [reason_text] if reason_text else []
         if details:

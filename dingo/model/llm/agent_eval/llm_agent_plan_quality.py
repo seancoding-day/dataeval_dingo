@@ -98,12 +98,14 @@ Evaluate the plan quality and return the JSON evaluation.{lang_hint}"""
             raw_score = 0.0
 
         if raw_score < 0:
-            log.info(f"{cls.__name__}: No planning content found in trace, defaulting to pass")
+            log.info(f"{cls.__name__}: model reports no planning content, marking N/A")
+            # TODO(计划②): 用 manifest window.plan 硬确认"确实无计划"，而非只采信模型 -1
             result = EvalDetail(metric=cls.__name__)
             result.status = False
-            result.label = [QualityLabel.QUALITY_GOOD]
-            result.score = 1.0
-            result.reason = [data.get("reason", "No planning content found; evaluation skipped.")]
+            result.applicable = False      # N/A：不再强转满分 pass
+            result.score = None
+            result.verdict = "n/a"
+            result.reason = [data.get("reason", "No planning content reported; plan quality not applicable.")]
             return result
 
         return super().process_response(response)
