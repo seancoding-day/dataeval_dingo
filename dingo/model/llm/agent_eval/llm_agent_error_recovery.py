@@ -124,12 +124,13 @@ Evaluate the agent's error recovery and return the JSON evaluation.{lang_hint}""
         content = getattr(input_data, "content", "") or ""
 
         if not cls._has_error_events(content):
-            log.info(f"{cls.__name__}: No error events detected, returning pass")
+            log.info(f"{cls.__name__}: No error events detected, marking N/A")
             result = EvalDetail(metric=cls.__name__)
             result.status = False
-            result.label = [QualityLabel.QUALITY_GOOD]
-            result.score = 1.0
-            result.reason = ["No error events found in execution trace; recovery evaluation skipped."]
+            result.applicable = False      # N/A：从聚合分母剔除，而非给满分
+            result.score = None
+            result.verdict = "n/a"
+            result.reason = ["No error events found in execution trace; recovery not applicable."]
             return result
 
         return super().eval(input_data)
