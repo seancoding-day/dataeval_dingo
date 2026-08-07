@@ -255,7 +255,7 @@ class Rule_TC609_0201_FormatCompliance(BaseRule):
         return res
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0202", ["guobiao_data"])
+# @Model.rule_register("QUALITY_BAD_TC609_0202", ["guobiao_data"])
 class Rule_TC609_0202_SafetyCompliance(Rule_TC609_Composite):
     """0202: Safety compliance, composed from safety and PII rules."""
 
