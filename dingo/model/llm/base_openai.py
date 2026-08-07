@@ -82,12 +82,10 @@ class BaseOpenAI(BaseLLM):
         else:
             model_name = cls.client.models.list().data[0].id
 
-        extra_params = cls.dynamic_config.model_extra
+        extra_params = cls.get_request_extra_params()
         cls.validate_config(extra_params)
 
-        request_timeout = (cls.dynamic_config.model_extra or {}).get(
-            "request_timeout", 90
-        )
+        request_timeout = extra_params.pop("request_timeout", 90)
         completions = cls.client.chat.completions.create(
             model=model_name,
             messages=messages,
@@ -108,6 +106,11 @@ class BaseOpenAI(BaseLLM):
                 provider="openai",
             ),
         )
+
+    @classmethod
+    def get_request_extra_params(cls) -> Dict:
+        """Return evaluator extras that should be sent to the LLM provider."""
+        return dict(cls.dynamic_config.model_extra or {})
 
     @staticmethod
     def _usage_value(data, key: str):

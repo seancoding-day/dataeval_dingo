@@ -38,6 +38,7 @@ This document provides comprehensive information about all quality metrics used 
 | `LLM_TC609_0102_DocContentFeatureCompleteness` | LLM_TC609_0102_DocContentFeatureCompleteness | Uses an LLM to assess modality, distribution, label statistics, sample examples, and limitations. | TC609 | N/A | [📝 View Example](../examples/guobiao/example_doc3.py) |
 | `LLM_TC609_0103_DocConstructionProcessCompleteness` | LLM_TC609_0103_DocConstructionProcessCompleteness | Uses an LLM to assess source, collection, processing, annotation, and version control. | TC609 | N/A | [📝 View Example](../examples/guobiao/example_doc3.py) |
 | `LLM_TC609_0104_DocApplicationCompleteness` | LLM_TC609_0104_DocApplicationCompleteness | Uses an LLM to assess license, target scenarios, evaluation method, benchmark results, and typical cases. | TC609 | N/A | [📝 View Example](../examples/guobiao/example_doc3.py) |
+| `LLM_TC609_0202_SafetyCompliance` | LLM_TC609_0202_SafetyCompliance | Uses an LLM to assess dataset content safety compliance. | TC609 | N/A | N/A |
 
 ### SFT Data Assessment Metrics
 

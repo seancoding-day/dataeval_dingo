@@ -579,7 +579,9 @@ class Rule_TC609_0205_ContentAuthenticity(BaseRule):
         return True
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0206", ["guobiao_data"])
+# Replaced by LLM_TC609_0206_ContentConsistency. Keep the implementation for
+# compatibility and offline comparisons, but do not expose it as an evaluator.
+# @Model.rule_register("QUALITY_BAD_TC609_0206", ["guobiao_data"])
 class Rule_TC609_0206_ContentConsistency(BaseRule):
     """Check semantic consistency among text items in data_content."""
 
@@ -689,7 +691,9 @@ class Rule_TC609_0206_ContentConsistency(BaseRule):
         return res
 
 
-@Model.rule_register("QUALITY_BAD_TC609_0207", ["guobiao_data"])
+# Replaced by LLM_TC609_0207_DataTypeConsistency. Keep the implementation for
+# compatibility and offline comparisons, but do not expose it as an evaluator.
+# @Model.rule_register("QUALITY_BAD_TC609_0207", ["guobiao_data"])
 class Rule_TC609_0207_DataTypeConsistency(BaseRule):
     """Check whether text content matches the configured dataset type."""
 
