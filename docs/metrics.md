@@ -38,6 +38,9 @@ This document provides comprehensive information about all quality metrics used 
 | `LLM_TC609_0102_DocContentFeatureCompleteness` | LLM_TC609_0102_DocContentFeatureCompleteness | Uses an LLM to assess modality, distribution, label statistics, sample examples, and limitations. | TC609 | N/A | [📝 View Example](../examples/guobiao/example_doc3.py) |
 | `LLM_TC609_0103_DocConstructionProcessCompleteness` | LLM_TC609_0103_DocConstructionProcessCompleteness | Uses an LLM to assess source, collection, processing, annotation, and version control. | TC609 | N/A | [📝 View Example](../examples/guobiao/example_doc3.py) |
 | `LLM_TC609_0104_DocApplicationCompleteness` | LLM_TC609_0104_DocApplicationCompleteness | Uses an LLM to assess license, target scenarios, evaluation method, benchmark results, and typical cases. | TC609 | N/A | [📝 View Example](../examples/guobiao/example_doc3.py) |
+| `LLM_TC609_0202_SafetyCompliance` | LLM_TC609_0202_SafetyCompliance | Uses an LLM to assess safety compliance across all modules in `data_content`. | TC609 | N/A | [📝 View Example](../examples/guobiao/llm_0202_SafetyCompliance.py) |
+| `LLM_TC609_0206_ContentConsistency` | LLM_TC609_0206_ContentConsistency | Uses an LLM to assess semantic and factual consistency among text items in `data_content`. | TC609 | N/A | [📝 View Example](../examples/guobiao/llm_0206_ContentConsistency.py) |
+| `LLM_TC609_0207_DataTypeConsistency` | LLM_TC609_0207_DataTypeConsistency | Uses an LLM to assess whether text items in `data_content` match the configured TC609 dataset type. | TC609 | N/A | [📝 View Example](../examples/guobiao/llm_0207_DataTypeConsistency.py) |
 
 ### SFT Data Assessment Metrics
 
@@ -157,7 +160,7 @@ This document provides comprehensive information about all quality metrics used 
 
 ### SAC/TC609 High-quality Dataset Metrics
 
-Only the following eight TC609 rule metrics are currently registered. Other rule implementations remain in the source code with their registration decorators commented out.
+Only the following six TC609 rule metrics are currently registered. The 0206 and 0207 rule implementations remain in the source code for compatibility and offline comparison, but their registration decorators are commented out. Their registered LLM replacements are listed under National Standard LLM Assessment Metrics.
 
 | Type | Metric | Description | Paper Source | Evaluation Results | Examples |
 |------|--------|-------------|--------------|-------------------|----------|
@@ -166,8 +169,6 @@ Only the following eight TC609 rule metrics are currently registered. Other rule
 | `QUALITY_BAD_TC609_0203` | Rule_TC609_0203_AnnotationCompliance | Checks TC609 annotation metadata fields, types, and enumerated values. | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0204` | Rule_TC609_0204_StructuralCompleteness | Checks fields configured in `key_list` for missing values. `allow_none` and `allow_empty` control whether `None` and empty strings/lists/dicts are accepted. | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0205` | Rule_TC609_0205_ContentAuthenticity | Requires `source` and `source_details`; validates non-empty traceability information and HTTP/HTTPS URL syntax when applicable. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0206` | Rule_TC609_0206_ContentConsistency | Uses multilingual text embeddings to check consistency among text items in `data_content`; multiple texts use robust-center aggregation instead of all-pairs comparison. | Internal Implementation | N/A | N/A |
-| `QUALITY_BAD_TC609_0207` | Rule_TC609_0207_DataTypeConsistency | Checks whether text items in `data_content` match the configured dataset type | Internal Implementation | N/A | N/A |
 | `QUALITY_BAD_TC609_0208` | Rule_TC609_0208_ContentCleanliness | Combines available text cleanliness checks; modality coverage is partial. | Internal Implementation | N/A | N/A |
 
 ### SFT Data Assessment Metrics - Agent-Enhanced

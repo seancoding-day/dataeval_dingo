@@ -69,7 +69,6 @@ class SummaryModel(BaseModel):
                 'calls': 0,
                 'records': 0,
                 'models': {},
-                'providers': {},
                 'sources': {},
             },
         )
@@ -92,10 +91,6 @@ class SummaryModel(BaseModel):
         if usage.model:
             usage_stats['models'][usage.model] = (
                 usage_stats['models'].get(usage.model, 0) + calls
-            )
-        if usage.provider:
-            usage_stats['providers'][usage.provider] = (
-                usage_stats['providers'].get(usage.provider, 0) + calls
             )
         if usage.source:
             usage_stats['sources'][usage.source] = (

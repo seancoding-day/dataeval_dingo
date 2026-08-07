@@ -19,7 +19,7 @@ class TokenUsage(BaseModel):
     reasoning_tokens: Optional[int] = None
     cached_tokens: Optional[int] = None
     model: Optional[str] = None
-    provider: Optional[str] = None
+    # provider: Optional[str] = None
     calls: int = 1
     source: str = "provider"
 

@@ -45,7 +45,7 @@ def test_extract_token_usage_from_openai_response_object():
     assert result.cached_tokens == 3
     assert result.reasoning_tokens == 2
     assert result.model == "gpt-test"
-    assert result.provider == "openai"
+    assert not hasattr(result, "provider")
     assert result.calls == 1
 
 
@@ -153,4 +153,5 @@ def test_result_info_only_serializes_usage_when_present():
     ).to_dict()
 
     assert with_usage["eval_details"]["content"][0]["usage"]["total_tokens"] == 3
+    assert "provider" not in with_usage["eval_details"]["content"][0]["usage"]
     assert "usage" not in without_usage["eval_details"]["content"][0]

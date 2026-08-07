@@ -84,6 +84,7 @@ dingo/
 │   ├── env/                 ← Test environment configs
 │   └── scripts/             ← Test scripts (pytest)
 └── docs/                    ← Documentation
+    └── tc609/              ← TC609-specific rule and LLM documentation
 ```
 
 ## Core Concepts
@@ -306,6 +307,7 @@ When these events occur, update the corresponding files:
 | Event | Update |
 |-------|--------|
 | New evaluator added | Ensure registration decorator is correct; update `docs/metrics.md` |
+| TC609 documentation added or changed | Keep TC609-specific Markdown in `docs/tc609/`; keep the shared `docs/metrics.md` in place |
 | New datasource added | Update `requirements/runtime.txt`, `setup.py` extras if heavy, README install section |
 | New dependency added | Decide: `runtime.txt` (core) vs `setup.py` extras (heavy/optional); use lazy import for optional |
 | New MCP tool added | Update MCP Tools table in this file |
