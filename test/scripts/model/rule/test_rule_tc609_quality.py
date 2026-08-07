@@ -177,7 +177,7 @@ def test_format_compliance_reports_missing_and_wrong_type(monkeypatch):
 
     assert result.status is True
     assert result.label == [
-        "QUALITY_BAD_TC609_0201.Rule_TC609_0201_FormatCompliance"
+        "QUALITY_BAD.Rule_TC609_0201_FormatCompliance"
     ]
     assert result.reason == [
         "data_id: expected str, got int",
