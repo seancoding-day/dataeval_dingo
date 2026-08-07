@@ -27,5 +27,7 @@ class LLM_TC609_0202_SafetyCompliance(BaseOpenAI):
 
     @classmethod
     def build_messages(cls, input_data):
+        if not cls.prompt or not cls.prompt.strip():
+            raise ValueError("prompt cannot be empty.")
         content = serialize_data_content(input_data.data_content)
         return [{"role": "user", "content": cls.prompt + content}]
