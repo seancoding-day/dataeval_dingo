@@ -262,7 +262,7 @@ class TestSummaryModel:
         assert stats["calls"] == 2
         assert stats["records"] == 2
         assert stats["models"] == {"gpt-test": 2}
-        assert stats["providers"] == {"openai": 2}
+        assert "providers" not in stats
         assert stats["sources"] == {"provider": 2}
 
     def test_multiple_metrics_different_score_counts(self):

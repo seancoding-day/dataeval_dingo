@@ -45,7 +45,7 @@ def test_extract_token_usage_from_openai_response_object():
     assert result.cached_tokens == 3
     assert result.reasoning_tokens == 2
     assert result.model == "gpt-test"
-    assert result.provider == "openai"
+    assert not hasattr(result, "provider")
     assert result.calls == 1
 
 

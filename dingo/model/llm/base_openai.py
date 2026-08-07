@@ -213,8 +213,6 @@ class BaseOpenAI(BaseLLM):
         current.calls += int(new_usage.calls or 1)
         if current.model != new_usage.model:
             current.model = current.model or new_usage.model
-        if current.provider != new_usage.provider:
-            current.provider = current.provider or new_usage.provider
         if current.source != new_usage.source:
             current.source = current.source or new_usage.source
         return current
