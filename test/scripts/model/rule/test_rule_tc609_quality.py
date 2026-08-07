@@ -27,20 +27,12 @@ def test_only_supported_tc609_quality_metrics_are_registered():
 
     assert len(rule_classes) == 40
     expected_registered = {
-        f"Rule_TC609_020{index}_{suffix}"
-        for index, suffix in enumerate(
-            (
-                "FormatCompliance",
-                "SafetyCompliance",
-                "AnnotationCompliance",
-                "StructuralCompleteness",
-                "ContentAuthenticity",
-                "ContentConsistency",
-                "DataTypeConsistency",
-                "ContentCleanliness",
-            ),
-            start=1,
-        )
+        "Rule_TC609_0201_FormatCompliance",
+        "Rule_TC609_0202_SafetyCompliance",
+        "Rule_TC609_0203_AnnotationCompliance",
+        "Rule_TC609_0204_StructuralCompleteness",
+        "Rule_TC609_0205_ContentAuthenticity",
+        "Rule_TC609_0208_ContentCleanliness",
     }
     actual_registered = set(rule_classes) & set(Model.rule_name_map)
     assert actual_registered == expected_registered
@@ -74,20 +66,12 @@ def test_only_supported_tc609_rules_are_grouped_as_data_rules():
     }
     assert actual_groups == {
         "guobiao_data": {
-            f"Rule_TC609_020{index}_{suffix}"
-            for index, suffix in enumerate(
-                (
-                    "FormatCompliance",
-                    "SafetyCompliance",
-                    "AnnotationCompliance",
-                    "StructuralCompleteness",
-                    "ContentAuthenticity",
-                    "ContentConsistency",
-                    "DataTypeConsistency",
-                    "ContentCleanliness",
-                ),
-                start=1,
-            )
+            "Rule_TC609_0201_FormatCompliance",
+            "Rule_TC609_0202_SafetyCompliance",
+            "Rule_TC609_0203_AnnotationCompliance",
+            "Rule_TC609_0204_StructuralCompleteness",
+            "Rule_TC609_0205_ContentAuthenticity",
+            "Rule_TC609_0208_ContentCleanliness",
         }
     }
 
