@@ -1,9 +1,7 @@
 from dingo.io.input import RequiredField
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
-from dingo.model.llm.guobiao.llm_tc609_base import (
-    serialize_data_content,
-)
+from dingo.model.llm.guobiao.llm_tc609_base import serialize_data_content
 
 
 @Model.llm_register("LLM_TC609_0206_ContentConsistency")

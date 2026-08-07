@@ -1,8 +1,6 @@
 from dingo.io.input import Data, RequiredField
 from dingo.model import Model
-from dingo.model.llm.guobiao.llm_tc609_0202_SafetyCompliance import (
-    LLM_TC609_0202_SafetyCompliance,
-)
+from dingo.model.llm.guobiao.llm_tc609_0202_SafetyCompliance import LLM_TC609_0202_SafetyCompliance
 
 
 def test_tc609_safety_compliance_definition():

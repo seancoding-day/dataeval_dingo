@@ -2,16 +2,9 @@ import json
 
 from dingo.config.input_args import EvaluatorLLMArgs
 from dingo.io.input import Data, RequiredField
-from dingo.model.llm.guobiao.llm_tc609_0206_content_consistency import (
-    LLM_TC609_0206_ContentConsistency,
-)
-from dingo.model.llm.guobiao.llm_tc609_0207_data_type_consistency import (
-    LLM_TC609_0207_DataTypeConsistency,
-)
-from dingo.model.llm.guobiao.llm_tc609_base import (
-    MAX_DATA_CONTENT_CHARS,
-    serialize_data_content,
-)
+from dingo.model.llm.guobiao.llm_tc609_0206_content_consistency import LLM_TC609_0206_ContentConsistency
+from dingo.model.llm.guobiao.llm_tc609_0207_data_type_consistency import LLM_TC609_0207_DataTypeConsistency
+from dingo.model.llm.guobiao.llm_tc609_base import MAX_DATA_CONTENT_CHARS, serialize_data_content
 
 
 def _data():

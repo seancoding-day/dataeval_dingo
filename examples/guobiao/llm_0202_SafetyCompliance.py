@@ -7,9 +7,7 @@ import os
 
 from dingo.config.input_args import EvaluatorLLMArgs
 from dingo.io import Data
-from dingo.model.llm.guobiao.llm_tc609_0202_SafetyCompliance import (
-    LLM_TC609_0202_SafetyCompliance,
-)
+from dingo.model.llm.guobiao.llm_tc609_0202_SafetyCompliance import LLM_TC609_0202_SafetyCompliance
 
 
 def main():

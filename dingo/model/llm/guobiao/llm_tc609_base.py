@@ -2,7 +2,6 @@
 
 import json
 
-
 MAX_DATA_CONTENT_CHARS = 30000
 
 

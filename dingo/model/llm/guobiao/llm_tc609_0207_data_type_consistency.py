@@ -2,12 +2,8 @@ from dingo.config.input_args import EvaluatorLLMArgs
 from dingo.io.input import RequiredField
 from dingo.model import Model
 from dingo.model.llm.base_openai import BaseOpenAI
-from dingo.model.llm.guobiao.llm_tc609_base import (
-    serialize_data_content,
-)
-from dingo.model.rule.guobiao.rule_tc609_quality_base import (
-    TC609_DATASET_TYPE_DESCRIPTIONS,
-)
+from dingo.model.llm.guobiao.llm_tc609_base import serialize_data_content
+from dingo.model.rule.guobiao.rule_tc609_quality_base import TC609_DATASET_TYPE_DESCRIPTIONS
 
 
 @Model.llm_register("LLM_TC609_0207_DataTypeConsistency")

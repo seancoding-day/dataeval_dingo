@@ -7,9 +7,7 @@ import os
 
 from dingo.config.input_args import EvaluatorLLMArgs
 from dingo.io import Data
-from dingo.model.llm.guobiao.llm_tc609_0207_data_type_consistency import (
-    LLM_TC609_0207_DataTypeConsistency,
-)
+from dingo.model.llm.guobiao.llm_tc609_0207_data_type_consistency import LLM_TC609_0207_DataTypeConsistency
 
 
 def main():
