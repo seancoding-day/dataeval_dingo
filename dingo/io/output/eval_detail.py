@@ -1,6 +1,6 @@
 from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class QualityLabel:
@@ -19,7 +19,7 @@ class TokenUsage(BaseModel):
     reasoning_tokens: Optional[int] = None
     cached_tokens: Optional[int] = None
     model: Optional[str] = None
-    provider: Optional[str] = None
+    provider: Optional[str] = Field(default=None, exclude=True)
     calls: int = 1
     source: str = "provider"
 
