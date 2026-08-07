@@ -22,7 +22,7 @@ class LLM_TC609_0206_ContentConsistency(BaseOpenAI):
         "paper_url": "",
         "paper_authors": "SAC/TC609",
         "evaluation_results": "",
-        "examples": "examples/guobiao/example_data.py",
+        "examples": "examples/guobiao/llm_0206_ContentConsistency.py",
     }
     prompt = """
 # 角色
