@@ -5,6 +5,7 @@ These rules run without LLM calls, checking structural properties
 of agent execution traces (loops, token budget, latency anomalies).
 """
 
+import hashlib
 import json
 import statistics
 from typing import Any, List, Optional
@@ -46,9 +47,14 @@ class RuleAgentTraceLoopDetection(BaseRule):
     """Detect repetitive tool call patterns indicating infinite loops.
 
     Input: content = JSON array of tool call objects with 'tool_name' field.
-    Detection: n-gram analysis on tool name sequences.
-    A loop is detected when the same subsequence of 2+ tool names
-    repeats 3 or more consecutive times.
+    Detection: n-gram analysis on tool call signatures.
+    A loop is detected when the same subsequence of 2+ calls repeats 3 or more
+    consecutive times.
+
+    A signature combines the tool name with a fingerprint of its arguments, so
+    a fan-out over one tool with different arguments (eight distinct search
+    queries) is not mistaken for a stuck loop, while the same call issued over
+    and over still is. Calls carrying no arguments compare by name alone.
     """
 
     # Trace-level evaluator: declares input_data_type / eval_layer so agent
@@ -57,24 +63,28 @@ class RuleAgentTraceLoopDetection(BaseRule):
     eval_layer = "trajectory"
     input_data_type = "agent_trace_json"
 
+    _ARGUMENT_KEYS = ("args", "arguments", "tool_input", "input")
+
     _required_fields = [RequiredField.CONTENT]
 
     @classmethod
     def eval(cls, input_data: Data) -> EvalDetail:
         result = EvalDetail(metric=cls.__name__)
 
-        tool_names = cls._extract_tool_names(input_data.content)
-        if len(tool_names) < 6:
+        calls = cls._extract_calls(input_data.content)
+        if len(calls) < 6:
             result.label = [QualityLabel.QUALITY_GOOD]
             return result
 
-        loop_info = cls._detect_loops(tool_names)
+        loop_info = cls._detect_loops([signature for _, signature in calls])
         if loop_info:
+            start = loop_info["position"]
+            pattern = [name for name, _ in calls[start : start + len(loop_info["pattern"])]]
             result.status = True
             result.label = [f"{cls.metric_type}.{cls.__name__}"]
             result.reason = [
-                f"Loop detected: pattern {loop_info['pattern']} "
-                f"repeats {loop_info['count']} times at position {loop_info['position']}"
+                f"Loop detected: pattern {pattern} "
+                f"repeats {loop_info['count']} times at position {start}"
             ]
         else:
             result.label = [QualityLabel.QUALITY_GOOD]
@@ -82,15 +92,31 @@ class RuleAgentTraceLoopDetection(BaseRule):
         return result
 
     @classmethod
-    def _extract_tool_names(cls, content: str) -> List[str]:
-        # Parenthesize the filter: `and` binds tighter than `or`, so without
-        # these parens a non-dict item would reach `item.get("name")` and raise
-        # AttributeError.
-        return [
-            item.get("tool_name", item.get("name", ""))
-            for item in _load_trace_items(content, "tool_calls", "steps")
-            if isinstance(item, dict) and (item.get("tool_name") or item.get("name"))
-        ]
+    def _extract_calls(cls, content: str) -> List[tuple]:
+        """Return ``(tool_name, signature)`` per call, in trace order."""
+        calls = []
+        for item in _load_trace_items(content, "tool_calls", "steps"):
+            if not isinstance(item, dict):
+                continue
+            name = item.get("tool_name") or item.get("name")
+            if not name:
+                continue
+            calls.append((name, f"{name}|{cls._argument_fingerprint(item)}"))
+        return calls
+
+    @classmethod
+    def _argument_fingerprint(cls, item: dict) -> str:
+        """Stable fingerprint of a call's arguments; empty when it has none."""
+        for key in cls._ARGUMENT_KEYS:
+            value = item.get(key)
+            if value in (None, "", {}, []):
+                continue
+            try:
+                normalized = json.dumps(value, ensure_ascii=False, sort_keys=True, default=str)
+            except (TypeError, ValueError):
+                normalized = str(value)
+            return hashlib.sha256(normalized.encode()).hexdigest()[:12]
+        return ""
 
     @classmethod
     def _detect_loops(
