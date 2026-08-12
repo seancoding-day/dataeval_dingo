@@ -45,6 +45,51 @@ class TestRuleAgentTraceLoopDetection:
         assert res.status is False
         assert res.label == [QualityLabel.QUALITY_GOOD]
 
+    def test_same_tool_with_distinct_arguments_is_not_a_loop(self):
+        # A research fan-out: one tool, eight different queries. Comparing tool
+        # names alone reads this as ['WebSearch','WebSearch'] repeating 4 times.
+        content = json.dumps(
+            {
+                "tool_calls": [
+                    {"tool_name": "WebSearch", "args": {"query": f"topic {i}"}}
+                    for i in range(8)
+                ]
+            }
+        )
+        res = RuleAgentTraceLoopDetection.eval(_data(content))
+        assert res.status is False
+        assert res.label == [QualityLabel.QUALITY_GOOD]
+
+    def test_same_tool_with_identical_arguments_is_flagged(self):
+        # Same tool, same arguments, over and over — a real stuck loop.
+        content = json.dumps(
+            {
+                "tool_calls": [
+                    {"tool_name": "WebSearch", "args": {"query": "same question"}}
+                    for _ in range(6)
+                ]
+            }
+        )
+        res = RuleAgentTraceLoopDetection.eval(_data(content))
+        assert res.status is True
+        assert res.reason is not None and "Loop detected" in res.reason[0]
+
+    def test_loop_reason_names_the_repeated_tool_not_its_signature(self):
+        content = json.dumps(
+            {
+                "tool_calls": [
+                    {"tool_name": "read_file", "args": {"path": "a.md"}}
+                    for _ in range(6)
+                ]
+            }
+        )
+        res = RuleAgentTraceLoopDetection.eval(_data(content))
+        assert res.status is True
+        # The reported pattern stays human-readable: tool names, not the
+        # internal argument fingerprint used for comparison.
+        assert "read_file" in res.reason[0]
+        assert "path" not in res.reason[0]
+
     def test_short_sequence_passes(self):
         # Fewer than 6 tool names → early pass, no analysis.
         content = json.dumps([{"tool_name": "a"}, {"tool_name": "b"}])
