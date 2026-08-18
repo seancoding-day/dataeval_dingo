@@ -43,7 +43,12 @@ class TestLocal:
 
         details = result.eval_details["default"][0]
         assert details.metric == "RuleQuanliangFieldValidation"
-        assert details.label == ["doi", "references", "related_works", "citations"]
+        assert details.label == [
+            "doi.missing_field",
+            "references.missing_field",
+            "related_works.missing_field",
+            "citations.missing_field",
+        ]
 
     def test_write_single_data_limit_per_file(self, tmp_path):
         input_data = {
