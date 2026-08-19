@@ -1,5 +1,9 @@
 # RuleQuanliangFieldValidation Label 说明
 
+## 实现位置
+
+[`rule_quanliang.py`](../../dingo/model/rule/scibase/rule_quanliang.py)
+
 ## 标签数量统计
 
 | 字段 | 标签数量 |
@@ -8,8 +12,8 @@
 | `doi` | 7 |
 | `isbns` | 4 |
 | `isbn13` | 4 |
-| `title` | 4 |
-| `abstract` | 4 |
+| `title` | 14 |
+| `abstract` | 14 |
 | `language` | 4 |
 | `author` | 7 |
 | `contributors` | 4 |
@@ -28,16 +32,16 @@
 | `publication_venue_name_unified` | 5 |
 | `grade_class` | 4 |
 | `grade` | 5 |
-| `references` | 14 |
-| `related_works` | 14 |
-| `citations` | 14 |
+| `references` | 24 |
+| `related_works` | 24 |
+| `citations` | 24 |
 | `supplementary_material` | 4 |
 | `cited_by_api_url` | 4 |
 | `access_xinghe_repository_sha256` | 4 |
 | `access_xinghe_repository_origin_path` | 3 |
 | `access_xinghe_repository_model_name` | 4 |
 | `access_xinghe_repository_model_version` | 5 |
-| **合计** | **174** |
+| **合计** | **224** |
 
 ## metadata_type
 
@@ -86,7 +90,17 @@
 | `title.missing_field` | 缺少字段 |
 | `title.null` | 值为 null |
 | `title.wrong_type` | 值不是字符串 |
-| `title.invisible_chars` | 包含不可见字符 |
+| `title.html_tag_layout` | 包含 HTML 排版标签 |
+| `title.html_tag_math` | 包含 MathML 标签 |
+| `title.html_tag_xml_comment` | 包含 XML 注释 |
+| `title.html_tag_cdata` | 包含 CDATA 片段 |
+| `title.html_entity_named` | 包含命名 HTML entity |
+| `title.html_entity_decimal` | 包含十进制数字 HTML entity |
+| `title.html_entity_hex` | 包含十六进制数字 HTML entity |
+| `title.special_char_invisible` | 包含不可见字符 |
+| `title.special_char_replacement` | 包含 Unicode 替换字符 |
+| `title.special_char_control` | 包含控制字符 |
+| `title.special_char_markup` | 包含方括号排版标记 |
 
 ## abstract
 
@@ -95,7 +109,17 @@
 | `abstract.missing_field` | 缺少字段 |
 | `abstract.null` | 值为 null |
 | `abstract.wrong_type` | 值不是字符串 |
-| `abstract.invisible_chars` | 包含不可见字符 |
+| `abstract.html_tag_layout` | 包含 HTML 排版标签 |
+| `abstract.html_tag_math` | 包含 MathML 标签 |
+| `abstract.html_tag_xml_comment` | 包含 XML 注释 |
+| `abstract.html_tag_cdata` | 包含 CDATA 片段 |
+| `abstract.html_entity_named` | 包含命名 HTML entity |
+| `abstract.html_entity_decimal` | 包含十进制数字 HTML entity |
+| `abstract.html_entity_hex` | 包含十六进制数字 HTML entity |
+| `abstract.special_char_invisible` | 包含不可见字符 |
+| `abstract.special_char_replacement` | 包含 Unicode 替换字符 |
+| `abstract.special_char_control` | 包含控制字符 |
+| `abstract.special_char_markup` | 包含方括号排版标记 |
 
 ## language
 
@@ -278,7 +302,17 @@
 | `references.empty` | `id_type` 或非 DOI 标识符为空 |
 | `references.title_null` | 标题为 null |
 | `references.title_wrong_type` | 标题类型错误 |
-| `references.title_invisible_chars` | 标题包含不可见字符 |
+| `references.title_html_tag_layout` | 标题包含 HTML 排版标签 |
+| `references.title_html_tag_math` | 标题包含 MathML 标签 |
+| `references.title_html_tag_xml_comment` | 标题包含 XML 注释 |
+| `references.title_html_tag_cdata` | 标题包含 CDATA 片段 |
+| `references.title_html_entity_named` | 标题包含命名 HTML entity |
+| `references.title_html_entity_decimal` | 标题包含十进制数字 HTML entity |
+| `references.title_html_entity_hex` | 标题包含十六进制数字 HTML entity |
+| `references.title_special_char_invisible` | 标题包含不可见字符 |
+| `references.title_special_char_replacement` | 标题包含 Unicode 替换字符 |
+| `references.title_special_char_control` | 标题包含控制字符 |
+| `references.title_special_char_markup` | 标题包含方括号排版标记 |
 | `references.id_empty` | DOI 为空 |
 | `references.id_wrong_type` | DOI 类型错误 |
 | `references.id_not_lowercase` | DOI 不是小写 |
@@ -297,7 +331,17 @@
 | `related_works.empty` | `id_type` 或非 DOI 标识符为空 |
 | `related_works.title_null` | 标题为 null |
 | `related_works.title_wrong_type` | 标题类型错误 |
-| `related_works.title_invisible_chars` | 标题包含不可见字符 |
+| `related_works.title_html_tag_layout` | 标题包含 HTML 排版标签 |
+| `related_works.title_html_tag_math` | 标题包含 MathML 标签 |
+| `related_works.title_html_tag_xml_comment` | 标题包含 XML 注释 |
+| `related_works.title_html_tag_cdata` | 标题包含 CDATA 片段 |
+| `related_works.title_html_entity_named` | 标题包含命名 HTML entity |
+| `related_works.title_html_entity_decimal` | 标题包含十进制数字 HTML entity |
+| `related_works.title_html_entity_hex` | 标题包含十六进制数字 HTML entity |
+| `related_works.title_special_char_invisible` | 标题包含不可见字符 |
+| `related_works.title_special_char_replacement` | 标题包含 Unicode 替换字符 |
+| `related_works.title_special_char_control` | 标题包含控制字符 |
+| `related_works.title_special_char_markup` | 标题包含方括号排版标记 |
 | `related_works.id_empty` | DOI 为空 |
 | `related_works.id_wrong_type` | DOI 类型错误 |
 | `related_works.id_not_lowercase` | DOI 不是小写 |
@@ -316,7 +360,17 @@
 | `citations.empty` | `id_type` 或非 DOI 标识符为空 |
 | `citations.title_null` | 标题为 null |
 | `citations.title_wrong_type` | 标题类型错误 |
-| `citations.title_invisible_chars` | 标题包含不可见字符 |
+| `citations.title_html_tag_layout` | 标题包含 HTML 排版标签 |
+| `citations.title_html_tag_math` | 标题包含 MathML 标签 |
+| `citations.title_html_tag_xml_comment` | 标题包含 XML 注释 |
+| `citations.title_html_tag_cdata` | 标题包含 CDATA 片段 |
+| `citations.title_html_entity_named` | 标题包含命名 HTML entity |
+| `citations.title_html_entity_decimal` | 标题包含十进制数字 HTML entity |
+| `citations.title_html_entity_hex` | 标题包含十六进制数字 HTML entity |
+| `citations.title_special_char_invisible` | 标题包含不可见字符 |
+| `citations.title_special_char_replacement` | 标题包含 Unicode 替换字符 |
+| `citations.title_special_char_control` | 标题包含控制字符 |
+| `citations.title_special_char_markup` | 标题包含方括号排版标记 |
 | `citations.id_empty` | DOI 为空 |
 | `citations.id_wrong_type` | DOI 类型错误 |
 | `citations.id_not_lowercase` | DOI 不是小写 |
