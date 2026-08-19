@@ -13,7 +13,7 @@
 | `isbns` | 4 |
 | `isbn13` | 4 |
 | `title` | 14 |
-| `abstract` | 14 |
+| `abstract` | 21 |
 | `language` | 4 |
 | `author` | 7 |
 | `contributors` | 4 |
@@ -41,7 +41,7 @@
 | `access_xinghe_repository_origin_path` | 3 |
 | `access_xinghe_repository_model_name` | 4 |
 | `access_xinghe_repository_model_version` | 5 |
-| **合计** | **224** |
+| **合计** | **231** |
 
 ## metadata_type
 
@@ -120,6 +120,13 @@
 | `abstract.special_char_replacement` | 包含 Unicode 替换字符 |
 | `abstract.special_char_control` | 包含控制字符 |
 | `abstract.special_char_markup` | 包含方括号排版标记 |
+| `abstract.empty` | 去除首尾空格后内容为空 |
+| `abstract.too_short` | 去除首尾空格后长度小于 20 个字符 |
+| `abstract.too_long` | 去除首尾空格后长度大于 6000 个字符 |
+| `abstract.likely_placeholder` | 内容可能是无摘要占位文本 |
+| `abstract.encoding_error` | 包含 Unicode 替换字符或典型乱码组合 |
+| `abstract.same_title` | 摘要与标题去除首尾空格并忽略大小写后完全相同 |
+| `abstract.likely_identifier` | 摘要整体可能是数字标识符、DOI、URL 或 S3 路径 |
 
 ## language
 

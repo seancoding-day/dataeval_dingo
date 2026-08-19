@@ -63,10 +63,69 @@ class TestRuleQuanliangFieldValidation:
         ]
         assert result.status is True
         assert result.label == [
-            f"{field}.{error_label}"
-            for field in ("title", "abstract")
-            for error_label in expected_error_labels
+            *(f"title.{error_label}" for error_label in expected_error_labels),
+            *(f"abstract.{error_label}" for error_label in expected_error_labels),
+            "abstract.encoding_error",
+            "abstract.same_title",
         ]
+
+    def test_abstract_quality_labels(self):
+        cases = [
+            ("", "Different title", ["abstract.empty"]),
+            ("short abstract", "Different title", ["abstract.too_short"]),
+            (
+                "No abstract available.",
+                "Different title",
+                ["abstract.likely_placeholder"],
+            ),
+            (
+                "This text contains the mojibake sequence 锟斤拷 and is long enough.",
+                "Different title",
+                ["abstract.encoding_error"],
+            ),
+            (
+                "The Same Abstract Title With More Than Thirty Characters",
+                "the same abstract title with more than thirty characters",
+                ["abstract.same_title"],
+            ),
+            (
+                "https://example.com/paper",
+                "Different title",
+                ["abstract.likely_identifier"],
+            ),
+        ]
+
+        for abstract, title, expected_labels in cases:
+            model = RuleQuanliangFieldValidation()
+            model.dynamic_config = model.dynamic_config.model_copy(deep=True)
+            model.dynamic_config.key_list = ["abstract"]
+            result = model.eval(Data(title=title, abstract=abstract))
+            assert result.status is True
+            assert result.label == expected_labels
+
+    def test_abstract_empty_matches_after_trimming(self):
+        model = RuleQuanliangFieldValidation()
+        model.dynamic_config = model.dynamic_config.model_copy(deep=True)
+        model.dynamic_config.key_list = ["abstract"]
+
+        result = model.eval(Data(abstract="   "))
+
+        assert result.status is True
+        assert result.label == ["abstract.empty"]
+
+    def test_abstract_placeholder_and_url_rules_avoid_substring_false_positives(self):
+        model = RuleQuanliangFieldValidation()
+        model.dynamic_config = model.dynamic_config.model_copy(deep=True)
+        model.dynamic_config.key_list = ["abstract"]
+        abstract = (
+            "Some experimental data were unavailable. https://example.com provides "
+            "supporting material for the complete study."
+        )
+
+        result = model.eval(Data(abstract=abstract))
+
+        assert result.status is False
+        assert result.label == ["QUALITY_GOOD"]
 
     def test_high_false_positive_patterns_are_not_enabled(self):
         model = RuleQuanliangFieldValidation()
