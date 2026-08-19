@@ -1,5 +1,9 @@
 # RuleQuanliangFieldValidation Label 说明
 
+## 实现位置
+
+[`rule_quanliang.py`](../../dingo/model/rule/scibase/rule_quanliang.py)
+
 ## 标签数量统计
 
 | 字段 | 标签数量 |
