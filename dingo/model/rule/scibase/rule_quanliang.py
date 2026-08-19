@@ -12,7 +12,30 @@ from dingo.model.rule.base import BaseRule
 
 URL_RE = re.compile(r"^[Hh][Tt][Tt][Pp][Ss]?://[^/$.?#][\s\S]*$")
 DOI_RE = re.compile(r"^10\.\d{4,9}/([^A-Z\s\|]*)$")
-INVISIBLE_RE = re.compile(r"[\u2000-\u200F\u202F\u205F\u3000\uFEFF\u00A0\u2060-\u206F\xa0]")
+SPECIAL_CHAR_INVISIBLE_RE = re.compile(
+    r"[\u2000-\u200F\u202F\u205F\u3000\uFEFF\u00A0\u2060-\u206F\xa0]"
+)
+HTML_TAG_LAYOUT_RE = re.compile(
+    r"<\s*/?\s*(?:i|b|p|br|sup|sub|em|strong|span|div|u|scp|tt)\b[^>]*>",
+    re.IGNORECASE,
+)
+HTML_TAG_MATH_RE = re.compile(
+    r"<\s*/?\s*(?:mml:)?(?:math|mrow|mi|mn|mo|ms|mtext|mspace|msub|msup|msubsup|"
+    r"mfrac|msqrt|mroot|mtable|mtr|mtd|mfenced|munderover|munder|mover)\b[^>]*>",
+    re.IGNORECASE,
+)
+HTML_TAG_XML_COMMENT_RE = re.compile(r"<!--[\s\S]*?-->")
+HTML_TAG_CDATA_RE = re.compile(r"<!\[CDATA\[[\s\S]*?\]\]>", re.IGNORECASE)
+HTML_ENTITY_NAMED_RE = re.compile(r"&[A-Za-z][A-Za-z0-9]+;")
+HTML_ENTITY_DECIMAL_RE = re.compile(r"&#[0-9]+;")
+HTML_ENTITY_HEX_RE = re.compile(r"&#[xX][0-9A-Fa-f]+;")
+SPECIAL_CHAR_REPLACEMENT_RE = re.compile("\uFFFD")
+# Keep TAB, LF and CR because multi-line abstracts may legitimately contain them.
+SPECIAL_CHAR_CONTROL_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]")
+SPECIAL_CHAR_MARKUP_RE = re.compile(
+    r"\[(?:!\s*/?\s*(?:i|sub|sup)\s*|!|○![R上下])\]",
+    re.IGNORECASE,
+)
 PAGE_RANGE_RE = re.compile(r"^\d+-\d+$")
 ISSN_RE = re.compile(r"^\d{4}-\d{3}[\dX]$")
 AUTHOR_SEP_RE = re.compile(r"[|;；]")
@@ -145,15 +168,15 @@ def _valid_issn(code: str) -> bool:
     return digits[7].upper() == expected
 
 
-ValidationResult = tuple[bool, str, str]
+ValidationResult = tuple[bool, list[str], list[str]]
 
 
 def _ok() -> ValidationResult:
-    return False, "", ""
+    return False, [], []
 
 
 def _fail(error_label: str, reason: str) -> ValidationResult:
-    return True, error_label, reason
+    return True, [error_label], [reason]
 
 
 def check_metadata_type(metadata_type: Any) -> ValidationResult:
@@ -220,28 +243,47 @@ def check_isbn13(isbn13: Any, metadata_type: Any) -> ValidationResult:
     return _ok()
 
 
-def check_title(title: Any) -> ValidationResult:
-    if title is None:
+def _check_html_and_special_chars(value: Any) -> ValidationResult:
+    if value is None:
         return _fail("null", "value is null")
-    if not isinstance(title, str):
+    if not isinstance(value, str):
         return _fail("wrong_type", "value must be a string")
-    if title == "":
+    if value == "":
         return _ok()
-    if INVISIBLE_RE.search(title):
-        return _fail("invisible_chars", "contains invisible unicode characters")
-    return _ok()
+
+    error_labels: List[str] = []
+    reasons: List[str] = []
+    pattern_checks = [
+        (HTML_TAG_LAYOUT_RE, "html_tag_layout", "contains HTML layout tag"),
+        (HTML_TAG_MATH_RE, "html_tag_math", "contains MathML tag"),
+        (HTML_TAG_XML_COMMENT_RE, "html_tag_xml_comment", "contains XML comment"),
+        (HTML_TAG_CDATA_RE, "html_tag_cdata", "contains CDATA section"),
+        (HTML_ENTITY_NAMED_RE, "html_entity_named", "contains named HTML entity"),
+        (HTML_ENTITY_DECIMAL_RE, "html_entity_decimal", "contains decimal HTML entity"),
+        (HTML_ENTITY_HEX_RE, "html_entity_hex", "contains hexadecimal HTML entity"),
+        (SPECIAL_CHAR_INVISIBLE_RE, "special_char_invisible", "contains invisible unicode character"),
+        (
+            SPECIAL_CHAR_REPLACEMENT_RE,
+            "special_char_replacement",
+            "contains unicode replacement character",
+        ),
+        (SPECIAL_CHAR_CONTROL_RE, "special_char_control", "contains control character"),
+        (SPECIAL_CHAR_MARKUP_RE, "special_char_markup", "contains bracket markup token"),
+    ]
+    for pattern, error_label, reason in pattern_checks:
+        matched_values = list(dict.fromkeys(match.group(0) for match in pattern.finditer(value)))
+        if matched_values:
+            error_labels.append(error_label)
+            reasons.append(f"{reason}: {json.dumps(matched_values, ensure_ascii=True)}")
+    return bool(error_labels), error_labels, reasons
+
+
+def check_title(title: Any) -> ValidationResult:
+    return _check_html_and_special_chars(title)
 
 
 def check_abstract(abstract: Any) -> ValidationResult:
-    if abstract is None:
-        return _fail("null", "value is null")
-    if not isinstance(abstract, str):
-        return _fail("wrong_type", "value must be a string")
-    if abstract == "":
-        return _ok()
-    if INVISIBLE_RE.search(abstract):
-        return _fail("invisible_chars", "contains invisible unicode characters")
-    return _ok()
+    return _check_html_and_special_chars(abstract)
 
 
 def check_language(language: Any) -> ValidationResult:
@@ -533,13 +575,21 @@ def _check_id_type_id_title_items(items: Any) -> ValidationResult:
         title = item.get("title")
         if not isinstance(id_type, str) or id_type == "":
             return _fail("empty", f"item[{idx}].id_type must be a non-empty string")
-        title_invalid, title_error_label, title_reason = check_title(title)
+        title_invalid, title_error_labels, title_reasons = check_title(title)
         if title_invalid:
-            return _fail(f"title_{title_error_label}", f"item[{idx}].title invalid: {title_reason}")
+            return (
+                True,
+                [f"title_{error_label}" for error_label in title_error_labels],
+                [f"item[{idx}].title invalid: {reason}" for reason in title_reasons],
+            )
         if id_type == "doi":
-            doi_invalid, doi_error_label, doi_reason = check_doi(citation_id, "paper")
+            doi_invalid, doi_error_labels, doi_reasons = check_doi(citation_id, "paper")
             if doi_invalid:
-                return _fail(f"id_{doi_error_label}", f"item[{idx}].id invalid DOI: {doi_reason}")
+                return (
+                    True,
+                    [f"id_{error_label}" for error_label in doi_error_labels],
+                    [f"item[{idx}].id invalid DOI: {reason}" for reason in doi_reasons],
+                )
         elif not isinstance(citation_id, str) or citation_id == "":
             return _fail("empty", f"item[{idx}].id must be a non-empty string")
     return _ok()
@@ -832,10 +882,10 @@ class RuleQuanliangFieldValidation(BaseRule):
                 bad_fields.append(f"{field}.missing_field")
                 reasons.append(f"{field}: missing field")
                 continue
-            invalid, error_label, detail_reason = FIELD_VALIDATORS[field](normalized)
+            invalid, error_labels, detail_reasons = FIELD_VALIDATORS[field](normalized)
             if invalid:
-                bad_fields.append(f"{field}.{error_label}")
-                reasons.append(f"{field}: {detail_reason or 'failed field validation'}")
+                bad_fields.extend(f"{field}.{error_label}" for error_label in error_labels)
+                reasons.extend(f"{field}: {reason}" for reason in detail_reasons)
 
         if bad_fields:
             res.status = True
