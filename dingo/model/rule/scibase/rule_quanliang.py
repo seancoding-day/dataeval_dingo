@@ -77,6 +77,34 @@ ISSN_RE = re.compile(r"^\d{4}-\d{3}[\dX]$")
 AUTHOR_SEP_RE = re.compile(r"[|;；]|,,|，，")
 ORCID_URL_RE = re.compile(r"^https://orcid\.org/\d{4}-\d{4}-\d{4}-\d{3}[\dX]$")
 
+# These patterns intentionally favor recall: a downstream LLM decides whether a
+# candidate really contains multiple people.  Keep the individual evidence names
+# stable so sampled results remain easy to diagnose.
+AUTHOR_ELLIPSIS_RE = re.compile(
+    r"(?:\bet\s+al\.?(?:\s|$)|[\u4e00-\u9fff]\u7b49)$", re.IGNORECASE
+)
+AUTHOR_CONJUNCTION_RE = re.compile(
+    r"(?:\b(?:and(?:\s*/\s*or)?|et|und|y)\b|"
+    r"(?<=[^\W\d_])(?:\u548c|\u4e0e|\u53ca)(?=[^\W\d_])|\u3001)",
+    re.IGNORECASE,
+)
+AUTHOR_LIST_SEPARATOR_RE = re.compile(r"[;\uff1b|\n\r\t]|(?<=\s)/(?=\s)")
+AUTHOR_CJK_COMMA_NAMES_RE = re.compile(
+    r"[\u4e00-\u9fff\u00b7\u2022\u30fb]{2,8}\s*[,\uff0c]\s*"
+    r"[\u4e00-\u9fff\u00b7\u2022\u30fb]{2,8}"
+)
+AUTHOR_WESTERN_COMMA_NAMES_RE = re.compile(
+    r"[A-Za-z\u00c0-\u024f][A-Za-z\u00c0-\u024f'\-\u2019.]*"
+    r"(?:\s+[A-Za-z\u00c0-\u024f][A-Za-z\u00c0-\u024f'\-\u2019.]*)+"
+    r"\s*[,\uff0c]\s*"
+    r"[A-Za-z\u00c0-\u024f][A-Za-z\u00c0-\u024f'\-\u2019.]*"
+    r"(?:\s+[A-Za-z\u00c0-\u024f][A-Za-z\u00c0-\u024f'\-\u2019.]*)+"
+)
+AUTHOR_CJK_WHITESPACE_NAMES_RE = re.compile(
+    r"^(?:[\u4e00-\u9fff\u00b7\u2022\u30fb]{2,6}\s+){1,}"
+    r"[\u4e00-\u9fff\u00b7\u2022\u30fb]{2,6}$"
+)
+
 OA_BOOL_VALUES = {"true", "false", "unknown"}
 METADATA_TYPE_VALUES = {"paper", "ebook"}
 OA_STATUS_VALUES = {"diamond", "gold", "green", "hybrid", "bronze", "closed", ""}
@@ -214,6 +242,47 @@ def _valid_orcid(orcid_url: str) -> bool:
     result = (12 - total % 11) % 11
     expected = "X" if result == 10 else str(result)
     return digits[-1] == expected
+
+
+def _detect_multiple_name_signals(name: str) -> list[str]:
+    """Detect signals that one ``author.name`` may contain multiple names.
+
+    This is a high-recall candidate detector rather than a final decision.  It
+    returns the matched signal names so downstream diagnostics or an LLM can
+    review why the value was tagged.
+    """
+    evidence: list[str] = []
+    normalized = re.sub(r"[ \f\v]+", " ", name.strip())
+    if not normalized:
+        return evidence
+
+    if AUTHOR_ELLIPSIS_RE.search(normalized):
+        evidence.append("author_ellipsis")
+    if AUTHOR_CONJUNCTION_RE.search(normalized):
+        evidence.append("author_conjunction")
+    if AUTHOR_LIST_SEPARATOR_RE.search(normalized):
+        evidence.append("explicit_list_separator")
+
+    # Require at least two visible characters on both sides.  This retains
+    # "Alice&Bob" and Chinese names while filtering acronym-like R&D / AT&T.
+    for match in re.finditer(r"([^\W\d_]+)\s*&\s*([^\W\d_]+)", normalized, re.UNICODE):
+        left, right = match.group(1), match.group(2)
+        if len(left) >= 2 and len(right) >= 2:
+            evidence.append("author_ampersand")
+            break
+
+    if AUTHOR_CJK_COMMA_NAMES_RE.search(normalized):
+        evidence.append("cjk_comma_names")
+    if AUTHOR_WESTERN_COMMA_NAMES_RE.search(normalized):
+        evidence.append("western_full_names_comma")
+
+    comma_count = normalized.count(",") + normalized.count("\uff0c")
+    if comma_count >= 2:
+        evidence.append("ambiguous_multiple_commas")
+    if AUTHOR_CJK_WHITESPACE_NAMES_RE.fullmatch(normalized):
+        evidence.append("cjk_whitespace_names")
+
+    return list(dict.fromkeys(evidence))
 
 
 ValidationResult = tuple[bool, list[str], list[str]]
@@ -453,6 +522,16 @@ def check_author(author: Any) -> ValidationResult:
                 reasons.append(f"item[{idx}].name is empty after trimming")
         else:
             normalized_names.append(re.sub(r"\s+", " ", name_trim).casefold())
+            multiple_name_signals = _detect_multiple_name_signals(name_trim)
+            if (
+                multiple_name_signals
+                and "multiple_names" not in error_labels
+            ):
+                error_labels.append("multiple_names")
+                reasons.append(
+                    f"item[{idx}].name may contain multiple authors; "
+                    f"signals={','.join(multiple_name_signals)}"
+                )
             if (
                 AUTHOR_SEP_RE.search(name_trim)
                 and "invalid_separator" not in error_labels
