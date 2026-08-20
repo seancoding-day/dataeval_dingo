@@ -11,7 +11,8 @@ from dingo.model.model import Model
 from dingo.model.rule.base import BaseRule
 
 URL_RE = re.compile(r"^[Hh][Tt][Tt][Pp][Ss]?://[^/$.?#][\s\S]*$")
-DOI_RE = re.compile(r"^10\.\d{4,9}/([^A-Z\s\|]*)$")
+DOI_RE = re.compile(r"^10\.\d{4,9}/[^\s|]+$", re.IGNORECASE)
+DOI_PREFIXES_RE = {"10.0000", "10.0001", "10.5555"}
 SPECIAL_CHAR_INVISIBLE_RE = re.compile(
     r"[\u2000-\u200F\u202F\u205F\u3000\uFEFF\u00A0\u2060-\u206F\xa0]"
 )
@@ -234,16 +235,19 @@ def check_doi(doi: Any, metadata_type: Any) -> ValidationResult:
         return _fail("empty", "value cannot be None when metadata_type='paper'") if required else _ok()
     if not isinstance(doi, str):
         return _fail("wrong_type", "value must be a string")
-    if doi == "":
-        return _fail("empty", "value cannot be empty string when metadata_type='paper'") if required else _ok()
-    if doi != doi.lower():
+    doi_trim = doi.strip()
+    if doi_trim == "":
+        return _fail("empty", "value is empty after trimming") if required else _ok()
+    if doi_trim != doi_trim.lower():
         return _fail("not_lowercase", "value must be lowercase")
-    if "https://doi.org/" in doi.lower():
-        return _fail("doi_url", "value should be DOI only, not a URL")
-    if doi.startswith("10.0000/"):
-        return _fail("placeholder", "placeholder DOI is not allowed")
-    if not DOI_RE.fullmatch(doi):
-        return _fail("invalid_format", "value does not match DOI format")
+    if not DOI_RE.fullmatch(doi_trim):
+        return _fail("format_invalid", "value does not match DOI format")
+    doi_prefix = doi_trim.split("/", 1)[0]
+    if doi_prefix in DOI_PREFIXES_RE:
+        return _fail(
+            "error_prefix",
+            f"DOI prefix '{doi_prefix}' is reserved for tests",
+        )
     return _ok()
 
 

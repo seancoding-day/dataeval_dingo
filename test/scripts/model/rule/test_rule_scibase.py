@@ -6,6 +6,34 @@ from dingo.model.rule.scibase.rule_quanliang import RuleQuanliangFieldValidation
 
 
 class TestRuleQuanliangFieldValidation:
+    def test_doi_empty_format_and_test_prefix_labels(self):
+        cases = [
+            ("   ", "doi.empty"),
+            ("https://doi.org/10.1234/abc", "doi.format_invalid"),
+            ("10.1234/abc def", "doi.format_invalid"),
+            ("10.1234/abc\tdef", "doi.format_invalid"),
+            ("10.0000/example", "doi.error_prefix"),
+            ("10.0001/example", "doi.error_prefix"),
+            ("10.5555/example", "doi.error_prefix"),
+        ]
+
+        for doi, expected_label in cases:
+            model = RuleQuanliangFieldValidation()
+            model.dynamic_config = model.dynamic_config.model_copy(deep=True)
+            model.dynamic_config.key_list = ["doi"]
+            result = model.eval(Data(metadata_type="paper", doi=doi))
+            assert result.status is True
+            assert result.label == [expected_label]
+
+    def test_invalid_test_prefix_doi_only_reports_format(self):
+        model = RuleQuanliangFieldValidation()
+        model.dynamic_config = model.dynamic_config.model_copy(deep=True)
+        model.dynamic_config.key_list = ["doi"]
+
+        result = model.eval(Data(metadata_type="paper", doi="10.0000/"))
+
+        assert result.label == ["doi.format_invalid"]
+
     def test_rule_quanliang_cases_from_jsonl(self):
         data_path = (
             Path(__file__).parent.parent.parent.parent / "data" / "scibase" / "rule_quanliang_cases.jsonl"

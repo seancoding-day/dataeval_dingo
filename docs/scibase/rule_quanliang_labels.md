@@ -9,7 +9,7 @@
 | 字段 | 标签数量 |
 |---|---:|
 | `metadata_type` | 5 |
-| `doi` | 7 |
+| `doi` | 6 |
 | `isbns` | 4 |
 | `isbn13` | 4 |
 | `title` | 21 |
@@ -32,16 +32,16 @@
 | `publication_venue_name_unified` | 5 |
 | `grade_class` | 4 |
 | `grade` | 5 |
-| `references` | 24 |
-| `related_works` | 24 |
-| `citations` | 24 |
+| `references` | 23 |
+| `related_works` | 23 |
+| `citations` | 23 |
 | `supplementary_material` | 4 |
 | `cited_by_api_url` | 4 |
 | `access_xinghe_repository_sha256` | 4 |
 | `access_xinghe_repository_origin_path` | 3 |
 | `access_xinghe_repository_model_name` | 4 |
 | `access_xinghe_repository_model_version` | 5 |
-| **合计** | **238** |
+| **合计** | **234** |
 
 ## metadata_type
 
@@ -61,9 +61,8 @@
 | `doi.empty` | 论文 DOI 为空 |
 | `doi.wrong_type` | 值不是字符串 |
 | `doi.not_lowercase` | DOI 不是小写 |
-| `doi.doi_url` | 值是 DOI URL，不是纯 DOI |
-| `doi.placeholder` | 使用了占位 DOI |
-| `doi.invalid_format` | DOI 格式错误 |
+| `doi.format_invalid` | DOI 格式错误，包含空白或分隔符，或者输入了 DOI URL |
+| `doi.error_prefix` | DOI 使用了错误或测试前缀 |
 
 ## isbns
 
@@ -330,9 +329,8 @@
 | `references.id_empty` | DOI 为空 |
 | `references.id_wrong_type` | DOI 类型错误 |
 | `references.id_not_lowercase` | DOI 不是小写 |
-| `references.id_doi_url` | DOI 是 URL |
-| `references.id_placeholder` | 使用了占位 DOI |
-| `references.id_invalid_format` | DOI 格式错误 |
+| `references.id_format_invalid` | DOI 格式错误 |
+| `references.id_error_prefix` | DOI 使用了错误或测试前缀 |
 
 ## related_works
 
@@ -359,9 +357,8 @@
 | `related_works.id_empty` | DOI 为空 |
 | `related_works.id_wrong_type` | DOI 类型错误 |
 | `related_works.id_not_lowercase` | DOI 不是小写 |
-| `related_works.id_doi_url` | DOI 是 URL |
-| `related_works.id_placeholder` | 使用了占位 DOI |
-| `related_works.id_invalid_format` | DOI 格式错误 |
+| `related_works.id_format_invalid` | DOI 格式错误 |
+| `related_works.id_error_prefix` | DOI 使用了错误或测试前缀 |
 
 ## citations
 
@@ -388,9 +385,8 @@
 | `citations.id_empty` | DOI 为空 |
 | `citations.id_wrong_type` | DOI 类型错误 |
 | `citations.id_not_lowercase` | DOI 不是小写 |
-| `citations.id_doi_url` | DOI 是 URL |
-| `citations.id_placeholder` | 使用了占位 DOI |
-| `citations.id_invalid_format` | DOI 格式错误 |
+| `citations.id_format_invalid` | DOI 格式错误 |
+| `citations.id_error_prefix` | DOI 使用了错误或测试前缀 |
 
 ## supplementary_material
 
