@@ -9,13 +9,13 @@
 | 字段 | 标签数量 |
 |---|---:|
 | `metadata_type` | 5 |
-| `doi` | 7 |
+| `doi` | 6 |
 | `isbns` | 4 |
 | `isbn13` | 4 |
-| `title` | 14 |
-| `abstract` | 14 |
+| `title` | 21 |
+| `abstract` | 21 |
 | `language` | 4 |
-| `author` | 7 |
+| `author` | 9 |
 | `contributors` | 4 |
 | `locations` | 6 |
 | `access_is_oa` | 4 |
@@ -32,16 +32,16 @@
 | `publication_venue_name_unified` | 5 |
 | `grade_class` | 4 |
 | `grade` | 5 |
-| `references` | 24 |
-| `related_works` | 24 |
-| `citations` | 24 |
+| `references` | 23 |
+| `related_works` | 23 |
+| `citations` | 23 |
 | `supplementary_material` | 4 |
 | `cited_by_api_url` | 4 |
 | `access_xinghe_repository_sha256` | 4 |
 | `access_xinghe_repository_origin_path` | 3 |
 | `access_xinghe_repository_model_name` | 4 |
 | `access_xinghe_repository_model_version` | 5 |
-| **合计** | **224** |
+| **合计** | **236** |
 
 ## metadata_type
 
@@ -61,9 +61,8 @@
 | `doi.empty` | 论文 DOI 为空 |
 | `doi.wrong_type` | 值不是字符串 |
 | `doi.not_lowercase` | DOI 不是小写 |
-| `doi.doi_url` | 值是 DOI URL，不是纯 DOI |
-| `doi.placeholder` | 使用了占位 DOI |
-| `doi.invalid_format` | DOI 格式错误 |
+| `doi.format_invalid` | DOI 格式错误，包含空白或分隔符，或者输入了 DOI URL |
+| `doi.error_prefix` | DOI 使用了错误或测试前缀 |
 
 ## isbns
 
@@ -101,6 +100,13 @@
 | `title.special_char_replacement` | 包含 Unicode 替换字符 |
 | `title.special_char_control` | 包含控制字符 |
 | `title.special_char_markup` | 包含方括号排版标记 |
+| `title.empty` | 去除首尾空格后内容为空 |
+| `title.too_short` | 去除首尾空格后长度小于 5 个字符 |
+| `title.too_long` | 去除首尾空格后长度大于 1000 个字符 |
+| `title.likely_placeholder` | 内容可能是标题占位文本 |
+| `title.encoding_error` | 包含 Unicode 替换字符或典型乱码组合 |
+| `title.likely_conference` | 内容可能是 IEEE 会议名称而非论文标题 |
+| `title.likely_identifier` | 标题整体可能是数字标识符、DOI、URL 或 S3 路径 |
 
 ## abstract
 
@@ -120,6 +126,13 @@
 | `abstract.special_char_replacement` | 包含 Unicode 替换字符 |
 | `abstract.special_char_control` | 包含控制字符 |
 | `abstract.special_char_markup` | 包含方括号排版标记 |
+| `abstract.empty` | 去除首尾空格后内容为空 |
+| `abstract.too_short` | 去除首尾空格后长度小于 20 个字符 |
+| `abstract.too_long` | 去除首尾空格后长度大于 6000 个字符 |
+| `abstract.likely_placeholder` | 内容可能是无摘要占位文本 |
+| `abstract.encoding_error` | 包含 Unicode 替换字符或典型乱码组合 |
+| `abstract.same_title` | 摘要与标题去除首尾空格并忽略大小写后完全相同 |
+| `abstract.likely_identifier` | 摘要整体可能是数字标识符、DOI、URL 或 S3 路径 |
 
 ## language
 
@@ -138,9 +151,11 @@
 | `author.null` | 值为 null |
 | `author.wrong_type` | 作者列表、对象或属性类型错误 |
 | `author.invalid_keys` | 作者对象字段不符合要求 |
-| `author.empty` | 作者姓名为空 |
-| `author.invalid_separator` | 作者姓名包含非法分隔符 |
-| `author.invalid_orcid` | ORCID URL 格式错误 |
+| `author.empty` | 作者列表为空 |
+| `author.empty_name` | 至少一个作者姓名去除首尾空格后为空 |
+| `author.duplicated_name` | 标准化后的非空作者姓名存在重复 |
+| `author.invalid_separator` | 作者姓名包含竖线、分号或连续两个逗号 |
+| `author.invalid_orcid` | ORCID URL 格式或校验位错误 |
 
 ## contributors
 
@@ -316,9 +331,8 @@
 | `references.id_empty` | DOI 为空 |
 | `references.id_wrong_type` | DOI 类型错误 |
 | `references.id_not_lowercase` | DOI 不是小写 |
-| `references.id_doi_url` | DOI 是 URL |
-| `references.id_placeholder` | 使用了占位 DOI |
-| `references.id_invalid_format` | DOI 格式错误 |
+| `references.id_format_invalid` | DOI 格式错误 |
+| `references.id_error_prefix` | DOI 使用了错误或测试前缀 |
 
 ## related_works
 
@@ -345,9 +359,8 @@
 | `related_works.id_empty` | DOI 为空 |
 | `related_works.id_wrong_type` | DOI 类型错误 |
 | `related_works.id_not_lowercase` | DOI 不是小写 |
-| `related_works.id_doi_url` | DOI 是 URL |
-| `related_works.id_placeholder` | 使用了占位 DOI |
-| `related_works.id_invalid_format` | DOI 格式错误 |
+| `related_works.id_format_invalid` | DOI 格式错误 |
+| `related_works.id_error_prefix` | DOI 使用了错误或测试前缀 |
 
 ## citations
 
@@ -374,9 +387,8 @@
 | `citations.id_empty` | DOI 为空 |
 | `citations.id_wrong_type` | DOI 类型错误 |
 | `citations.id_not_lowercase` | DOI 不是小写 |
-| `citations.id_doi_url` | DOI 是 URL |
-| `citations.id_placeholder` | 使用了占位 DOI |
-| `citations.id_invalid_format` | DOI 格式错误 |
+| `citations.id_format_invalid` | DOI 格式错误 |
+| `citations.id_error_prefix` | DOI 使用了错误或测试前缀 |
 
 ## supplementary_material
 

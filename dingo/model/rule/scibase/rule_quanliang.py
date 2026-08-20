@@ -11,7 +11,8 @@ from dingo.model.model import Model
 from dingo.model.rule.base import BaseRule
 
 URL_RE = re.compile(r"^[Hh][Tt][Tt][Pp][Ss]?://[^/$.?#][\s\S]*$")
-DOI_RE = re.compile(r"^10\.\d{4,9}/([^A-Z\s\|]*)$")
+DOI_RE = re.compile(r"^10\.\d{4,9}/[^\s|]+$", re.IGNORECASE)
+DOI_PREFIXES_RE = {"10.0000", "10.0001", "10.5555"}
 SPECIAL_CHAR_INVISIBLE_RE = re.compile(
     r"[\u2000-\u200F\u202F\u205F\u3000\uFEFF\u00A0\u2060-\u206F\xa0]"
 )
@@ -36,10 +37,45 @@ SPECIAL_CHAR_MARKUP_RE = re.compile(
     r"\[(?:!\s*/?\s*(?:i|sub|sup)\s*|!|○![R上下])\]",
     re.IGNORECASE,
 )
+TITLE_PLACEHOLDER_VALUES = {
+    "[untitled]", "untitled", "(no title)", "[no title]", "[no title available]",
+    "no title", "unknown", "n/a", "na", "none", "null", "not available",
+    "[not available].", "not applicable", "missing", "missing title", "title missing",
+    "without title", "tbd", "to be determined", "---", "--", "-", ".",
+}
+TITLE_ENCODING_ERROR_RE = re.compile(
+    r"�|锟斤拷|烫烫烫|屯屯屯|Ã.|Â.|â€™|â€œ|â€|â€“|â€”|â€¦|ï»¿"
+)
+TITLE_CONFERENCE_RE = re.compile(
+    r"^(?:\[\s*)?(?:\d{4}[\s-]+)?ieee\b.*\b"
+    r"(?:proceedings|conference|symposium|workshop|congress)\b",
+    re.IGNORECASE,
+)
+TITLE_IDENTIFIER_RE = re.compile(
+    r"(?:\d+|(?:doi\s*:\s*)?10\.\d{4,9}/\S+|"
+    r"https?://(?:dx\.)?doi\.org/10\.\d{4,9}/\S+|"
+    r"(?:https?://|www\.|s3a?://)\S+)",
+    re.IGNORECASE,
+)
+ABSTRACT_PLACEHOLDER_VALUES = {"n/a", "na", "none", "null", "unknown", "-", "--", "."}
+ABSTRACT_PLACEHOLDER_RE = re.compile(
+    r"^(?:no abstract(?: available)?|abstract (?:is )?(?:not available|unavailable|not provided|"
+    r"not supplied|not received|missing)|not available|unavailable)[.!]?$",
+    re.IGNORECASE,
+)
+ABSTRACT_ENCODING_ERROR_RE = re.compile(
+    r"�|锟斤拷|烫烫烫|屯屯屯|Ã.|Â.|â€™|â€œ|â€|â€“|â€”|â€¦|ï»¿"
+)
+ABSTRACT_IDENTIFIER_RE = re.compile(
+    r"(?:\d+|(?:doi\s*:\s*)?10\.\d{4,9}/\S+|"
+    r"https?://(?:dx\.)?doi\.org/10\.\d{4,9}/\S+|"
+    r"(?:https?://|www\.|s3a?://)\S+)",
+    re.IGNORECASE,
+)
 PAGE_RANGE_RE = re.compile(r"^\d+-\d+$")
 ISSN_RE = re.compile(r"^\d{4}-\d{3}[\dX]$")
-AUTHOR_SEP_RE = re.compile(r"[|;；]")
-ORCID_URL_RE = re.compile(r"^[Hh][Tt][Tt][Pp][Ss]?://orcid\.org/\d{4}-\d{4}-\d{4}-\d{3}[\dXx]$")
+AUTHOR_SEP_RE = re.compile(r"[|;；]|,,|，，")
+ORCID_URL_RE = re.compile(r"^https://orcid\.org/\d{4}-\d{4}-\d{4}-\d{3}[\dX]$")
 
 OA_BOOL_VALUES = {"true", "false", "unknown"}
 METADATA_TYPE_VALUES = {"paper", "ebook"}
@@ -168,6 +204,18 @@ def _valid_issn(code: str) -> bool:
     return digits[7].upper() == expected
 
 
+def _valid_orcid(orcid_url: str) -> bool:
+    if not ORCID_URL_RE.fullmatch(orcid_url):
+        return False
+    digits = orcid_url.rsplit("/", 1)[-1].replace("-", "")
+    total = 0
+    for digit in digits[:15]:
+        total = (total + int(digit)) * 2
+    result = (12 - total % 11) % 11
+    expected = "X" if result == 10 else str(result)
+    return digits[-1] == expected
+
+
 ValidationResult = tuple[bool, list[str], list[str]]
 
 
@@ -199,16 +247,19 @@ def check_doi(doi: Any, metadata_type: Any) -> ValidationResult:
         return _fail("empty", "value cannot be None when metadata_type='paper'") if required else _ok()
     if not isinstance(doi, str):
         return _fail("wrong_type", "value must be a string")
-    if doi == "":
-        return _fail("empty", "value cannot be empty string when metadata_type='paper'") if required else _ok()
-    if doi != doi.lower():
+    doi_trim = doi.strip()
+    if doi_trim == "":
+        return _fail("empty", "value is empty after trimming") if required else _ok()
+    if doi_trim != doi_trim.lower():
         return _fail("not_lowercase", "value must be lowercase")
-    if "https://doi.org/" in doi.lower():
-        return _fail("doi_url", "value should be DOI only, not a URL")
-    if doi.startswith("10.0000/"):
-        return _fail("placeholder", "placeholder DOI is not allowed")
-    if not DOI_RE.fullmatch(doi):
-        return _fail("invalid_format", "value does not match DOI format")
+    if not DOI_RE.fullmatch(doi_trim):
+        return _fail("format_invalid", "value does not match DOI format")
+    doi_prefix = doi_trim.split("/", 1)[0]
+    if doi_prefix in DOI_PREFIXES_RE:
+        return _fail(
+            "error_prefix",
+            f"DOI prefix '{doi_prefix}' is reserved for tests",
+        )
     return _ok()
 
 
@@ -279,11 +330,83 @@ def _check_html_and_special_chars(value: Any) -> ValidationResult:
 
 
 def check_title(title: Any) -> ValidationResult:
-    return _check_html_and_special_chars(title)
+    if title is None:
+        return _fail("null", "value is null")
+    if not isinstance(title, str):
+        return _fail("wrong_type", "value must be a string")
+
+    invalid, error_labels, reasons = _check_html_and_special_chars(title)
+    title_trim = title.strip()
+    title_lower = title_trim.lower()
+
+    if title_trim == "":
+        error_labels.append("empty")
+        reasons.append("value is empty after trimming")
+    else:
+        if len(title_trim) < 5:
+            error_labels.append("too_short")
+            reasons.append("trimmed content length is less than 5")
+        if len(title_trim) > 1000:
+            error_labels.append("too_long")
+            reasons.append("trimmed content length is greater than 1000")
+        if title_lower in TITLE_PLACEHOLDER_VALUES:
+            error_labels.append("likely_placeholder")
+            reasons.append("content is a likely title placeholder")
+        if TITLE_ENCODING_ERROR_RE.search(title):
+            error_labels.append("encoding_error")
+            reasons.append("content contains a likely encoding error")
+        if TITLE_CONFERENCE_RE.search(title_trim):
+            error_labels.append("likely_conference")
+            reasons.append("content is likely an IEEE conference title")
+        if TITLE_IDENTIFIER_RE.fullmatch(title_trim):
+            error_labels.append("likely_identifier")
+            reasons.append("content consists only of an identifier or URL")
+
+    return invalid or bool(error_labels), error_labels, reasons
 
 
-def check_abstract(abstract: Any) -> ValidationResult:
-    return _check_html_and_special_chars(abstract)
+def check_abstract(abstract: Any, title: Any = None) -> ValidationResult:
+    if abstract is None:
+        return _fail("null", "value is null")
+    if not isinstance(abstract, str):
+        return _fail("wrong_type", "value must be a string")
+
+    invalid, error_labels, reasons = _check_html_and_special_chars(abstract)
+    abstract_trim = abstract.strip()
+    abstract_lower = abstract_trim.lower()
+
+    if abstract_trim == "":
+        error_labels.append("empty")
+        reasons.append("value is empty after trimming")
+    else:
+        if len(abstract_trim) < 20:
+            error_labels.append("too_short")
+            reasons.append("trimmed content length is less than 20")
+        if len(abstract_trim) > 6000:
+            error_labels.append("too_long")
+            reasons.append("trimmed content length is greater than 6000")
+        if (
+            abstract_lower in ABSTRACT_PLACEHOLDER_VALUES
+            or ABSTRACT_PLACEHOLDER_RE.fullmatch(abstract_trim)
+        ):
+            error_labels.append("likely_placeholder")
+            reasons.append("content is a likely abstract placeholder")
+        if ABSTRACT_ENCODING_ERROR_RE.search(abstract):
+            error_labels.append("encoding_error")
+            reasons.append("content contains a likely encoding error")
+        if (
+            isinstance(title, str)
+            and abstract_trim
+            and title.strip()
+            and abstract_lower == title.strip().lower()
+        ):
+            error_labels.append("same_title")
+            reasons.append("content is identical to title after trimming and lowercasing")
+        if ABSTRACT_IDENTIFIER_RE.fullmatch(abstract_trim):
+            error_labels.append("likely_identifier")
+            reasons.append("content consists only of an identifier or URL")
+
+    return invalid or bool(error_labels), error_labels, reasons
 
 
 def check_language(language: Any) -> ValidationResult:
@@ -306,7 +429,11 @@ def check_author(author: Any) -> ValidationResult:
     if not isinstance(author, list):
         return _fail("wrong_type", "value must be a list")
     if len(author) == 0:
-        return _ok()
+        return _fail("empty", "author list is empty")
+
+    normalized_names: List[str] = []
+    error_labels: List[str] = []
+    reasons: List[str] = []
     for idx, item in enumerate(author):
         if not isinstance(item, dict):
             return _fail("wrong_type", f"item[{idx}] must be an object")
@@ -316,15 +443,37 @@ def check_author(author: Any) -> ValidationResult:
         orcid = item.get("orcid")
         if not isinstance(name, str):
             return _fail("wrong_type", f"item[{idx}].name must be a string")
-        if name == "":
-            return _fail("empty", f"item[{idx}].name must be non-empty")
-        if AUTHOR_SEP_RE.search(name):
-            return _fail("invalid_separator", f"item[{idx}].name contains invalid separator")
         if not isinstance(orcid, str):
             return _fail("wrong_type", f"item[{idx}].orcid must be a string")
-        if orcid != "" and not ORCID_URL_RE.fullmatch(orcid):
-            return _fail("invalid_orcid", f"item[{idx}].orcid is not a valid ORCID URL")
-    return _ok()
+
+        name_trim = name.strip()
+        if name_trim == "":
+            if "empty_name" not in error_labels:
+                error_labels.append("empty_name")
+                reasons.append(f"item[{idx}].name is empty after trimming")
+        else:
+            normalized_names.append(re.sub(r"\s+", " ", name_trim).casefold())
+            if (
+                AUTHOR_SEP_RE.search(name_trim)
+                and "invalid_separator" not in error_labels
+            ):
+                error_labels.append("invalid_separator")
+                reasons.append(f"item[{idx}].name contains separator noise")
+
+        orcid_trim = orcid.strip()
+        if (
+            orcid_trim != ""
+            and not _valid_orcid(orcid_trim)
+            and "invalid_orcid" not in error_labels
+        ):
+            error_labels.append("invalid_orcid")
+            reasons.append(f"item[{idx}].orcid has invalid format or checksum")
+
+    if len(normalized_names) != len(set(normalized_names)):
+        error_labels.insert(1 if "empty_name" in error_labels else 0, "duplicated_name")
+        reasons.insert(1 if "empty_name" in error_labels else 0, "author names contain duplicates")
+
+    return bool(error_labels), error_labels, reasons
 
 
 def check_contributors(contributors: Any) -> ValidationResult:
@@ -575,7 +724,7 @@ def _check_id_type_id_title_items(items: Any) -> ValidationResult:
         title = item.get("title")
         if not isinstance(id_type, str) or id_type == "":
             return _fail("empty", f"item[{idx}].id_type must be a non-empty string")
-        title_invalid, title_error_labels, title_reasons = check_title(title)
+        title_invalid, title_error_labels, title_reasons = _check_html_and_special_chars(title)
         if title_invalid:
             return (
                 True,
@@ -792,7 +941,7 @@ FIELD_VALIDATORS = {
     "isbns": lambda record: check_isbns(record.get("isbns"), record.get("metadata_type")),
     "isbn13": lambda record: check_isbn13(record.get("isbn13"), record.get("metadata_type")),
     "title": lambda record: check_title(record.get("title")),
-    "abstract": lambda record: check_abstract(record.get("abstract")),
+    "abstract": lambda record: check_abstract(record.get("abstract"), record.get("title")),
     "language": lambda record: check_language(record.get("language")),
     "author": lambda record: check_author(record.get("author")),
     "contributors": lambda record: check_contributors(record.get("contributors")),
