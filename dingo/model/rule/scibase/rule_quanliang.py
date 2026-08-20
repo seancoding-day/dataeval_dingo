@@ -74,8 +74,8 @@ ABSTRACT_IDENTIFIER_RE = re.compile(
 )
 PAGE_RANGE_RE = re.compile(r"^\d+-\d+$")
 ISSN_RE = re.compile(r"^\d{4}-\d{3}[\dX]$")
-AUTHOR_SEP_RE = re.compile(r"[|;；]")
-ORCID_URL_RE = re.compile(r"^[Hh][Tt][Tt][Pp][Ss]?://orcid\.org/\d{4}-\d{4}-\d{4}-\d{3}[\dXx]$")
+AUTHOR_SEP_RE = re.compile(r"[|;；]|,,|，，")
+ORCID_URL_RE = re.compile(r"^https://orcid\.org/\d{4}-\d{4}-\d{4}-\d{3}[\dX]$")
 
 OA_BOOL_VALUES = {"true", "false", "unknown"}
 METADATA_TYPE_VALUES = {"paper", "ebook"}
@@ -202,6 +202,18 @@ def _valid_issn(code: str) -> bool:
     calculated = (11 - (total % 11)) % 11
     expected = "X" if calculated == 10 else str(calculated)
     return digits[7].upper() == expected
+
+
+def _valid_orcid(orcid_url: str) -> bool:
+    if not ORCID_URL_RE.fullmatch(orcid_url):
+        return False
+    digits = orcid_url.rsplit("/", 1)[-1].replace("-", "")
+    total = 0
+    for digit in digits[:15]:
+        total = (total + int(digit)) * 2
+    result = (12 - total % 11) % 11
+    expected = "X" if result == 10 else str(result)
+    return digits[-1] == expected
 
 
 ValidationResult = tuple[bool, list[str], list[str]]
@@ -417,7 +429,11 @@ def check_author(author: Any) -> ValidationResult:
     if not isinstance(author, list):
         return _fail("wrong_type", "value must be a list")
     if len(author) == 0:
-        return _ok()
+        return _fail("empty", "author list is empty")
+
+    normalized_names: List[str] = []
+    error_labels: List[str] = []
+    reasons: List[str] = []
     for idx, item in enumerate(author):
         if not isinstance(item, dict):
             return _fail("wrong_type", f"item[{idx}] must be an object")
@@ -427,15 +443,37 @@ def check_author(author: Any) -> ValidationResult:
         orcid = item.get("orcid")
         if not isinstance(name, str):
             return _fail("wrong_type", f"item[{idx}].name must be a string")
-        if name == "":
-            return _fail("empty", f"item[{idx}].name must be non-empty")
-        if AUTHOR_SEP_RE.search(name):
-            return _fail("invalid_separator", f"item[{idx}].name contains invalid separator")
         if not isinstance(orcid, str):
             return _fail("wrong_type", f"item[{idx}].orcid must be a string")
-        if orcid != "" and not ORCID_URL_RE.fullmatch(orcid):
-            return _fail("invalid_orcid", f"item[{idx}].orcid is not a valid ORCID URL")
-    return _ok()
+
+        name_trim = name.strip()
+        if name_trim == "":
+            if "empty_name" not in error_labels:
+                error_labels.append("empty_name")
+                reasons.append(f"item[{idx}].name is empty after trimming")
+        else:
+            normalized_names.append(re.sub(r"\s+", " ", name_trim).casefold())
+            if (
+                AUTHOR_SEP_RE.search(name_trim)
+                and "invalid_separator" not in error_labels
+            ):
+                error_labels.append("invalid_separator")
+                reasons.append(f"item[{idx}].name contains separator noise")
+
+        orcid_trim = orcid.strip()
+        if (
+            orcid_trim != ""
+            and not _valid_orcid(orcid_trim)
+            and "invalid_orcid" not in error_labels
+        ):
+            error_labels.append("invalid_orcid")
+            reasons.append(f"item[{idx}].orcid has invalid format or checksum")
+
+    if len(normalized_names) != len(set(normalized_names)):
+        error_labels.insert(1 if "empty_name" in error_labels else 0, "duplicated_name")
+        reasons.insert(1 if "empty_name" in error_labels else 0, "author names contain duplicates")
+
+    return bool(error_labels), error_labels, reasons
 
 
 def check_contributors(contributors: Any) -> ValidationResult:

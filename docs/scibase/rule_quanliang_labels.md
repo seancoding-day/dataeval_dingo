@@ -15,7 +15,7 @@
 | `title` | 21 |
 | `abstract` | 21 |
 | `language` | 4 |
-| `author` | 7 |
+| `author` | 9 |
 | `contributors` | 4 |
 | `locations` | 6 |
 | `access_is_oa` | 4 |
@@ -41,7 +41,7 @@
 | `access_xinghe_repository_origin_path` | 3 |
 | `access_xinghe_repository_model_name` | 4 |
 | `access_xinghe_repository_model_version` | 5 |
-| **合计** | **234** |
+| **合计** | **236** |
 
 ## metadata_type
 
@@ -151,9 +151,11 @@
 | `author.null` | 值为 null |
 | `author.wrong_type` | 作者列表、对象或属性类型错误 |
 | `author.invalid_keys` | 作者对象字段不符合要求 |
-| `author.empty` | 作者姓名为空 |
-| `author.invalid_separator` | 作者姓名包含非法分隔符 |
-| `author.invalid_orcid` | ORCID URL 格式错误 |
+| `author.empty` | 作者列表为空 |
+| `author.empty_name` | 至少一个作者姓名去除首尾空格后为空 |
+| `author.duplicated_name` | 标准化后的非空作者姓名存在重复 |
+| `author.invalid_separator` | 作者姓名包含竖线、分号或连续两个逗号 |
+| `author.invalid_orcid` | ORCID URL 格式或校验位错误 |
 
 ## contributors
 

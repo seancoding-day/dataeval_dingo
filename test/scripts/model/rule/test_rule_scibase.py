@@ -6,6 +6,66 @@ from dingo.model.rule.scibase.rule_quanliang import RuleQuanliangFieldValidation
 
 
 class TestRuleQuanliangFieldValidation:
+    def test_author_quality_labels(self):
+        model = RuleQuanliangFieldValidation()
+        model.dynamic_config = model.dynamic_config.model_copy(deep=True)
+        model.dynamic_config.key_list = ["author"]
+
+        result = model.eval(Data(author=[]))
+        assert result.label == ["author.empty"]
+
+        result = model.eval(
+            Data(
+                author=[
+                    {"name": "   ", "orcid": ""},
+                    {"name": "John  Smith", "orcid": ""},
+                    {"name": " john smith ", "orcid": ""},
+                    {"name": "Alice||Bob", "orcid": "https://orcid.org/0000-0002-1825-0098"},
+                ]
+            )
+        )
+        assert result.label == [
+            "author.empty_name",
+            "author.duplicated_name",
+            "author.invalid_separator",
+            "author.invalid_orcid",
+        ]
+
+    def test_author_valid_orcid_checksum(self):
+        model = RuleQuanliangFieldValidation()
+        model.dynamic_config = model.dynamic_config.model_copy(deep=True)
+        model.dynamic_config.key_list = ["author"]
+
+        result = model.eval(
+            Data(
+                author=[
+                    {
+                        "name": "John Smith",
+                        "orcid": "https://orcid.org/0000-0002-1825-0097",
+                    }
+                ]
+            )
+        )
+
+        assert result.status is False
+        assert result.label == ["QUALITY_GOOD"]
+
+    def test_author_invalid_separator_patterns(self):
+        model = RuleQuanliangFieldValidation()
+        model.dynamic_config = model.dynamic_config.model_copy(deep=True)
+        model.dynamic_config.key_list = ["author"]
+
+        invalid_names = (
+            "Alice|Bob",
+            "Alice;Bob",
+            "Alice；Bob",
+            "Alice,,Bob",
+            "Alice，，Bob",
+        )
+        for name in invalid_names:
+            result = model.eval(Data(author=[{"name": name, "orcid": ""}]))
+            assert result.label == ["author.invalid_separator"]
+
     def test_doi_empty_format_and_test_prefix_labels(self):
         cases = [
             ("   ", "doi.empty"),
