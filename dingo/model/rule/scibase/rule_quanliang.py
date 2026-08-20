@@ -36,6 +36,26 @@ SPECIAL_CHAR_MARKUP_RE = re.compile(
     r"\[(?:!\s*/?\s*(?:i|sub|sup)\s*|!|○![R上下])\]",
     re.IGNORECASE,
 )
+TITLE_PLACEHOLDER_VALUES = {
+    "[untitled]", "untitled", "(no title)", "[no title]", "[no title available]",
+    "no title", "unknown", "n/a", "na", "none", "null", "not available",
+    "[not available].", "not applicable", "missing", "missing title", "title missing",
+    "without title", "tbd", "to be determined", "---", "--", "-", ".",
+}
+TITLE_ENCODING_ERROR_RE = re.compile(
+    r"�|锟斤拷|烫烫烫|屯屯屯|Ã.|Â.|â€™|â€œ|â€|â€“|â€”|â€¦|ï»¿"
+)
+TITLE_CONFERENCE_RE = re.compile(
+    r"^(?:\[\s*)?(?:\d{4}[\s-]+)?ieee\b.*\b"
+    r"(?:proceedings|conference|symposium|workshop|congress)\b",
+    re.IGNORECASE,
+)
+TITLE_IDENTIFIER_RE = re.compile(
+    r"(?:\d+|(?:doi\s*:\s*)?10\.\d{4,9}/\S+|"
+    r"https?://(?:dx\.)?doi\.org/10\.\d{4,9}/\S+|"
+    r"(?:https?://|www\.|s3a?://)\S+)",
+    re.IGNORECASE,
+)
 ABSTRACT_PLACEHOLDER_VALUES = {"n/a", "na", "none", "null", "unknown", "-", "--", "."}
 ABSTRACT_PLACEHOLDER_RE = re.compile(
     r"^(?:no abstract(?: available)?|abstract (?:is )?(?:not available|unavailable|not provided|"
@@ -294,7 +314,39 @@ def _check_html_and_special_chars(value: Any) -> ValidationResult:
 
 
 def check_title(title: Any) -> ValidationResult:
-    return _check_html_and_special_chars(title)
+    if title is None:
+        return _fail("null", "value is null")
+    if not isinstance(title, str):
+        return _fail("wrong_type", "value must be a string")
+
+    invalid, error_labels, reasons = _check_html_and_special_chars(title)
+    title_trim = title.strip()
+    title_lower = title_trim.lower()
+
+    if title_trim == "":
+        error_labels.append("empty")
+        reasons.append("value is empty after trimming")
+    else:
+        if len(title_trim) < 5:
+            error_labels.append("too_short")
+            reasons.append("trimmed content length is less than 5")
+        if len(title_trim) > 1000:
+            error_labels.append("too_long")
+            reasons.append("trimmed content length is greater than 1000")
+        if title_lower in TITLE_PLACEHOLDER_VALUES:
+            error_labels.append("likely_placeholder")
+            reasons.append("content is a likely title placeholder")
+        if TITLE_ENCODING_ERROR_RE.search(title):
+            error_labels.append("encoding_error")
+            reasons.append("content contains a likely encoding error")
+        if TITLE_CONFERENCE_RE.search(title_trim):
+            error_labels.append("likely_conference")
+            reasons.append("content is likely an IEEE conference title")
+        if TITLE_IDENTIFIER_RE.fullmatch(title_trim):
+            error_labels.append("likely_identifier")
+            reasons.append("content consists only of an identifier or URL")
+
+    return invalid or bool(error_labels), error_labels, reasons
 
 
 def check_abstract(abstract: Any, title: Any = None) -> ValidationResult:
@@ -630,7 +682,7 @@ def _check_id_type_id_title_items(items: Any) -> ValidationResult:
         title = item.get("title")
         if not isinstance(id_type, str) or id_type == "":
             return _fail("empty", f"item[{idx}].id_type must be a non-empty string")
-        title_invalid, title_error_labels, title_reasons = check_title(title)
+        title_invalid, title_error_labels, title_reasons = _check_html_and_special_chars(title)
         if title_invalid:
             return (
                 True,

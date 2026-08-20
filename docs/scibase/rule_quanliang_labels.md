@@ -12,7 +12,7 @@
 | `doi` | 7 |
 | `isbns` | 4 |
 | `isbn13` | 4 |
-| `title` | 14 |
+| `title` | 21 |
 | `abstract` | 21 |
 | `language` | 4 |
 | `author` | 7 |
@@ -41,7 +41,7 @@
 | `access_xinghe_repository_origin_path` | 3 |
 | `access_xinghe_repository_model_name` | 4 |
 | `access_xinghe_repository_model_version` | 5 |
-| **合计** | **231** |
+| **合计** | **238** |
 
 ## metadata_type
 
@@ -101,6 +101,13 @@
 | `title.special_char_replacement` | 包含 Unicode 替换字符 |
 | `title.special_char_control` | 包含控制字符 |
 | `title.special_char_markup` | 包含方括号排版标记 |
+| `title.empty` | 去除首尾空格后内容为空 |
+| `title.too_short` | 去除首尾空格后长度小于 5 个字符 |
+| `title.too_long` | 去除首尾空格后长度大于 1000 个字符 |
+| `title.likely_placeholder` | 内容可能是标题占位文本 |
+| `title.encoding_error` | 包含 Unicode 替换字符或典型乱码组合 |
+| `title.likely_conference` | 内容可能是 IEEE 会议名称而非论文标题 |
+| `title.likely_identifier` | 标题整体可能是数字标识符、DOI、URL 或 S3 路径 |
 
 ## abstract
 

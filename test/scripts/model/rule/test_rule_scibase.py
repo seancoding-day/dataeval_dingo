@@ -64,10 +64,46 @@ class TestRuleQuanliangFieldValidation:
         assert result.status is True
         assert result.label == [
             *(f"title.{error_label}" for error_label in expected_error_labels),
+            "title.encoding_error",
             *(f"abstract.{error_label}" for error_label in expected_error_labels),
             "abstract.encoding_error",
             "abstract.same_title",
         ]
+
+    def test_title_quality_labels(self):
+        cases = [
+            ("   ", ["title.empty"]),
+            ("Test", ["title.too_short"]),
+            ("N/A", ["title.too_short", "title.likely_placeholder"]),
+            ("This title contains 锟斤拷 encoding noise", ["title.encoding_error"]),
+            (
+                "2024 IEEE International Conference on Big Data",
+                ["title.likely_conference"],
+            ),
+            ("https://example.com/paper", ["title.likely_identifier"]),
+        ]
+
+        for title, expected_labels in cases:
+            model = RuleQuanliangFieldValidation()
+            model.dynamic_config = model.dynamic_config.model_copy(deep=True)
+            model.dynamic_config.key_list = ["title"]
+            result = model.eval(Data(title=title))
+            assert result.status is True
+            assert result.label == expected_labels
+
+    def test_title_rules_avoid_conference_and_url_false_positives(self):
+        model = RuleQuanliangFieldValidation()
+        model.dynamic_config = model.dynamic_config.model_copy(deep=True)
+        model.dynamic_config.key_list = ["title"]
+
+        for title in (
+            "IEEE Transactions on Knowledge and Data Engineering",
+            "Lessons from the Conference on Machine Learning",
+            "https://example.com A Study of Machine Learning",
+        ):
+            result = model.eval(Data(title=title))
+            assert result.status is False
+            assert result.label == ["QUALITY_GOOD"]
 
     def test_abstract_quality_labels(self):
         cases = [
