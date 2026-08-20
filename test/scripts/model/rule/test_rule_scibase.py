@@ -27,6 +27,7 @@ class TestRuleQuanliangFieldValidation:
         assert result.label == [
             "author.empty_name",
             "author.duplicated_name",
+            "author.multiple_names",
             "author.invalid_separator",
             "author.invalid_orcid",
         ]
@@ -64,7 +65,34 @@ class TestRuleQuanliangFieldValidation:
         )
         for name in invalid_names:
             result = model.eval(Data(author=[{"name": name, "orcid": ""}]))
-            assert result.label == ["author.invalid_separator"]
+            assert result.label == [
+                "author.multiple_names",
+                "author.invalid_separator",
+            ]
+
+    def test_author_multiple_names_patterns(self):
+        model = RuleQuanliangFieldValidation()
+        model.dynamic_config = model.dynamic_config.model_copy(deep=True)
+        model.dynamic_config.key_list = ["author"]
+
+        candidate_names = (
+            "John Smith and Mary Lee",
+            "Alice & Bob",
+            "张三、李四",
+            "John Smith et al.",
+            "张三，李四",
+            "John Smith, Mary Lee",
+            "Smith, John, Lee, Mary",
+            "张三 李四",
+        )
+        for name in candidate_names:
+            result = model.eval(Data(author=[{"name": name, "orcid": ""}]))
+            assert "author.multiple_names" in result.label
+
+        non_candidate_names = ("John Smith", "Smith, John", "R&D", "AT&T Research")
+        for name in non_candidate_names:
+            result = model.eval(Data(author=[{"name": name, "orcid": ""}]))
+            assert result.label == ["QUALITY_GOOD"]
 
     def test_doi_empty_format_and_test_prefix_labels(self):
         cases = [
