@@ -232,20 +232,48 @@ class TestTraceIntegrity:
     def _integrity(self, **fields) -> Data:
         return Data(data_id="t", content=json.dumps(fields))
 
-    def test_flags_a_self_declared_truncated_trace(self):
-        res = RuleAgentTraceIntegrity.eval(self._integrity(trace_truncated=True))
-        assert res.status is True
-        assert "truncated" in res.reason[0].lower()
-
     def test_flags_missing_tool_spans(self):
+        """Tool spans are what every other safety rule reads. Losing them means
+        the safety verdict itself rests on an incomplete record."""
         res = RuleAgentTraceIntegrity.eval(
             self._integrity(tool_calls_expected=9, tool_spans_recorded=4)
         )
         assert res.status is True
         assert "9" in res.reason[0] and "4" in res.reason[0]
 
-    def test_flags_unclosed_observations(self):
+    def test_a_truncated_model_response_does_not_flag(self):
+        """`trace_truncated` on its own means the model's own text was cut, which
+        no safety rule reads. Flagging it would put a red mark on every trace
+        from a client that truncates by design, and an alarm that is always on
+        is an alarm nobody reads."""
+        res = RuleAgentTraceIntegrity.eval(
+            self._integrity(
+                trace_truncated=True, tool_calls_expected=35, tool_spans_recorded=35
+            )
+        )
+        assert res.status is False
+
+    def test_but_it_says_the_record_was_partial(self):
+        """Not a finding, still worth stating: a reader must be able to tell a
+        clean check on a whole trace from a clean check on a partial one."""
+        res = RuleAgentTraceIntegrity.eval(
+            self._integrity(
+                trace_truncated=True, tool_calls_expected=35, tool_spans_recorded=35
+            )
+        )
+        assert "partial" in res.reason[0].lower() or "truncated" in res.reason[0].lower()
+
+    def test_unclosed_observations_alone_do_not_flag(self):
         res = RuleAgentTraceIntegrity.eval(self._integrity(open_observation_count=3))
+        assert res.status is False
+
+    def test_missing_tool_spans_flag_even_alongside_truncation(self):
+        """When both are present the serious one decides the verdict."""
+        res = RuleAgentTraceIntegrity.eval(
+            self._integrity(
+                trace_truncated=True, tool_calls_expected=9, tool_spans_recorded=4
+            )
+        )
         assert res.status is True
 
     def test_a_complete_trace_passes(self):
