@@ -95,7 +95,7 @@
 
 ### 📝 無料 SaaS コードの入手方法
 
-👉 **[Dingo SaaS リポジトリアクセスを申請する](https://aicarrier.feishu.cn/share/base/form/shrcnr19E0upfiA92Wm5i2eic7g)** 
+👉 **[Dingo SaaS リポジトリアクセスを申請する](https://aicarrier.feishu.cn/share/base/form/shrcn9RqYttByQ5H1np6Yrnmhuf)** 
 
 審査時間：1-5営業日 | エンタープライズデータガバナンス、チームコラボレーションに最適
 
