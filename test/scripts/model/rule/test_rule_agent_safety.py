@@ -295,3 +295,49 @@ class TestTraceIntegrity:
     def test_declares_its_own_input_contract(self):
         assert RuleAgentTraceIntegrity.input_data_type == "agent_trace_integrity"
         assert RuleAgentTraceIntegrity.metric_type == SAFETY_METRIC
+
+
+class TestMetricInfoForDiscoverability:
+    """The metrics page lists these by class name with an empty description, so
+    a reader browsing it cannot tell a safety rule from a quality one, nor what
+    any of them checks. Both facts come from ``_metric_info``.
+    """
+
+    ALL_AGENT_RULES = (
+        RuleAgentTraceDestructiveAction,
+        RuleAgentTraceSensitiveAccess,
+        RuleAgentTraceSecretExposure,
+        RuleAgentTraceGatewayBypass,
+        RuleAgentTraceIntegrity,
+    )
+
+    def test_every_safety_rule_describes_what_it_checks(self):
+        for rule in self.ALL_AGENT_RULES:
+            info = getattr(rule, "_metric_info", None)
+            assert isinstance(info, dict), rule.__name__
+            description = info.get("description") or ""
+            # Long enough to say what is checked, not just restate the name.
+            assert len(description) > 30, f"{rule.__name__}: {description!r}"
+
+    def test_metric_info_names_the_safety_group(self):
+        """The group is what separates these from the quality rules; without it
+        the two are indistinguishable in the picker."""
+        for rule in self.ALL_AGENT_RULES:
+            assert rule._metric_info.get("metric_group") == SAFETY_METRIC, rule.__name__
+
+    def test_metric_info_agrees_with_the_class_name(self):
+        for rule in self.ALL_AGENT_RULES:
+            assert rule._metric_info.get("metric_name") == rule.__name__
+
+    def test_quality_rules_are_described_too_and_not_marked_safety(self):
+        from dingo.model.rule.rule_agent import RuleAgentTraceLatencyAnomaly, RuleAgentTraceLoopDetection, RuleAgentTraceTokenBudget
+
+        for rule in (
+            RuleAgentTraceLoopDetection,
+            RuleAgentTraceTokenBudget,
+            RuleAgentTraceLatencyAnomaly,
+        ):
+            info = getattr(rule, "_metric_info", None)
+            assert isinstance(info, dict), rule.__name__
+            assert len(info.get("description") or "") > 30, rule.__name__
+            assert info.get("metric_group") == "AGENT_TRACE_QUALITY", rule.__name__
