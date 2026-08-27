@@ -73,7 +73,7 @@ Evaluate whether this text is suitable for LLM pretraining. Focus on issues that
   - Example (BAD): Misaligned columns, missing headers, or garbled HTML tags
   - Impact: Models cannot learn proper table representation
 
-- **Error_Code**: Code blocks with formatting corruption
+- **Code_Corruption**: Code blocks with formatting corruption
   **Common corruption patterns**:
   - Missing code fence (` ``` `): code appears as plain text without language block
   - Lost indentation: Python/YAML code with all indentation stripped (flat lines)
