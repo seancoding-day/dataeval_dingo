@@ -69,7 +69,7 @@ Evaluate whether this text is suitable for LLM pretraining. Focus on issues that
   - Example (GOOD): "The item costs $100 and satisfies $x^2 + y^2 = z^2$ where price is $50"
     (Dollar signs for money + proper LaTeX pair)
 
-- **Error_Table**: Table structures that are malformed or unreadable
+- **Table_Corruption**: Table structures that are malformed or unreadable
   - Example (BAD): Misaligned columns, missing headers, or garbled HTML tags
   - Impact: Models cannot learn proper table representation
 
