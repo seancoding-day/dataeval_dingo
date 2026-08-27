@@ -100,17 +100,17 @@ Evaluate whether this text is suitable for LLM pretraining. Focus on issues that
 **Impact**: Noise prevents models from learning meaningful semantic patterns.
 
 **Check for**:
-- **Error_Garbled_Characters**: Encoding issues or anti-crawler artifacts
+- **Garbled_Characters**: Encoding issues or anti-crawler artifacts
   - Example (BAD): "â€™" (broken UTF-8), "□□□" (placeholder chars), "ï»¿" (BOM)
   - Threshold: >1% of characters are garbled
   - Impact: Corrupts token distributions
 
-- **Error_Words_Stuck**: Missing spaces break tokenization
+- **Words_Stuck**: Missing spaces break tokenization
   - Example (BAD): "Thequickbrownfoxjumpsoverthelazydog"
   - Threshold: >1% of text has word boundaries missing
   - Impact: Wrong subword tokenization patterns
 
-- **Error_Lack_Punctuation**: Sentence boundaries unclear
+- **Lack_Punctuation**: Sentence boundaries unclear
   - Example (BAD): "I like apples they are red also I like oranges"
   - Impact: Models cannot learn sentence segmentation
 
@@ -122,7 +122,7 @@ Evaluate whether this text is suitable for LLM pretraining. Focus on issues that
 **Impact**: Repetitive content reduces training efficiency and causes memorization.
 
 **Check for**:
-- **Error_Duplicate**: Excessive repetition that dominates the text
+- **Duplication**: Excessive repetition that dominates the text
   - Example (BAD): "I like blue. I like blue. I like blue. I like blue..." (>30% duplicate)
   - Threshold: Same sentence/phrase repeats >5 times OR duplicate ratio >30%
   - Impact: Over-represents certain patterns
@@ -135,8 +135,8 @@ Evaluate whether this text is suitable for LLM pretraining. Focus on issues that
 **Impact**: Harmful content should not be learned by models.
 
 **Check for**:
-- **Error_Politics**: Content promoting extremism, terrorism, ethnic hatred
-- **Error_Prohibition**: Violence, pornography, gambling, drugs
+- **Politics**: Content promoting extremism, terrorism, ethnic hatred
+- **Prohibition**: Violence, pornography, gambling, drugs
 
 **Key Question**: "Is this content safe for model training?"
 
@@ -198,11 +198,11 @@ Output: {{"score": 0, "type": "Completeness", "name": "Formula_Corruption", "rea
 
 **Example 3 (Bad - Effectiveness)**:
 Input: "Theappleisredandtasty�withsomegarbledtext□□"
-Output: {"score": 0, "type": "Effectiveness", "name": "Error_Garbled_Characters", "reason": "Contains encoding corruption (�, □) and missing spaces (>1% of text)"}
+Output: {"score": 0, "type": "Effectiveness", "name": "Garbled_Characters", "reason": "Contains encoding corruption (�, □) and missing spaces (>1% of text)"}
 
 **Example 4 (Bad - Similarity)**:
 Input: "Blue is nice. Blue is nice. Blue is nice. Blue is nice. Blue is nice. Blue is nice."
-Output: {"score": 0, "type": "Similarity", "name": "Error_Duplicate", "reason": "Same sentence repeats 6 times, indicating low content diversity"}
+Output: {"score": 0, "type": "Similarity", "name": "Duplication", "reason": "Same sentence repeats 6 times, indicating low content diversity"}
 
 ---
 
