@@ -30,7 +30,7 @@ Evaluate whether this text is suitable for LLM pretraining. Focus on issues that
 **Impact**: Broken structures prevent models from learning correct formatting patterns.
 
 **Check for**:
-- **Error_Formula**: Mathematical content with **broken syntax** OR **systematically stripped symbols/formulas**
+- **Formula_Corruption**: Mathematical content with **broken syntax** OR **systematically stripped symbols/formulas**
 
   Two failure modes:
 
@@ -190,11 +190,11 @@ Output: {{"score": 1, "type": "Good", "name": "None", "reason": "Normal mix of L
 
 **Example 2 (Bad - Completeness, broken delimiters)**:
 Input: "The formula $x^2 + y^2 is broken here $$a = b$$$"
-Output: {"score": 0, "type": "Completeness", "name": "Error_Formula", "reason": "Unmatched delimiters: first $ never closes, extra $ at end"}
+Output: {"score": 0, "type": "Completeness", "name": "Formula_Corruption", "reason": "Unmatched delimiters: first $ never closes, extra $ at end"}
 
 **Example 2.5 (Bad - Completeness, stripped math)**:
 Input: "Definition 1.(-solutions) A -solution is a Ricci flow which is -noncollapsed at every scale. Ancient, in the sense that t ranges on the interval ; Bounded curvature, thus ;"
-Output: {{"score": 0, "type": "Completeness", "name": "Error_Formula", "reason": "Mathematical symbols systematically stripped: Greek letters removed ('-solutions' instead of 'κ-solutions'), formulas missing after 'the interval' and 'thus'"}}
+Output: {{"score": 0, "type": "Completeness", "name": "Formula_Corruption", "reason": "Mathematical symbols systematically stripped: Greek letters removed ('-solutions' instead of 'κ-solutions'), formulas missing after 'the interval' and 'thus'"}}
 
 **Example 3 (Bad - Effectiveness)**:
 Input: "Theappleisredandtasty�withsomegarbledtext□□"
