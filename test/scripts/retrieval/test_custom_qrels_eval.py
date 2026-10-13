@@ -52,6 +52,7 @@ class TestCustomQrelsEval:
             lambda name: evalset if name == "cjk_test" else None,
         )
         input_args = InputArgs(**{
+            "task_id": "user-retrieval-task-001",
             "input_path": "cjk_test",
             "output_path": str(tmp_path / "out"),
             "executor": {"retrieval": {
@@ -63,6 +64,7 @@ class TestCustomQrelsEval:
 
         summary = RetrievalExecutor(input_args).execute()
 
+        assert summary.task_id == "user-retrieval-task-001"
         metrics = summary.metrics_score_stats["cjk_test"]
         assert summary.total == 2
         assert metrics["recall_at_100"] == 0.5

@@ -240,7 +240,7 @@ class RetrievalExecutor:
 
         finished_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         summary = SummaryModel(
-            task_id=str(uuid.uuid4())[:8],
+            task_id=self.input_args.task_id or str(uuid.uuid4())[:8],
             task_name=self.input_args.task_name or "retrieval_eval",
             input_path=task_label,
             output_path=output_dir,
@@ -393,7 +393,7 @@ class RetrievalExecutor:
         )
 
         summary = SummaryModel(
-            task_id=str(uuid.uuid4())[:8],
+            task_id=self.input_args.task_id or str(uuid.uuid4())[:8],
             task_name=self.input_args.task_name or "retrieval_eval",
             input_path=self.input_args.input_path,
             output_path=output_dir,
@@ -641,7 +641,7 @@ class RetrievalExecutor:
         all_results: dict[str, Any] = {task_label: oe_summary.to_dict()}
 
         summary = SummaryModel(
-            task_id=str(uuid.uuid4())[:8],
+            task_id=self.input_args.task_id or str(uuid.uuid4())[:8],
             task_name=self.input_args.task_name or "open_eval",
             input_path=queries_path,
             output_path=output_dir,

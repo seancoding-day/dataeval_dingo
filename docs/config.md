@@ -18,6 +18,7 @@
 
 | Parameter | Type | Default | Required | Description |
 |-----------|------|---------|----------|-------------|
+| task_id | str | "" | No | 用户指定的任务唯一标识；为空时由执行器自动生成 |
 | task_name | str | "dingo" | No | 任务名称 |
 | input_path | str | "test/data/test_local_json.json" | Yes | 要检查的文件或目录路径 |
 | output_path | str | "outputs/" | No | 结果输出路径 |
@@ -188,6 +189,7 @@ LLM 配置（支持额外字段，所有额外字段会直接透传给 LLM API�
 
 ```json
 {
+  "task_id": "my-task-001",
   "task_name": "dingo",
   "input_path": "test/data/test_local_json.json",
   "output_path": "outputs/",
@@ -268,6 +270,7 @@ run(config)
 
 # 或从字典创建配置
 config_dict = {
+    "task_id": "my-task-001",
     "task_name": "my_task",
     "input_path": "data.json",
     # ... 其他配置

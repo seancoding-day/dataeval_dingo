@@ -13,6 +13,28 @@ from dingo.io.output.summary_model import SummaryModel
 class TestSparkExecutor:
     """Spark 执行器测试类"""
 
+    def test_execute_preserves_user_provided_task_id(self):
+        input_args = InputArgs(
+            task_id="user-spark-task-001",
+            executor={"result_save": {"bad": True}},
+            evaluator=[],
+        )
+        executor = SparkExecutor(input_args=input_args)
+        spark = MagicMock()
+        data_rdd = MagicMock()
+        evaluated_rdd = MagicMock()
+        data_rdd.count.return_value = 0
+        data_rdd.map.return_value.persist.return_value = evaluated_rdd
+        evaluated_rdd.filter.return_value.count.return_value = 0
+        executor.initialize_spark = MagicMock(return_value=(spark, MagicMock()))
+        executor.load_data = MagicMock(return_value=data_rdd)
+        executor.summarize = MagicMock(side_effect=lambda summary: summary)
+
+        summary = executor.execute()
+
+        assert summary.task_id == "user-spark-task-001"
+        assert summary.input_args["task_id"] == "user-spark-task-001"
+
     def test_aggregate_eval_details_with_scores(self):
         """测试聚合函数正确收集指标分数"""
         # 模拟数据

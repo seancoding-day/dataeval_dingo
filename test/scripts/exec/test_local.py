@@ -8,6 +8,23 @@ from dingo.model import Model
 
 
 class TestLocal:
+    def test_execute_preserves_user_provided_task_id(self, tmp_path):
+        input_path = tmp_path / "input.jsonl"
+        input_path.write_text('{"content": "test"}\n', encoding="utf-8")
+        input_args = InputArgs(
+            task_id="user-task-001",
+            input_path=str(input_path),
+            output_path=str(tmp_path / "outputs"),
+            dataset={"source": "local", "format": "jsonl"},
+            executor={"result_save": {"bad": False, "good": False}},
+            evaluator=[],
+        )
+
+        summary = LocalExecutor(input_args).execute()
+
+        assert summary.task_id == "user-task-001"
+        assert summary.input_args["task_id"] == "user-task-001"
+
     def test_rule_runtime_config_key_list_applies_in_local_executor(self):
         input_data = {
             "evaluator": [],

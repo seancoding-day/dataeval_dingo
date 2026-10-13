@@ -185,6 +185,7 @@ class EvalPipline(BaseModel):
 
 
 class InputArgs(BaseModel):
+    task_id: str = ""
     task_name: str = "dingo"
     input_path: str = "test/data/test_local_json.json"
     output_path: str = "outputs/"
