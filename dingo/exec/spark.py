@@ -201,7 +201,7 @@ class SparkExecutor(ExecProto):
             num_good = total - num_bad
             # Create summary
             self.summary = SummaryModel(
-                task_id=str(uuid.uuid1()),
+                task_id=self.input_args.task_id or str(uuid.uuid1()),
                 task_name=self.input_args.task_name,
                 # eval_group=self.input_args.executor.eval_group,
                 input_path=self.input_args.input_path if not self.spark_rdd else "",

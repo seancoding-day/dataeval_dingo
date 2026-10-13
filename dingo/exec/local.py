@@ -58,7 +58,7 @@ class LocalExecutor(ExecProto):
                 os.makedirs(output_path)
 
         self.summary = SummaryModel(
-            task_id=str(uuid.uuid1()),
+            task_id=self.input_args.task_id or str(uuid.uuid1()),
             task_name=self.input_args.task_name,
             input_path=input_path,
             output_path=output_path if self.input_args.executor.result_save.bad else "",
