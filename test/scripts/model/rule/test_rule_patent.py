@@ -1,7 +1,12 @@
 import pytest
 
 from dingo.io.input import Data
-from dingo.model.rule.scibase.rule_patent import MAX_CLAIMS_LENGTH, RulePatentFieldValidation, check_ipc_unified
+from dingo.model.rule.scibase.rule_patent import (
+    MAX_CLAIMS_LENGTH,
+    RulePatentFieldValidation,
+    check_document_number_unifed,
+    check_ipc_unified,
+)
 
 
 def _claims_with_string_length(length: int) -> list[dict]:
@@ -14,7 +19,14 @@ class TestRulePatentFieldValidation:
         claims = _claims_with_string_length(MAX_CLAIMS_LENGTH)
         assert len(str(claims)) == MAX_CLAIMS_LENGTH
 
-        result = RulePatentFieldValidation().eval(Data(claims=claims, ipc_unified=[]))
+        result = RulePatentFieldValidation().eval(
+            Data(
+                claims=claims,
+                ipc_unified=[],
+                document_number="JP2013022164A",
+                document_number_unifed="JP2013022164A",
+            )
+        )
 
         assert result.status is False
         assert result.label == ["QUALITY_GOOD"]
@@ -23,7 +35,14 @@ class TestRulePatentFieldValidation:
         claims = _claims_with_string_length(MAX_CLAIMS_LENGTH + 1)
         assert len(str(claims)) == MAX_CLAIMS_LENGTH + 1
 
-        result = RulePatentFieldValidation().eval(Data(claims=claims, ipc_unified=[]))
+        result = RulePatentFieldValidation().eval(
+            Data(
+                claims=claims,
+                ipc_unified=[],
+                document_number="JP2013022164A",
+                document_number_unifed="JP2013022164A",
+            )
+        )
 
         assert result.status is True
         assert result.label == ["claims.too_long"]
@@ -32,7 +51,13 @@ class TestRulePatentFieldValidation:
         ]
 
     def test_missing_claims_is_invalid(self):
-        result = RulePatentFieldValidation().eval(Data(ipc_unified=[]))
+        result = RulePatentFieldValidation().eval(
+            Data(
+                ipc_unified=[],
+                document_number="JP2013022164A",
+                document_number_unifed="JP2013022164A",
+            )
+        )
 
         assert result.status is True
         assert result.label == ["claims.missing_field"]
@@ -117,9 +142,117 @@ class TestRulePatentFieldValidation:
 
     def test_rule_reports_invalid_ipc_unified(self):
         result = RulePatentFieldValidation().eval(
-            Data(claims=[], ipc_unified=["A01A 01/00"])
+            Data(
+                claims=[],
+                ipc_unified=["A01A 01/00"],
+                document_number="JP2013022164A",
+                document_number_unifed="JP2013022164A",
+            )
         )
 
         assert result.status is True
         assert result.label == ["ipc_unified.invalid_format"]
         assert result.reason[0].startswith("ipc_unified: item[0]")
+
+    @pytest.mark.parametrize(
+        ("document_number", "document_number_unifed"),
+        [
+            ("JP特開平11-73838A", "JPH11073838A"),
+            ("JP特開平5-263266A", "JPH05263266A"),
+            ("JP特開昭63-123456A", "JPS63123456A"),
+            ("JP特開昭63-123456", "JPS63123456A"),
+            ("JP特開2003-75095(P2003-75095A)A", "JP2003075095A"),
+            ("JP特公平7-46852B2", "JPH07046852B2"),
+            ("JP特公昭48-1234B2", "JPS48001234B2"),
+            ("JP特許第3405959号(P3405959)B2", "JP3405959B2"),
+            ("JP実用新案登録第3082161号(U3082161)U", "JP3082161U"),
+            ("JP実開平6-10396U", "JPH06010396U"),
+            ("JP実公平7-15070Y2", "JPH07015070Y2"),
+            ("JP第2891579号B2", "JP2891579B2"),
+        ],
+    )
+    def test_valid_document_number_conversion(
+        self,
+        document_number,
+        document_number_unifed,
+    ):
+        assert check_document_number_unifed(
+            document_number_unifed,
+            document_number,
+        ) == (False, [], [])
+
+    @pytest.mark.parametrize(
+        "document_number_unifed",
+        [
+            "",
+            "JP特開平11-73838A",
+            "JP2013-022164A",
+            "JP2013022164 A",
+        ],
+    )
+    def test_document_number_unifed_must_be_ascii_alphanumeric(
+        self,
+        document_number_unifed,
+    ):
+        invalid, labels, reasons = check_document_number_unifed(
+            document_number_unifed
+        )
+
+        assert invalid is True
+        assert labels == ["invalid_format"]
+        assert reasons == ["value must contain only ASCII letters and digits"]
+
+    @pytest.mark.parametrize("document_number_unifed", [None, 123, []])
+    def test_document_number_unifed_must_be_string(
+        self,
+        document_number_unifed,
+    ):
+        assert check_document_number_unifed(document_number_unifed) == (
+            True,
+            ["wrong_type"],
+            ["value must be a string"],
+        )
+
+    def test_reports_incorrect_document_number_conversion(self):
+        invalid, labels, reasons = check_document_number_unifed(
+            "JPH11073839A",
+            "JP特開平11-73838A",
+        )
+
+        assert invalid is True
+        assert labels == ["incorrect_conversion"]
+        assert reasons == [
+            "conversion from document_number 'JP特開平11-73838A' is incorrect: "
+            "expected 'JPH11073838A', got 'JPH11073839A'"
+        ]
+
+    def test_rule_reports_invalid_document_number_unifed(self):
+        result = RulePatentFieldValidation().eval(
+            Data(
+                claims=[],
+                ipc_unified=[],
+                document_number="JP特開平11-73838A",
+                document_number_unifed="JPH11073839A",
+            )
+        )
+
+        assert result.status is True
+        assert result.label == ["document_number_unifed.incorrect_conversion"]
+        assert result.reason == [
+            "document_number_unifed: conversion from document_number "
+            "'JP特開平11-73838A' is incorrect: expected 'JPH11073838A', "
+            "got 'JPH11073839A'"
+        ]
+
+    def test_missing_document_number_unifed_is_invalid(self):
+        result = RulePatentFieldValidation().eval(
+            Data(
+                claims=[],
+                ipc_unified=[],
+                document_number="JP2013022164A",
+            )
+        )
+
+        assert result.status is True
+        assert result.label == ["document_number_unifed.missing_field"]
+        assert result.reason == ["document_number_unifed: missing field"]
