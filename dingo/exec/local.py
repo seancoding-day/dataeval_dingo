@@ -134,6 +134,7 @@ class LocalExecutor(ExecProto):
                         for label in label_set:
                             self.summary.type_count[field_key].setdefault(label, 0)
                             self.summary.type_count[field_key][label] += 1
+                        self.summary.add_label_sample(field_key, label_set)
 
                     for field_key, eval_detail_list in result_info.token_usage_details.items():
                         for eval_detail in eval_detail_list:
@@ -291,10 +292,12 @@ class LocalExecutor(ExecProto):
     ) -> SummaryModel:
         new_summary = copy.deepcopy(summary)
         if new_summary.total == 0:
+            new_summary.calculate_label_stats_ratios()
             return new_summary
         new_summary.score = round(new_summary.num_good / new_summary.total * 100, 2)
         if refresh_type_ratio:
             new_summary = self.refresh_type_ratio(new_summary)
+        new_summary.calculate_label_stats_ratios()
 
         # 计算指标分数的平均值、最小值、最大值、标准差等
         new_summary.calculate_metrics_score_averages()
@@ -436,6 +439,7 @@ class LocalExecutor(ExecProto):
 
     def get_summary(self):
         self.summary = self.refresh_type_ratio(self.summary)
+        self.summary.calculate_label_stats_ratios()
         return self.summary
 
     def get_info_list(self, high_quality: bool) -> list:

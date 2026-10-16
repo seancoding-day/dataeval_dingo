@@ -19,6 +19,45 @@ from dingo.io.output.summary_model import SummaryModel
 class TestSummaryModel:
     """测试 SummaryModel 的指标分数统计功能"""
 
+    def test_label_stats_expand_paths_and_deduplicate_per_sample(self):
+        summary = SummaryModel(total=2)
+
+        summary.add_label_sample(
+            "content",
+            [
+                "Completeness.Table_Header_Corruption",
+                "Completeness.Table_Cell_Corruption",
+                "QUALITY_GOOD",
+            ],
+        )
+        summary.add_label_sample(
+            "content",
+            [
+                "Completeness.Table_Header_Corruption",
+                "QUALITY_BAD_EFFECTIVENESS.RuleColonEnd",
+            ],
+        )
+        summary.calculate_label_stats_ratios()
+
+        stats = {
+            item.label: item
+            for item in summary.label_stats["content"]
+        }
+        assert stats["Completeness"].sample_count == 2
+        assert stats["Completeness"].sample_ratio == 1.0
+        assert stats["Completeness.Table_Header_Corruption"].sample_count == 2
+        assert stats["Completeness.Table_Cell_Corruption"].sample_count == 1
+        assert stats["QUALITY_GOOD"].sample_count == 1
+        assert stats["QUALITY_BAD_EFFECTIVENESS"].sample_count == 1
+        assert (
+            stats["QUALITY_BAD_EFFECTIVENESS.RuleColonEnd"].sample_count
+            == 1
+        )
+        assert "Effectiveness" not in stats
+
+        serialized = summary.to_dict()["label_stats"]["content"]
+        assert [item["label"] for item in serialized] == sorted(stats)
+
     def test_input_args_are_serialized(self):
         input_args = InputArgs(**{
             "input_path": "data.jsonl",

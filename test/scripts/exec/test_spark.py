@@ -77,6 +77,35 @@ class TestSparkExecutor:
         assert acc['metric_scores']['field1']['LLMRAGFaithfulness'] == [9.5, 8.3]
         assert 'field1' in acc['label_counts']
         assert acc['label_counts']['field1']['good'] == 2
+        assert acc['label_path_counts']['field1']['good'] == 2
+
+    def test_aggregate_label_paths_deduplicates_per_item(self):
+        item = {
+            "eval_details": {
+                "content": [
+                    {
+                        "label": [
+                            "Completeness.Table_Header_Corruption",
+                            "Completeness.Table_Cell_Corruption",
+                            "QUALITY_GOOD",
+                            "QUALITY_BAD_EFFECTIVENESS.RuleColonEnd",
+                        ]
+                    }
+                ]
+            }
+        }
+        acc = {'label_counts': {}, 'metric_scores': {}}
+
+        result = SparkExecutor._aggregate_eval_details(acc, item)
+
+        counts = result['label_path_counts']['content']
+        assert counts['Completeness'] == 1
+        assert counts['Completeness.Table_Header_Corruption'] == 1
+        assert counts['Completeness.Table_Cell_Corruption'] == 1
+        assert counts['QUALITY_GOOD'] == 1
+        assert counts['QUALITY_BAD_EFFECTIVENESS'] == 1
+        assert counts['QUALITY_BAD_EFFECTIVENESS.RuleColonEnd'] == 1
+        assert 'Effectiveness' not in counts
 
     def test_merge_eval_details_with_scores(self):
         """测试合并函数正确合并多个累加器的分数"""
@@ -263,6 +292,15 @@ class TestSparkExecutor:
         assert stats['score_average'] == 8.9  # (9.5 + 8.3) / 2
         assert stats['score_min'] == 8.3
         assert stats['score_max'] == 9.5
+        label_stats = {
+            item["label"]: item
+            for item in result_dict["label_stats"]["field1"]
+        }
+        assert label_stats["good"] == {
+            "label": "good",
+            "sample_count": 2,
+            "sample_ratio": 1.0,
+        }
 
     def test_spark_executor_summarize_multiple_metrics(self):
         """测试 SparkExecutor.summarize 处理多个指标"""
