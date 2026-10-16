@@ -41,6 +41,7 @@ class TestRulePatentFieldValidation:
         "ipc_unified",
         [
             [],
+            ["F03G"],
             ["A01A 1/00"],
             ["B60T 8/48", "H99Z 999/999999"],
             '["B60T 8/48", "B60T 8/58"]',
@@ -65,6 +66,7 @@ class TestRulePatentFieldValidation:
             "A01A 1/1234567",  # Subgroup must contain at most six digits.
             "A01A 1-00",       # Groups must be separated by a slash.
             "A01A 1/00 A",     # Extra suffixes are not allowed.
+            "F03G 0/00",       # Zero groups must be reduced to "F03G".
         ],
     )
     def test_invalid_ipc_format(self, ipc_code):
@@ -83,8 +85,10 @@ class TestRulePatentFieldValidation:
         assert labels == ["invalid_format"]
         assert reasons == [
             "item[1] value 'C00C 5/27' must match IPC format "
+            "'<A-H><01-99><A-Z>' or "
             "'<A-H><01-99><A-Z> <1-999>/<2-6 digits>'",
             "item[3] value 'C00C 15/08' must match IPC format "
+            "'<A-H><01-99><A-Z>' or "
             "'<A-H><01-99><A-Z> <1-999>/<2-6 digits>'",
         ]
 

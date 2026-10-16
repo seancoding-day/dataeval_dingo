@@ -9,6 +9,7 @@ from dingo.model.model import Model
 from dingo.model.rule.base import BaseRule
 
 MAX_CLAIMS_LENGTH = 1_000_000
+IPC_SUBCLASS_RE = re.compile(r"^[A-H](?:0[1-9]|[1-9][0-9])[A-Z]$")
 IPC_CODE_RE = re.compile(
     r"^(?P<section>[A-H])"
     r"(?P<class>0[1-9]|[1-9][0-9])"
@@ -56,12 +57,19 @@ def check_ipc_unified(ipc_unified: Any) -> ValidationResult:
             reasons.append(f"item[{index}] must be a string")
             continue
 
+        # IPC entries whose main group and subgroup are both zero are
+        # normalized to the four-character subclass code (for example,
+        # ``F03G 0/00`` becomes ``F03G``).
+        if IPC_SUBCLASS_RE.fullmatch(ipc_code):
+            continue
+
         match = IPC_CODE_RE.fullmatch(ipc_code)
         if match is None:
             if "invalid_format" not in error_labels:
                 error_labels.append("invalid_format")
             reasons.append(
                 f"item[{index}] value {ipc_code!r} must match IPC format "
+                "'<A-H><01-99><A-Z>' or "
                 "'<A-H><01-99><A-Z> <1-999>/<2-6 digits>'"
             )
             continue
