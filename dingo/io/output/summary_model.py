@@ -1,9 +1,15 @@
 import statistics
-from typing import Any, Dict
+from typing import Any, Dict, Iterable, List
 
 from pydantic import BaseModel, Field
 
 from dingo.io.output.eval_detail import TokenUsage
+
+
+class LabelStat(BaseModel):
+    label: str
+    sample_count: int
+    sample_ratio: float
 
 
 class SummaryModel(BaseModel):
@@ -20,6 +26,7 @@ class SummaryModel(BaseModel):
     total: int = 0
     type_count: Dict[str, Dict[str, int]] = Field(default_factory=dict)
     type_ratio: Dict[str, Dict[str, float]] = Field(default_factory=dict)
+    label_stats: Dict[str, List[LabelStat]] = Field(default_factory=dict)
 
     # 新增：指标分数统计（用于RAG等评估场景）
     # 结构：{field_key: {metric_name: {scores, score_average, ...}}}
@@ -27,6 +34,51 @@ class SummaryModel(BaseModel):
     token_usage_stats: Dict[str, Dict[str, Dict[str, Any]]] = Field(default_factory=dict)
     statistics: Dict[str, Dict[str, Dict[str, int]]] = Field(default_factory=dict)
     input_args: Dict[str, Any] = Field(default_factory=dict)
+
+    @staticmethod
+    def expand_label_paths(label: str) -> List[str]:
+        """Expand one label into its dot-delimited parent paths."""
+        parts = label.split('.')
+        return ['.'.join(parts[:index]) for index in range(1, len(parts) + 1)]
+
+    def add_label_sample(self, field_key: str, labels: Iterable[str]):
+        """Count each label path once for one sample and field."""
+        label_paths = {
+            path
+            for label in labels
+            for path in self.expand_label_paths(label)
+        }
+        if not label_paths:
+            return
+        stats_by_label = {
+            stat.label: stat
+            for stat in self.label_stats.setdefault(field_key, [])
+        }
+        for label_path in label_paths:
+            stat = stats_by_label.get(label_path)
+            if stat is None:
+                stat = LabelStat(
+                    label=label_path,
+                    sample_count=0,
+                    sample_ratio=0.0,
+                )
+                self.label_stats[field_key].append(stat)
+                stats_by_label[label_path] = stat
+            stat.sample_count += 1
+
+    def calculate_label_stats_ratios(self):
+        """Refresh label ratios after the summary total is known."""
+        for field_key, stats in self.label_stats.items():
+            for stat in stats:
+                stat.sample_ratio = (
+                    round(stat.sample_count / self.total, 6)
+                    if self.total > 0
+                    else 0.0
+                )
+            self.label_stats[field_key] = sorted(
+                stats,
+                key=lambda stat: stat.label,
+            )
 
     def add_metric_score(self, field_key: str, metric_name: str, score: float):
         """
@@ -181,6 +233,13 @@ class SummaryModel(BaseModel):
             field_key: dict(sorted(type_ratios.items()))
             for field_key, type_ratios in sorted(self.type_ratio.items())
         }
+        sorted_label_stats = {
+            field_key: [
+                stat.model_dump()
+                for stat in sorted(stats, key=lambda item: item.label)
+            ]
+            for field_key, stats in sorted(self.label_stats.items())
+        }
         result = {
             'task_id': self.task_id,
             'task_name': self.task_name,
@@ -195,6 +254,7 @@ class SummaryModel(BaseModel):
             'total': self.total,
             'type_count': sorted_type_count,
             'type_ratio': sorted_type_ratio,
+            'label_stats': sorted_label_stats,
         }
 
         # 如果有指标分数统计，以层级结构添加到输出中（与 type_ratio 结构一致）

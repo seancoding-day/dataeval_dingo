@@ -420,6 +420,14 @@ class TestLocal:
         assert all([item in result.type_ratio.get('content') for item in ["QUALITY_BAD_EFFECTIVENESS.RuleColonEnd",
                                                       "QUALITY_BAD_EFFECTIVENESS.RuleSpecialCharacter",
                                                       "QUALITY_GOOD"]])
+        label_stats = {
+            item.label: item
+            for item in result.label_stats["content"]
+        }
+        assert label_stats["QUALITY_BAD_EFFECTIVENESS"].sample_count == 1
+        assert label_stats["QUALITY_BAD_EFFECTIVENESS"].sample_ratio == 1.0
+        assert label_stats["QUALITY_GOOD"].sample_count == 1
+        assert "Effectiveness" not in label_stats
 
         input_data["executor"]["result_save"]["all_labels"] = False
         input_args = InputArgs(**input_data)

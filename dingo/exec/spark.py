@@ -9,7 +9,7 @@ from pyspark.sql import SparkSession
 
 from dingo.config import InputArgs
 from dingo.exec.base import ExecProto, Executor
-from dingo.io import Data, ResultInfo, SummaryModel
+from dingo.io import Data, LabelStat, ResultInfo, SummaryModel
 from dingo.io.output.eval_detail import EvalDetail
 from dingo.model import Model
 
@@ -81,6 +81,7 @@ class SparkExecutor(ExecProto):
         """聚合单个 item 的 eval_details 到累加器中，同时收集 scores"""
         eval_details_dict = item.get('eval_details', {})
         statistics_details = item.get('_statistics_details', {})
+        label_path_counts = acc.setdefault('label_path_counts', {})
 
         # 遍历第一层：字段名，第二层是 List[EvalDetail] (序列化为 list of dicts)
         for field_key, eval_detail_list in eval_details_dict.items():
@@ -89,6 +90,8 @@ class SparkExecutor(ExecProto):
                 acc['label_counts'][field_key] = {}
             if field_key not in acc['metric_scores']:
                 acc['metric_scores'][field_key] = {}
+            if field_key not in label_path_counts:
+                label_path_counts[field_key] = {}
 
             # 遍历 List[EvalDetail]，同时收集指标分数和标签
             label_set = set()
@@ -114,6 +117,16 @@ class SparkExecutor(ExecProto):
                     acc['label_counts'][field_key][label] = 1
                 else:
                     acc['label_counts'][field_key][label] += 1
+
+            label_path_set = {
+                path
+                for label in label_set
+                for path in SummaryModel.expand_label_paths(label)
+            }
+            for label_path in label_path_set:
+                label_path_counts[field_key][label_path] = (
+                    label_path_counts[field_key].get(label_path, 0) + 1
+                )
 
         statistics_counts = acc.setdefault('statistics', {})
         for field_key, eval_detail_list in statistics_details.items():
@@ -146,6 +159,12 @@ class SparkExecutor(ExecProto):
                         acc1['label_counts'][field_key][label] = count
                     else:
                         acc1['label_counts'][field_key][label] += count
+
+        target_label_path_counts = acc1.setdefault('label_path_counts', {})
+        for field_key, label_dict in acc2.get('label_path_counts', {}).items():
+            target = target_label_path_counts.setdefault(field_key, {})
+            for label, count in label_dict.items():
+                target[label] = target.get(label, 0) + count
 
         # 合并 metric scores（按 field_key 分组）
         for field_key, metrics_dict in acc2['metric_scores'].items():
@@ -341,6 +360,7 @@ class SparkExecutor(ExecProto):
             aggregated_results = self.data_info_list.aggregate(
                 {
                     'label_counts': {},
+                    'label_path_counts': {},
                     'metric_scores': {},
                     'statistics': {},
                 },  # 初始累加器
@@ -348,10 +368,12 @@ class SparkExecutor(ExecProto):
                 SparkExecutor._merge_eval_details  # 合并累加器
             )
             type_ratio_counts = aggregated_results['label_counts']
+            label_path_counts = aggregated_results['label_path_counts']
             metric_scores = aggregated_results['metric_scores']
             statistics = aggregated_results['statistics']
         else:
             type_ratio_counts = {}
+            label_path_counts = {}
             metric_scores = {}
             statistics = {}
 
@@ -363,6 +385,18 @@ class SparkExecutor(ExecProto):
                 new_summary.type_ratio[field_name][eval_details] = round(
                     type_ratio_counts[field_name][eval_details] / new_summary.total, 6
                 )
+
+        new_summary.label_stats = {
+            field_name: [
+                LabelStat(
+                    label=label,
+                    sample_count=count,
+                    sample_ratio=round(count / new_summary.total, 6),
+                )
+                for label, count in sorted(label_counts.items())
+            ]
+            for field_name, label_counts in sorted(label_path_counts.items())
+        }
 
         # 添加收集到的 metric scores 到 summary（按 field_key 分组）
         for field_key, metrics in metric_scores.items():
